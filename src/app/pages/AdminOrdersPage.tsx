@@ -269,11 +269,11 @@ export default function AdminOrdersPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <Card className="glass-grid-card p-4">
-              <div className="text-sm text-muted-foreground">Customer Bills</div>
+              <div className="text-sm text-muted-foreground">Total Orders</div>
               <div className="text-3xl font-bold">{groupedOrders.length}</div>
             </Card>
             <Card className="glass-grid-card p-4">
-              <div className="text-sm text-muted-foreground">Unpaid Bills</div>
+              <div className="text-sm text-muted-foreground">Unpaid Orders</div>
               <div className="text-3xl font-bold">
                 {
                   groupedOrders.filter((group) =>

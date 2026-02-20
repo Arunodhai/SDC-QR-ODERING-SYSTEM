@@ -187,17 +187,15 @@ export default function OrderSuccessPage() {
             <div className="space-y-2">
               <div className="rounded-md border">
                 <div className="grid grid-cols-12 gap-2 border-b bg-gray-50 px-3 py-2 text-xs font-semibold text-muted-foreground">
-                  <span className="col-span-5">Item</span>
+                  <span className="col-span-6">Item</span>
                   <span className="col-span-2 text-center">Qty</span>
-                  <span className="col-span-2 text-right">Price</span>
-                  <span className="col-span-3 text-right">Total</span>
+                  <span className="col-span-4 text-right">Price</span>
                 </div>
                 {order.items.map((item: any, idx: number) => (
                   <div key={idx} className="grid grid-cols-12 gap-2 px-3 py-2 text-sm border-b last:border-b-0">
-                    <span className="col-span-5">{item.name}</span>
+                    <span className="col-span-6">{item.name}</span>
                     <span className="col-span-2 text-center">{item.quantity}</span>
-                    <span className="col-span-2 text-right">${Number(item.price || 0).toFixed(2)}</span>
-                    <span className="col-span-3 text-right font-semibold">${(item.price * item.quantity).toFixed(2)}</span>
+                    <span className="col-span-4 text-right font-semibold">${Number(item.price || 0).toFixed(2)}</span>
                   </div>
                 ))}
               </div>

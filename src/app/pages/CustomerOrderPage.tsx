@@ -24,6 +24,18 @@ const sameIdSet = (a: string[], b: string[]) => {
   const bb = [...b].sort();
   return aa.every((v, i) => v === bb[i]);
 };
+const formatDateTime = (value?: string | null) => {
+  if (!value) return '-';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '-';
+  return d.toLocaleString([], {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+};
 
 export default function CustomerOrderPage() {
   const { tableNumber } = useParams();
@@ -52,6 +64,14 @@ export default function CustomerOrderPage() {
   const [swipeOffsetById, setSwipeOffsetById] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const latestFinalBillIdRef = useRef<string>('');
+  const roundByOrderId = userOrders
+    .slice()
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    .reduce((acc: Record<string, number>, order: any, index: number) => {
+      acc[String(order.id)] = index + 1;
+      return acc;
+    }, {});
+  const visibleUserOrders = userOrders.filter((o) => o.status !== 'CANCELLED');
 
   useEffect(() => {
     loadMenu();
@@ -411,11 +431,11 @@ export default function CustomerOrderPage() {
         {phoneConfirmed && activeTab === 'menu' && (
           <Card className="glass-grid-card p-4 mb-6">
             <h3 className="font-semibold mb-2">Your Orders</h3>
-            {userOrders.length === 0 ? (
+            {visibleUserOrders.length === 0 ? (
               <p className="text-sm text-muted-foreground">No orders for this number at Table {tableNumber}.</p>
             ) : (
               <div className="space-y-2">
-                {userOrders.map((o) => (
+                {visibleUserOrders.map((o) => (
                   <div key={o.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
                     <div>
                       <div className="font-semibold">Order #{o.id}</div>
@@ -481,7 +501,7 @@ export default function CustomerOrderPage() {
                     <div className="space-y-1">
                       {currentBill.orders.map((o: any, idx: number) => (
                         <div key={o.id} className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>Round {idx + 1} • Order #{o.id}</span>
+                          <span>Round {roundByOrderId[String(o.id)] || idx + 1} • Order #{o.id}</span>
                           <span>${Number(o.total || 0).toFixed(2)}</span>
                         </div>
                       ))}
@@ -549,6 +569,9 @@ export default function CustomerOrderPage() {
                   <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
                     <span>Table {bill.tableNumber}</span>
                     <span>${Number(bill.total || 0).toFixed(2)}</span>
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    Paid on: {formatDateTime(bill.paidAt || bill.createdAt)}
                   </div>
                   {expandedPaidBills[bill.id] && (
                     <div className="mt-2 rounded-md border bg-gray-50 p-2">
