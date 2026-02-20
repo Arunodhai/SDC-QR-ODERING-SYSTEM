@@ -330,7 +330,7 @@ export default function AdminOrdersPage() {
           </div>
         </div>
 
-        <div className="columns-1 md:columns-2 xl:columns-3 gap-4 [column-fill:_balance]">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {groupedOrders.map((group) => {
             const groupKey = `${group.tableNumber}__${group.customerPhone || 'NO_PHONE'}__${group.startedAt}`;
             const loadingKey = `${group.tableNumber}__${group.customerPhone || ''}`;
@@ -340,7 +340,7 @@ export default function AdminOrdersPage() {
               .reduce((sum, o) => sum + Number(o.total || 0), 0);
             const isExpanded = Boolean(expandedGroups[groupKey]);
             return (
-              <Card key={groupKey} className="glass-grid-card p-4 h-fit mb-4 break-inside-avoid">
+              <Card key={groupKey} className="glass-grid-card p-4 h-fit">
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div>
                     <h3 className="text-lg font-bold">Table {group.tableNumber}</h3>
