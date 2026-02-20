@@ -133,6 +133,9 @@ export default function AdminOrdersPage() {
           const today = new Date().toDateString();
           return new Date(order.createdAt).toDateString() === today;
         }
+        if (filter === 'UNPAID') {
+          return order.paymentStatus === 'UNPAID' && order.status !== 'CANCELLED';
+        }
         return order.paymentStatus === filter;
       }),
     [orders, filter],
@@ -338,6 +341,10 @@ export default function AdminOrdersPage() {
             const groupTotal = group.orders
               .filter((o) => o.status !== 'CANCELLED')
               .reduce((sum, o) => sum + Number(o.total || 0), 0);
+            const groupPaymentStatus =
+              group.orders.length > 0 && group.orders.every((o) => o.paymentStatus === 'PAID')
+                ? 'PAID'
+                : 'UNPAID';
             return (
               <Card key={groupKey} className="glass-grid-card p-4 h-fit">
                 <div className="mb-3 flex items-start justify-between gap-3">
@@ -356,6 +363,11 @@ export default function AdminOrdersPage() {
                   <div className="text-right min-w-[190px] shrink-0">
                     <div className="text-lg font-bold">${groupTotal.toFixed(2)}</div>
                     <div className="text-xs text-muted-foreground">Payable (excludes cancelled)</div>
+                    <div className="mt-1 flex justify-end">
+                      <Badge className={PAYMENT_COLORS[groupPaymentStatus as keyof typeof PAYMENT_COLORS]}>
+                        {groupPaymentStatus}
+                      </Badge>
+                    </div>
                     {group.customerPhone && unpaidOrders.length > 0 && (
                       <div className="mt-2 flex flex-col items-end gap-2">
                         <Button
@@ -490,9 +502,6 @@ export default function AdminOrdersPage() {
                       <span className="text-xs text-muted-foreground">Order #{order.id}</span>
                       <Badge className={STATUS_COLORS[order.status as keyof typeof STATUS_COLORS]}>
                         {statusLabel(order.status)}
-                      </Badge>
-                      <Badge className={PAYMENT_COLORS[order.paymentStatus as keyof typeof PAYMENT_COLORS]}>
-                        {order.paymentStatus}
                       </Badge>
                     </div>
                     <p className="text-xs font-semibold text-primary mt-1">Billing Ref: {billingRef(order)}</p>
