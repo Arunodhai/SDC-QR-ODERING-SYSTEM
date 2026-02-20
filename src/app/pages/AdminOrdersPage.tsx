@@ -133,9 +133,6 @@ export default function AdminOrdersPage() {
           const today = new Date().toDateString();
           return new Date(order.createdAt).toDateString() === today;
         }
-        if (filter === 'UNPAID') {
-          return order.paymentStatus === 'UNPAID' && order.status !== 'CANCELLED';
-        }
         return order.paymentStatus === filter;
       }),
     [orders, filter],
@@ -337,12 +334,11 @@ export default function AdminOrdersPage() {
           {groupedOrders.map((group) => {
             const groupKey = `${group.tableNumber}__${group.customerPhone || 'NO_PHONE'}__${group.startedAt}`;
             const loadingKey = `${group.tableNumber}__${group.customerPhone || ''}`;
-            const unpaidOrders = group.orders.filter((o) => o.paymentStatus === 'UNPAID' && o.status !== 'CANCELLED');
-            const groupTotal = group.orders
-              .filter((o) => o.status !== 'CANCELLED')
-              .reduce((sum, o) => sum + Number(o.total || 0), 0);
+            const payableOrders = group.orders.filter((o) => o.status !== 'CANCELLED');
+            const unpaidOrders = payableOrders.filter((o) => o.paymentStatus === 'UNPAID');
+            const groupTotal = payableOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
             const groupPaymentStatus =
-              group.orders.length > 0 && group.orders.every((o) => o.paymentStatus === 'PAID')
+              payableOrders.length > 0 && payableOrders.every((o) => o.paymentStatus === 'PAID')
                 ? 'PAID'
                 : 'UNPAID';
             return (
