@@ -1,9 +1,9 @@
-import { Coffee, LayoutGrid, Table2, Receipt, LogOut } from 'lucide-react';
+import { Coffee, LayoutGrid, Table2, Receipt, LogOut, ChefHat } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router';
 import { Button } from './ui/button';
 import * as api from '../lib/api';
 
-export default function AdminNav() {
+export default function AdminNav({ sticky = true }: { sticky?: boolean }) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -21,10 +21,11 @@ export default function AdminNav() {
     { path: '/admin/menu', label: 'Menu', icon: LayoutGrid },
     { path: '/admin/tables', label: 'Tables', icon: Table2 },
     { path: '/admin/orders', label: 'Orders', icon: Receipt },
+    { path: '/kitchen', label: 'Kitchen', icon: ChefHat },
   ];
 
   return (
-    <div className="sticky top-0 z-30 border-b bg-white/95">
+    <div className={`${sticky ? 'sticky top-0 z-30' : ''} border-b bg-white/95`}>
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex flex-wrap items-center justify-between gap-3 py-4">
           <div className="flex items-center gap-2">

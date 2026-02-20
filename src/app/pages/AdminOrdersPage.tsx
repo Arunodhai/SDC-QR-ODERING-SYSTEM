@@ -15,11 +15,18 @@ const STATUS_COLORS = {
   PREPARING: 'bg-yellow-100 text-yellow-800',
   READY: 'bg-green-100 text-green-800',
   COMPLETED: 'bg-gray-100 text-gray-800',
+  CANCELLED: 'bg-gray-200 text-gray-700',
 };
 
 const PAYMENT_COLORS = {
   PAID: 'bg-green-100 text-green-800',
   UNPAID: 'bg-orange-100 text-orange-800',
+};
+
+const billingRef = (order: any) => {
+  const phone = order.customerPhone || '';
+  const last4 = phone ? phone.slice(-4) : '0000';
+  return `T${order.tableNumber}-P${last4}-O${order.id}`;
 };
 
 export default function AdminOrdersPage() {
@@ -195,6 +202,7 @@ export default function AdminOrdersPage() {
                   </div>
                   <p className="text-sm text-muted-foreground">{order.customerName}</p>
                   <p className="text-xs text-muted-foreground">{order.customerPhone ? `Mobile: ${order.customerPhone}` : 'Mobile: -'}</p>
+                  <p className="text-xs font-semibold text-primary">Billing Ref: {billingRef(order)}</p>
                   <p className="text-xs text-muted-foreground">
                     {format(new Date(order.createdAt), 'MMM dd, yyyy • h:mm a')}
                   </p>

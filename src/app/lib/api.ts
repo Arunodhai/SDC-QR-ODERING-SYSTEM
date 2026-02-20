@@ -352,9 +352,13 @@ export const markOrdersPaidBulk = async (orderIds: string[]) => {
 };
 
 export const cancelPendingOrder = async (id: string, phone?: string) => {
-  let query = supabase.from('orders').delete().eq('id', Number(id)).eq('status', 'PENDING');
+  let query = supabase
+    .from('orders')
+    .update({ status: 'CANCELLED' })
+    .eq('id', Number(id))
+    .eq('status', 'PENDING');
   if (phone) query = query.eq('customer_phone', phone);
-  const { error } = await query;
+  const { error } = await query.select('id').single();
 
   if (error) throw new Error(errMsg(error, 'Failed to cancel order'));
   return { success: true };

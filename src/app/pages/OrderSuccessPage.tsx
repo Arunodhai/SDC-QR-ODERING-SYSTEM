@@ -11,6 +11,7 @@ const STATUS_LABELS: Record<string, string> = {
   PREPARING: 'Preparing',
   READY: 'Ready for pickup/serve',
   COMPLETED: 'Completed',
+  CANCELLED: 'Cancelled',
 };
 
 const STATUS_PROGRESS_LABELS: Record<string, string> = {
@@ -30,6 +31,8 @@ export default function OrderSuccessPage() {
   const [error, setError] = useState<string>('');
   const [cancelLoading, setCancelLoading] = useState(false);
   const [cancelled, setCancelled] = useState(false);
+  const billingRef =
+    `T${table || order?.tableNumber || '-'}-P${phone ? phone.slice(-4) : '0000'}-O${orderId || '-'}`;
 
   useEffect(() => {
     if (!orderId) {
@@ -67,6 +70,7 @@ export default function OrderSuccessPage() {
   const status = order?.status || 'PENDING';
   const activeStep = Math.max(STATUS_STEPS.indexOf(status), 0);
   const statusIcon = useMemo(() => {
+    if (status === 'CANCELLED') return <CheckCircle className="w-18 h-18 text-gray-500 mx-auto mb-4" />;
     if (status === 'PENDING') return <Clock3 className="w-18 h-18 text-amber-500 mx-auto mb-4" />;
     if (status === 'PREPARING') return <ChefHat className="w-18 h-18 text-blue-600 mx-auto mb-4" />;
     if (status === 'READY') return <PartyPopper className="w-18 h-18 text-green-600 mx-auto mb-4" />;
@@ -115,10 +119,19 @@ export default function OrderSuccessPage() {
             <span className="text-muted-foreground">Current Status</span>
             <span className="font-semibold">{cancelled ? 'Cancelled' : (STATUS_LABELS[status] || status)}</span>
           </div>
+          <div className="mt-1 flex items-center justify-between">
+            <span className="text-muted-foreground">Billing Ref</span>
+            <span className="font-semibold">{billingRef}</span>
+          </div>
         </div>
 
         <div className="mt-5">
           <div className="mb-2 text-sm font-semibold">Progress</div>
+          {status === 'CANCELLED' ? (
+            <div className="rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-center font-semibold">
+              Order Cancelled
+            </div>
+          ) : (
           <div className="relative px-1">
             <div className="absolute left-4 right-4 top-3 h-0.5 bg-gray-200" />
             <div
@@ -140,6 +153,7 @@ export default function OrderSuccessPage() {
             ))}
             </div>
           </div>
+          )}
         </div>
 
         {!cancelled && status === 'PENDING' && !loading && !error && (
