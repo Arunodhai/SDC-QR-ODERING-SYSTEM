@@ -346,7 +346,21 @@ export const updateOrderPayment = async (id: string, paymentStatus: string) => {
 };
 
 export const getUnpaidBillByTableAndPhone = async (tableNumber: number, phone: string) => {
-  const { data, error } = await supabase
+  const latestPaidBoundary = await supabase
+    .from('orders')
+    .select('created_at')
+    .eq('table_number', Number(tableNumber))
+    .eq('customer_phone', phone)
+    .eq('payment_status', 'PAID')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (latestPaidBoundary.error) {
+    throw new Error(errMsg(latestPaidBoundary.error, 'Failed to resolve billing session'));
+  }
+
+  let query = supabase
     .from('orders')
     .select('*,order_items(*)')
     .eq('table_number', Number(tableNumber))
@@ -354,6 +368,12 @@ export const getUnpaidBillByTableAndPhone = async (tableNumber: number, phone: s
     .eq('payment_status', 'UNPAID')
     .neq('status', 'CANCELLED')
     .order('created_at', { ascending: true });
+
+  if (latestPaidBoundary.data?.created_at) {
+    query = query.gt('created_at', latestPaidBoundary.data.created_at);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw new Error(errMsg(error, 'Failed to fetch unpaid bill'));
   const orders = (data || []).map(toOrder);
@@ -425,13 +445,36 @@ export const getActiveOrdersByTableAndPhone = async (tableNumber: number, phone:
 };
 
 export const getOrdersByTableAndPhone = async (tableNumber: number, phone: string) => {
-  const { data, error } = await supabase
+  const latestPaidBoundary = await supabase
+    .from('orders')
+    .select('created_at')
+    .eq('table_number', Number(tableNumber))
+    .eq('customer_phone', phone)
+    .eq('payment_status', 'PAID')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (latestPaidBoundary.error) {
+    if (String(latestPaidBoundary.error.message || '').includes('customer_phone')) {
+      throw new Error('DB is missing customer_phone column. Run sql/add_customer_phone.sql in Supabase SQL editor.');
+    }
+    throw new Error(errMsg(latestPaidBoundary.error, 'Failed to resolve order session'));
+  }
+
+  let query = supabase
     .from('orders')
     .select('*,order_items(*)')
     .eq('table_number', Number(tableNumber))
     .eq('customer_phone', phone)
     .eq('payment_status', 'UNPAID')
     .order('created_at', { ascending: false });
+
+  if (latestPaidBoundary.data?.created_at) {
+    query = query.gt('created_at', latestPaidBoundary.data.created_at);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     if (String(error.message || '').includes('customer_phone')) {
