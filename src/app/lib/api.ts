@@ -360,7 +360,25 @@ export const cancelPendingOrder = async (id: string, phone?: string) => {
   if (phone) query = query.eq('customer_phone', phone);
   const { error } = await query.select('id').single();
 
-  if (error) throw new Error(errMsg(error, 'Failed to cancel order'));
+  if (!error) return { success: true };
+
+  const msg = String(error.message || '');
+  const enumCancelledMissing =
+    msg.includes('invalid input value for enum order_status') && msg.includes('CANCELLED');
+
+  if (!enumCancelledMissing) {
+    throw new Error(errMsg(error, 'Failed to cancel order'));
+  }
+
+  // Backward compatibility: if DB enum doesn't include CANCELLED, hard-delete pending order.
+  let deleteQuery = supabase
+    .from('orders')
+    .delete()
+    .eq('id', Number(id))
+    .eq('status', 'PENDING');
+  if (phone) deleteQuery = deleteQuery.eq('customer_phone', phone);
+  const { error: deleteError } = await deleteQuery;
+  if (deleteError) throw new Error(errMsg(deleteError, 'Failed to cancel order'));
   return { success: true };
 };
 

@@ -31,10 +31,16 @@ export default function OrderSuccessPage() {
   const [error, setError] = useState<string>('');
   const [cancelLoading, setCancelLoading] = useState(false);
   const [cancelled, setCancelled] = useState(false);
+  const [currentBill, setCurrentBill] = useState<{ orders: any[]; total: number } | null>(null);
   const billingRef =
     `T${table || order?.tableNumber || '-'}-P${phone ? phone.slice(-4) : '0000'}-O${orderId || '-'}`;
 
   useEffect(() => {
+    if (cancelled) {
+      setLoading(false);
+      return;
+    }
+
     if (!orderId) {
       setLoading(false);
       setError('Missing order reference. Please place a new order from your table page.');
@@ -49,6 +55,11 @@ export default function OrderSuccessPage() {
         const res = await api.getOrderById(orderId);
         if (!mounted) return;
         setOrder(res.order);
+        if (table && phone) {
+          const billRes = await api.getUnpaidBillByTableAndPhone(Number(table), phone);
+          if (!mounted) return;
+          setCurrentBill(billRes);
+        }
         setError('');
       } catch (err) {
         if (!mounted) return;
@@ -65,9 +76,9 @@ export default function OrderSuccessPage() {
       mounted = false;
       if (timer) clearInterval(timer);
     };
-  }, [orderId]);
+  }, [orderId, table, phone, cancelled]);
 
-  const status = order?.status || 'PENDING';
+  const status = cancelled ? 'CANCELLED' : (order?.status || 'PENDING');
   const activeStep = Math.max(STATUS_STEPS.indexOf(status), 0);
   const statusIcon = useMemo(() => {
     if (status === 'CANCELLED') return <CheckCircle className="w-18 h-18 text-gray-500 mx-auto mb-4" />;
@@ -86,7 +97,7 @@ export default function OrderSuccessPage() {
     try {
       await api.cancelPendingOrder(orderId, phone || undefined);
       setCancelled(true);
-      setOrder(null);
+      setOrder((prev: any) => ({ ...(prev || {}), status: 'CANCELLED' }));
       setError('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to cancel order');
@@ -183,6 +194,24 @@ export default function OrderSuccessPage() {
             </div>
           )}
         </div>
+
+        {currentBill && currentBill.orders.length > 0 && (
+          <div className="mt-4 rounded-lg border bg-gray-50 p-3 text-sm">
+            <div className="mb-2 font-semibold">Your Bill (Unpaid)</div>
+            <div className="space-y-1">
+              {currentBill.orders.map((o) => (
+                <div key={o.id} className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Order #{o.id}</span>
+                  <span>${Number(o.total || 0).toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-2 flex items-center justify-between">
+              <span className="font-semibold">Grand Total</span>
+              <span className="font-bold">${Number(currentBill.total || 0).toFixed(2)}</span>
+            </div>
+          </div>
+        )}
 
         <div className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
           <Coffee className="w-4 h-4" />

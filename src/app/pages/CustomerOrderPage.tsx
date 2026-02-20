@@ -21,6 +21,7 @@ export default function CustomerOrderPage() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [phoneConfirmed, setPhoneConfirmed] = useState(false);
   const [activeOrders, setActiveOrders] = useState<any[]>([]);
+  const [currentBill, setCurrentBill] = useState<{ orders: any[]; total: number } | null>(null);
   const [loadingActiveOrders, setLoadingActiveOrders] = useState(false);
   const [isCartSheetOpen, setIsCartSheetOpen] = useState(false);
   const [showSelectedItems, setShowSelectedItems] = useState(false);
@@ -133,8 +134,13 @@ export default function CustomerOrderPage() {
     if (!tableNumber || !phone) return;
     setLoadingActiveOrders(true);
     try {
-      const res = await api.getActiveOrdersByTableAndPhone(Number(tableNumber), phone.trim());
-      setActiveOrders(res.orders || []);
+      const trimmedPhone = phone.trim();
+      const [activeRes, billRes] = await Promise.all([
+        api.getActiveOrdersByTableAndPhone(Number(tableNumber), trimmedPhone),
+        api.getUnpaidBillByTableAndPhone(Number(tableNumber), trimmedPhone),
+      ]);
+      setActiveOrders(activeRes.orders || []);
+      setCurrentBill(billRes);
     } catch (error) {
       console.error('Error loading active orders:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to load your active orders');
@@ -152,6 +158,14 @@ export default function CustomerOrderPage() {
     setPhoneConfirmed(true);
     loadActiveOrders(phone);
   };
+
+  useEffect(() => {
+    if (!phoneConfirmed || !customerPhone || !tableNumber) return;
+    const timer = setInterval(() => {
+      loadActiveOrders(customerPhone);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [phoneConfirmed, customerPhone, tableNumber]);
 
   const placeOrder = async () => {
     if (Object.keys(cart).length === 0) {
@@ -280,6 +294,7 @@ export default function CustomerOrderPage() {
                   onClick={() => {
                     setPhoneConfirmed(false);
                     setActiveOrders([]);
+                    setCurrentBill(null);
                     setCustomerPhone('');
                     setCart({});
                     setItemNotes({});
@@ -306,6 +321,23 @@ export default function CustomerOrderPage() {
                     </Button>
                   </div>
                 ))}
+              </div>
+            )}
+            {currentBill && currentBill.orders.length > 0 && (
+              <div className="mt-3 rounded-md border bg-gray-50 p-3">
+                <p className="text-sm font-semibold mb-1">Current Bill (Unpaid)</p>
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  {currentBill.orders.map((o) => (
+                    <div key={o.id} className="flex items-center justify-between">
+                      <span>Order #{o.id}</span>
+                      <span>${Number(o.total || 0).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-2 flex items-center justify-between text-sm font-semibold">
+                  <span>Grand Total</span>
+                  <span>${Number(currentBill.total || 0).toFixed(2)}</span>
+                </div>
               </div>
             )}
           </Card>
