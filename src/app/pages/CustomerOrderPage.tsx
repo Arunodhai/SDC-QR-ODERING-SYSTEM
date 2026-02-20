@@ -16,10 +16,23 @@ export default function CustomerOrderPage() {
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [phoneConfirmed, setPhoneConfirmed] = useState(false);
+  const [activeOrders, setActiveOrders] = useState<any[]>([]);
+  const [loadingActiveOrders, setLoadingActiveOrders] = useState(false);
   const [loading, setLoading] = useState(true);
+  const phoneKey = `stories_phone_table_${tableNumber}`;
 
   useEffect(() => {
     loadMenu();
+    const params = new URLSearchParams(window.location.search);
+    const fromQuery = (params.get('phone') || '').replace(/[^\d]/g, '');
+    const storedPhone = fromQuery || localStorage.getItem(phoneKey);
+    if (storedPhone) {
+      setCustomerPhone(storedPhone);
+      setPhoneConfirmed(true);
+      loadActiveOrders(storedPhone);
+    }
   }, []);
 
   const loadMenu = async () => {
@@ -65,9 +78,40 @@ export default function CustomerOrderPage() {
     return Object.values(cart).reduce((sum, qty) => sum + qty, 0);
   };
 
+  const isValidPhone = (value: string) => /^\d{8,15}$/.test(value.trim());
+
+  const loadActiveOrders = async (phone: string) => {
+    if (!tableNumber || !phone) return;
+    setLoadingActiveOrders(true);
+    try {
+      const res = await api.getActiveOrdersByTableAndPhone(Number(tableNumber), phone.trim());
+      setActiveOrders(res.orders || []);
+    } catch (error) {
+      console.error('Error loading active orders:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to load your active orders');
+    } finally {
+      setLoadingActiveOrders(false);
+    }
+  };
+
+  const confirmPhone = () => {
+    if (!isValidPhone(customerPhone)) {
+      toast.error('Enter a valid mobile number (8-15 digits)');
+      return;
+    }
+    const phone = customerPhone.trim();
+    localStorage.setItem(phoneKey, phone);
+    setPhoneConfirmed(true);
+    loadActiveOrders(phone);
+  };
+
   const placeOrder = async () => {
     if (Object.keys(cart).length === 0) {
       toast.error('Your cart is empty');
+      return;
+    }
+    if (!isValidPhone(customerPhone)) {
+      toast.error('Enter a valid mobile number before placing order');
       return;
     }
 
@@ -82,16 +126,18 @@ export default function CustomerOrderPage() {
         };
       });
 
-      await api.createOrder({
+      const res = await api.createOrder({
         tableId: tableNumber,
         tableNumber: Number(tableNumber),
         customerName: customerName || 'Guest',
+        customerPhone: customerPhone.trim(),
         items: orderItems,
         total: getCartTotal(),
       });
 
       toast.success('Order placed successfully!');
-      navigate('/order/success');
+      const createdOrderId = res?.order?.id;
+      navigate(`/order/success?orderId=${createdOrderId}&table=${tableNumber}&phone=${encodeURIComponent(customerPhone.trim())}`);
     } catch (error) {
       console.error('Error placing order:', error);
       toast.error('Failed to place order');
@@ -134,6 +180,65 @@ export default function CustomerOrderPage() {
 
       {/* Menu */}
       <div className="max-w-5xl mx-auto px-4 py-6">
+        {!phoneConfirmed && (
+          <Card className="glass-grid-card p-4 mb-6">
+            <h3 className="font-semibold mb-2">Enter Mobile Number to Continue</h3>
+            <p className="text-sm text-muted-foreground mb-3">
+              Use the same number later to retrieve your active orders.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Input
+                placeholder="Mobile number"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value.replace(/[^\d]/g, ''))}
+              />
+              <Button onClick={confirmPhone}>Continue</Button>
+            </div>
+          </Card>
+        )}
+
+        {phoneConfirmed && (
+          <Card className="glass-grid-card p-4 mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+              <h3 className="font-semibold">Your Active Orders</h3>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => loadActiveOrders(customerPhone)} disabled={loadingActiveOrders}>
+                  {loadingActiveOrders ? 'Refreshing...' : 'Refresh'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    localStorage.removeItem(phoneKey);
+                    setPhoneConfirmed(false);
+                    setActiveOrders([]);
+                  }}
+                >
+                  Change Number
+                </Button>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">Tracking mobile: {customerPhone}</p>
+            {activeOrders.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No active orders for this number at Table {tableNumber}.</p>
+            ) : (
+              <div className="space-y-2">
+                {activeOrders.map((o) => (
+                  <div key={o.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                    <div>
+                      <div className="font-semibold">Order #{o.id}</div>
+                      <div className="text-muted-foreground">Status: {o.status}</div>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/order/success?orderId=${o.id}&table=${tableNumber}&phone=${encodeURIComponent(customerPhone)}`)}>
+                      View
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        )}
+
         {categories.map(category => {
           const categoryItems = menuItems.filter(item => String(item.categoryId) === String(category.id));
           if (categoryItems.length === 0) return null;
@@ -141,6 +246,9 @@ export default function CustomerOrderPage() {
           return (
             <div key={category.id} className="mb-8">
               <h2 className="text-xl font-bold mb-4">{category.name}</h2>
+              {!phoneConfirmed && (
+                <p className="mb-3 text-sm text-muted-foreground">Enter mobile number above to start ordering.</p>
+              )}
               <div className="grid gap-4">
                 {categoryItems.map(item => (
                   <Card key={item.id} className="glass-grid-card p-4">
@@ -163,6 +271,7 @@ export default function CustomerOrderPage() {
                             <Button
                               variant="outline"
                               size="icon"
+                              disabled={!phoneConfirmed}
                               onClick={() => removeFromCart(item.id)}
                             >
                               <Minus className="w-4 h-4" />
@@ -171,13 +280,14 @@ export default function CustomerOrderPage() {
                             <Button
                               variant="outline"
                               size="icon"
+                              disabled={!phoneConfirmed}
                               onClick={() => addToCart(item.id)}
                             >
                               <Plus className="w-4 h-4" />
                             </Button>
                           </>
                         ) : (
-                          <Button onClick={() => addToCart(item.id)}>
+                          <Button disabled={!phoneConfirmed} onClick={() => addToCart(item.id)}>
                             <Plus className="w-4 h-4 mr-2" />
                             Add
                           </Button>
@@ -196,6 +306,13 @@ export default function CustomerOrderPage() {
       {getCartItemCount() > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-30 border-t bg-white shadow-2xl">
           <div className="max-w-5xl mx-auto px-4 py-4">
+            <div className="mb-3">
+              <Input
+                placeholder="Mobile number"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value.replace(/[^\d]/g, ''))}
+              />
+            </div>
             <div className="mb-3">
               <Input
                 placeholder="Your name (optional)"

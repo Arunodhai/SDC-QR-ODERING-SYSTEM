@@ -32,6 +32,7 @@ const toOrder = (row: any) => ({
   tableId: String(row.table_number),
   tableNumber: Number(row.table_number),
   customerName: row.customer_name || 'Guest',
+  customerPhone: row.customer_phone || '',
   items: (row.order_items || []).map(toOrderItem),
   total: Number(row.total_amount || 0),
   status: row.status,
@@ -220,14 +221,28 @@ export const getOrders = async () => {
   return { orders: (data || []).map(toOrder) };
 };
 
+export const getOrderById = async (id: string) => {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*,order_items(*)')
+    .eq('id', Number(id))
+    .single();
+
+  if (error) throw new Error(errMsg(error, 'Failed to fetch order'));
+  return { order: toOrder(data) };
+};
+
 export const createOrder = async (order: any) => {
   const total = Number(order.total || 0);
 
-  const { data: createdOrder, error: orderError } = await supabase
+  let createdOrder: any = null;
+
+  const { data: createdOrderWithPhone, error: orderErrorWithPhone } = await supabase
     .from('orders')
     .insert({
       table_number: Number(order.tableNumber),
       customer_name: order.customerName || 'Guest',
+      customer_phone: order.customerPhone || null,
       status: 'PENDING',
       payment_method: 'COUNTER',
       payment_status: 'UNPAID',
@@ -236,7 +251,30 @@ export const createOrder = async (order: any) => {
     .select()
     .single();
 
-  if (orderError) throw new Error(errMsg(orderError, 'Failed to create order'));
+  if (orderErrorWithPhone) {
+    // Backward compatibility for schemas without customer_phone.
+    if (String(orderErrorWithPhone.message || '').includes('customer_phone')) {
+      const { data: createdOrderFallback, error: orderErrorFallback } = await supabase
+        .from('orders')
+        .insert({
+          table_number: Number(order.tableNumber),
+          customer_name: order.customerName || 'Guest',
+          status: 'PENDING',
+          payment_method: 'COUNTER',
+          payment_status: 'UNPAID',
+          total_amount: total,
+        })
+        .select()
+        .single();
+
+      if (orderErrorFallback) throw new Error(errMsg(orderErrorFallback, 'Failed to create order'));
+      createdOrder = createdOrderFallback;
+    } else {
+      throw new Error(errMsg(orderErrorWithPhone, 'Failed to create order'));
+    }
+  } else {
+    createdOrder = createdOrderWithPhone;
+  }
 
   const itemsPayload = (order.items || []).map((item: any) => ({
     order_id: createdOrder.id,
@@ -284,4 +322,23 @@ export const updateOrderPayment = async (id: string, paymentStatus: string) => {
 
   if (error) throw new Error(errMsg(error, 'Failed to update order payment'));
   return { order: toOrder(data) };
+};
+
+export const getActiveOrdersByTableAndPhone = async (tableNumber: number, phone: string) => {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*,order_items(*)')
+    .eq('table_number', Number(tableNumber))
+    .eq('customer_phone', phone)
+    .in('status', ['PENDING', 'PREPARING', 'READY'])
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    if (String(error.message || '').includes('customer_phone')) {
+      throw new Error('DB is missing customer_phone column. Run sql/add_customer_phone.sql in Supabase SQL editor.');
+    }
+    throw new Error(errMsg(error, 'Failed to fetch active orders'));
+  }
+
+  return { orders: (data || []).map(toOrder) };
 };
