@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import { ChevronDown, ChevronUp, Filter, ReceiptText } from 'lucide-react';
+import { ChevronDown, Filter, ReceiptText } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -49,7 +49,7 @@ export default function AdminOrdersPage() {
   } | null>(null);
   const [billLoadingKey, setBillLoadingKey] = useState<string>('');
   const [markingGroupPaid, setMarkingGroupPaid] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [selectedGroupDetails, setSelectedGroupDetails] = useState<any | null>(null);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
@@ -338,7 +338,6 @@ export default function AdminOrdersPage() {
             const groupTotal = group.orders
               .filter((o) => o.status !== 'CANCELLED')
               .reduce((sum, o) => sum + Number(o.total || 0), 0);
-            const isExpanded = Boolean(expandedGroups[groupKey]);
             return (
               <Card key={groupKey} className="glass-grid-card p-4 h-fit">
                 <div className="mb-3 flex items-start justify-between gap-3">
@@ -391,74 +390,25 @@ export default function AdminOrdersPage() {
 
                 <div className="mb-2 flex items-center justify-end">
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     className="h-8 px-2"
                     onClick={() =>
-                      setExpandedGroups((prev) => ({ ...prev, [groupKey]: !prev[groupKey] }))
+                      setSelectedGroupDetails({
+                        groupKey,
+                        tableNumber: group.tableNumber,
+                        customerName: group.customerName,
+                        customerPhone: group.customerPhone,
+                        startedAt: group.startedAt,
+                        total: groupTotal,
+                        orders: group.orders,
+                      })
                     }
                   >
-                    {isExpanded ? (
-                      <>
-                        <ChevronUp className="w-4 h-4 mr-1" />
-                        Collapse
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="w-4 h-4 mr-1" />
-                        Expand
-                      </>
-                    )}
+                    <ChevronDown className="w-4 h-4 mr-1" />
+                    View Details
                   </Button>
                 </div>
-
-                {isExpanded && (
-                  <div className="space-y-3">
-                    {group.orders.map((order, idx) => (
-                      <div key={order.id} className="rounded-lg border bg-white p-3">
-                        <div className="mb-2 flex items-start justify-between gap-2">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold">Round {idx + 1}</span>
-                              <span className="text-xs text-muted-foreground">Order #{order.id}</span>
-                              <Badge className={STATUS_COLORS[order.status as keyof typeof STATUS_COLORS]}>
-                                {statusLabel(order.status)}
-                              </Badge>
-                              <Badge className={PAYMENT_COLORS[order.paymentStatus as keyof typeof PAYMENT_COLORS]}>
-                                {order.paymentStatus}
-                              </Badge>
-                            </div>
-                            <p className="text-xs font-semibold text-primary mt-1">Billing Ref: {billingRef(order)}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {format(new Date(order.createdAt), 'MMM dd, yyyy • h:mm a')}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            {order.status === 'CANCELLED' ? (
-                              <div>
-                                <div className="font-bold text-red-700">$0.00</div>
-                                <div className="text-xs text-red-600">Cancelled (excluded)</div>
-                              </div>
-                            ) : (
-                              <div className="font-bold">${Number(order.total || 0).toFixed(2)}</div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="space-y-1">
-                          {order.items.map((item: any, idx: number) => (
-                            <div key={idx} className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">
-                                {item.quantity}x {item.name}
-                              </span>
-                              <span>${(item.price * item.quantity).toFixed(2)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </Card>
             );
           })}
@@ -512,6 +462,73 @@ export default function AdminOrdersPage() {
             </Button>
             <Button onClick={markBillPaid} disabled={markingGroupPaid || !billPreview || billPreview.isPaid}>
               {markingGroupPaid ? 'Marking...' : billPreview?.isPaid ? 'Already Paid' : 'Mark All as Paid'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(selectedGroupDetails)} onOpenChange={(open) => !open && setSelectedGroupDetails(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>
+              Table {selectedGroupDetails?.tableNumber} • Order Details
+            </DialogTitle>
+            <DialogDescription>
+              {selectedGroupDetails
+                ? `${selectedGroupDetails.customerName || 'Guest'} • ${selectedGroupDetails.customerPhone || '-'} • ${format(new Date(selectedGroupDetails.startedAt), 'MMM dd, yyyy • h:mm a')}`
+                : ''}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="max-h-[65vh] overflow-y-auto space-y-3 pr-1">
+            {(selectedGroupDetails?.orders || []).map((order: any, idx: number) => (
+              <div key={order.id} className="rounded-lg border bg-white p-3">
+                <div className="mb-2 flex items-start justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">Round {idx + 1}</span>
+                      <span className="text-xs text-muted-foreground">Order #{order.id}</span>
+                      <Badge className={STATUS_COLORS[order.status as keyof typeof STATUS_COLORS]}>
+                        {statusLabel(order.status)}
+                      </Badge>
+                      <Badge className={PAYMENT_COLORS[order.paymentStatus as keyof typeof PAYMENT_COLORS]}>
+                        {order.paymentStatus}
+                      </Badge>
+                    </div>
+                    <p className="text-xs font-semibold text-primary mt-1">Billing Ref: {billingRef(order)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(order.createdAt), 'MMM dd, yyyy • h:mm a')}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    {order.status === 'CANCELLED' ? (
+                      <div>
+                        <div className="font-bold text-red-700">$0.00</div>
+                        <div className="text-xs text-red-600">Cancelled (excluded)</div>
+                      </div>
+                    ) : (
+                      <div className="font-bold">${Number(order.total || 0).toFixed(2)}</div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  {order.items.map((item: any, itemIdx: number) => (
+                    <div key={itemIdx} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        {item.quantity}x {item.name}
+                      </span>
+                      <span>${(item.price * item.quantity).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelectedGroupDetails(null)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
