@@ -415,6 +415,23 @@ export default function AdminOrdersPage() {
                         startedAt: group.startedAt,
                         total: groupTotal,
                         orders: group.orders,
+                        paymentStatus: groupPaymentStatus,
+                        paidAt:
+                          groupPaymentStatus === 'PAID'
+                            ? (() => {
+                                const groupOrderIds = group.orders.map((o: any) => String(o.id));
+                                const matchedPaidBills = (finalBills || []).filter((b: any) =>
+                                  b.isPaid &&
+                                  (b.orderIds || []).some((id: any) => groupOrderIds.includes(String(id))),
+                                );
+                                if (!matchedPaidBills.length) return null;
+                                const latestPaid = [...matchedPaidBills].sort(
+                                  (a: any, b: any) =>
+                                    new Date(b.paidAt || b.createdAt).getTime() - new Date(a.paidAt || a.createdAt).getTime(),
+                                )[0];
+                                return latestPaid?.paidAt || latestPaid?.createdAt || null;
+                              })()
+                            : null,
                       })
                     }
                   >
@@ -491,6 +508,11 @@ export default function AdminOrdersPage() {
                 ? `${selectedGroupDetails.customerName || 'Guest'} • ${selectedGroupDetails.customerPhone || '-'} • ${format(new Date(selectedGroupDetails.startedAt), 'MMM dd, yyyy • h:mm a')}`
                 : ''}
             </DialogDescription>
+            {selectedGroupDetails?.paymentStatus === 'PAID' && selectedGroupDetails?.paidAt ? (
+              <p className="text-xs text-green-700 mt-1">
+                Payment: PAID on {format(new Date(selectedGroupDetails.paidAt), 'MMM dd, yyyy • h:mm a')}
+              </p>
+            ) : null}
           </DialogHeader>
 
           <div className="max-h-[65vh] overflow-y-auto space-y-3 pr-1">
