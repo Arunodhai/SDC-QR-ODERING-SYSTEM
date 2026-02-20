@@ -371,20 +371,6 @@ export default function AdminOrdersPage() {
                     {group.customerPhone && unpaidOrders.length > 0 && (
                       <div className="mt-2 flex flex-col items-end gap-2">
                         <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            generateFinalBill({
-                              tableNumber: group.tableNumber,
-                              customerPhone: group.customerPhone,
-                            })
-                          }
-                          disabled={billLoadingKey === loadingKey}
-                        >
-                          <ReceiptText className="w-4 h-4 mr-1" />
-                          {billLoadingKey === loadingKey ? 'Generating...' : 'Generate Final Bill'}
-                        </Button>
-                        <Button
                           size="sm"
                           onClick={() =>
                             markGroupPaid(
@@ -400,7 +386,26 @@ export default function AdminOrdersPage() {
                   </div>
                 </div>
 
-                <div className="mb-2 flex items-center justify-end">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <div>
+                    {group.customerPhone && unpaidOrders.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-2"
+                        onClick={() =>
+                          generateFinalBill({
+                            tableNumber: group.tableNumber,
+                            customerPhone: group.customerPhone,
+                          })
+                        }
+                        disabled={billLoadingKey === loadingKey}
+                      >
+                        <ReceiptText className="w-4 h-4 mr-1" />
+                        {billLoadingKey === loadingKey ? 'Generating...' : 'Generate Final Bill'}
+                      </Button>
+                    )}
+                  </div>
                   <Button
                     variant="outline"
                     size="sm"
