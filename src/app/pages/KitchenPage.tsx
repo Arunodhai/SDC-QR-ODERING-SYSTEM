@@ -145,21 +145,25 @@ export default function KitchenPage() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+              <nav className="flex gap-1 rounded-xl border bg-white p-1">
               <Button
                 size="sm"
-                variant={viewMode === 'active' ? 'default' : 'outline'}
+                variant={viewMode === 'active' ? 'default' : 'ghost'}
+                className="rounded-lg"
                 onClick={() => setViewMode('active')}
               >
                 Active
               </Button>
               <Button
                 size="sm"
-                variant={viewMode === 'history' ? 'default' : 'outline'}
+                variant={viewMode === 'history' ? 'default' : 'ghost'}
+                className="rounded-lg"
                 onClick={() => setViewMode('history')}
               >
                 <History className="h-4 w-4 mr-1" />
                 History
               </Button>
+              </nav>
               {viewMode === 'history' && (
                 <input
                   type="date"

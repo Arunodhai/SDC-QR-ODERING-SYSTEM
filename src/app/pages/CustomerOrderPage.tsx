@@ -1,13 +1,12 @@
 import { useParams, useNavigate } from 'react-router';
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Minus, ShoppingCart, Coffee, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, Coffee, Trash2, ChevronDown, ChevronUp, ReceiptText } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { toast } from 'sonner';
 import * as api from '../lib/api';
 
@@ -36,7 +35,7 @@ export default function CustomerOrderPage() {
     lineItems?: Array<{ name: string; quantity: number; unitPrice: number; lineTotal: number }>;
   } | null>(null);
   const [latestFinalBill, setLatestFinalBill] = useState<any>(null);
-  const [showBillDialog, setShowBillDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState<'menu' | 'bill'>('menu');
   const [billChangedHighlight, setBillChangedHighlight] = useState(false);
   const [loadingActiveOrders, setLoadingActiveOrders] = useState(false);
   const [isCartSheetOpen, setIsCartSheetOpen] = useState(false);
@@ -165,21 +164,25 @@ export default function CustomerOrderPage() {
       setActiveOrders(activeRes.orders || []);
       setCurrentBill(billRes);
       try {
+        setLatestFinalBill(null);
         const finalBillRes = await api.getLatestFinalBillByTableAndPhone(Number(tableNumber), trimmedPhone);
         if (finalBillRes.bill) {
           setLatestFinalBill(finalBillRes.bill);
           if (latestFinalBillIdRef.current && latestFinalBillIdRef.current !== finalBillRes.bill.id) {
             setBillChangedHighlight(true);
-            setShowBillDialog(true);
+            setActiveTab('bill');
             setTimeout(() => setBillChangedHighlight(false), 6000);
           }
           latestFinalBillIdRef.current = finalBillRes.bill.id;
         } else {
           setLatestFinalBill(null);
+          latestFinalBillIdRef.current = '';
         }
       } catch (err) {
         // Keep customer flow functional even if final_bills migration is not applied yet.
         console.error('Final bill sync warning:', err);
+        setLatestFinalBill(null);
+        latestFinalBillIdRef.current = '';
       }
     } catch (error) {
       console.error('Error loading active orders:', error);
@@ -307,14 +310,60 @@ export default function CustomerOrderPage() {
                 Stories de Café
               </h1>
               <p className="text-sm text-muted-foreground">Table {tableNumber}</p>
+              {phoneConfirmed && (
+                <p className="text-xs text-muted-foreground">Tracking mobile: {customerPhone}</p>
+              )}
             </div>
-            {getCartItemCount() > 0 && (
-              <Badge variant="secondary" className="text-lg px-3 py-1 bg-primary/10 text-primary">
-                <ShoppingCart className="w-4 h-4 mr-1" />
-                {getCartItemCount()}
-              </Badge>
-            )}
+            <div className="flex items-center gap-2">
+              {phoneConfirmed && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setPhoneConfirmed(false);
+                    setActiveTab('menu');
+                    setActiveOrders([]);
+                    setCurrentBill(null);
+                    setLatestFinalBill(null);
+                    latestFinalBillIdRef.current = '';
+                    setCustomerPhone('');
+                    setCart({});
+                    setItemNotes({});
+                    setCustomerName('');
+                  }}
+                >
+                  Change Number
+                </Button>
+              )}
+              {getCartItemCount() > 0 && (
+                <Badge variant="secondary" className="text-lg px-3 py-1 bg-primary/10 text-primary">
+                  <ShoppingCart className="w-4 h-4 mr-1" />
+                  {getCartItemCount()}
+                </Badge>
+              )}
+            </div>
           </div>
+          {phoneConfirmed && (
+            <div className="mt-3 flex gap-1 rounded-xl border bg-white p-1 w-fit">
+              <Button
+                variant={activeTab === 'menu' ? 'default' : 'ghost'}
+                className="rounded-lg"
+                size="sm"
+                onClick={() => setActiveTab('menu')}
+              >
+                Menu
+              </Button>
+              <Button
+                variant={activeTab === 'bill' ? 'default' : 'ghost'}
+                className={`rounded-lg ${billChangedHighlight ? 'animate-pulse ring-1 ring-primary/50' : ''}`}
+                size="sm"
+                onClick={() => setActiveTab('bill')}
+              >
+                <ReceiptText className="w-4 h-4 mr-1" />
+                Your Bill
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -337,50 +386,9 @@ export default function CustomerOrderPage() {
           </Card>
         )}
 
-        {phoneConfirmed && (
+        {phoneConfirmed && activeTab === 'menu' && (
           <Card className="glass-grid-card p-4 mb-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-              <h3 className="font-semibold">Your Active Orders</h3>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={billChangedHighlight ? 'relative border-primary text-primary animate-pulse' : ''}
-                  onClick={() => {
-                    if (!currentBill || currentBill.orders.length === 0) {
-                      if (latestFinalBill) {
-                        setShowBillDialog(true);
-                        return;
-                      }
-                      toast.info('No unpaid bill found yet.');
-                      return;
-                    }
-                    setShowBillDialog(true);
-                  }}
-                >
-                  {billChangedHighlight && (
-                    <span className="mr-1 inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
-                  )}
-                  View Bill
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setPhoneConfirmed(false);
-                    setActiveOrders([]);
-                    setCurrentBill(null);
-                    setCustomerPhone('');
-                    setCart({});
-                    setItemNotes({});
-                    setCustomerName('');
-                  }}
-                >
-                  Change Number
-                </Button>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground mb-3">Tracking mobile: {customerPhone}</p>
+            <h3 className="font-semibold mb-2">Your Active Orders</h3>
             {activeOrders.length === 0 ? (
               <p className="text-sm text-muted-foreground">No active orders for this number at Table {tableNumber}.</p>
             ) : (
@@ -389,38 +397,84 @@ export default function CustomerOrderPage() {
                   <div key={o.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
                     <div>
                       <div className="font-semibold">Order #{o.id}</div>
-                      <div className={`font-medium ${STATUS_TEXT_COLORS[o.status] || 'text-muted-foreground'}`}>
-                        Status: {o.status}
+                      <div>
+                        <span className="font-medium text-black">Status: </span>
+                        <span className={`font-medium ${STATUS_TEXT_COLORS[o.status] || 'text-muted-foreground'}`}>{o.status}</span>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/order/success?orderId=${o.id}&table=${tableNumber}&phone=${encodeURIComponent(customerPhone)}`)}>
-                      View
-                    </Button>
                   </div>
                 ))}
               </div>
             )}
-            {currentBill && currentBill.orders.length > 0 && (
-              <div className="mt-3 rounded-md border bg-gray-50 p-3">
-                <p className="text-sm font-semibold mb-1">Current Bill (Unpaid)</p>
-                <div className="space-y-1 text-xs text-muted-foreground">
-                  {currentBill.orders.map((o) => (
-                    <div key={o.id} className="flex items-center justify-between">
-                      <span>Order #{o.id}</span>
-                      <span>${Number(o.total || 0).toFixed(2)}</span>
-                    </div>
-                  ))}
+            <div className="mt-3 rounded-md border bg-gray-50 p-3">
+              <div className="flex items-center justify-between text-sm font-semibold">
+                <span>Grand Total</span>
+                <span>${Number((latestFinalBill && !latestFinalBill.isPaid ? latestFinalBill.total : currentBill?.total) || 0).toFixed(2)}</span>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {phoneConfirmed && activeTab === 'bill' && (
+          <Card className="glass-grid-card p-4 mb-6">
+            <h3 className="font-semibold mb-2">Your Bill</h3>
+            {latestFinalBill ? (
+              <div className="space-y-2 text-sm">
+                <div className="rounded-md border bg-gray-50 px-3 py-2 text-xs text-muted-foreground">
+                  <div className="flex items-center justify-between">
+                    <span>Bill ID</span>
+                    <span className="font-semibold">#{latestFinalBill.id}</span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between">
+                    <span>Status</span>
+                    <span className={`font-semibold ${latestFinalBill.isPaid ? 'text-green-600' : 'text-amber-600'}`}>
+                      {latestFinalBill.isPaid ? 'PAID' : 'UNPAID'}
+                    </span>
+                  </div>
                 </div>
-                <div className="mt-2 flex items-center justify-between text-sm font-semibold">
-                  <span>Grand Total</span>
-                  <span>${Number(currentBill.total || 0).toFixed(2)}</span>
+                {(latestFinalBill.lineItems || []).map((item: any, idx: number) => (
+                  <div key={`${item.name}_${idx}`} className="rounded-md border px-3 py-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{item.name}</span>
+                      <span className="font-semibold">${Number(item.lineTotal || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{Number(item.quantity || 0)} x ${Number(item.unitPrice || 0).toFixed(2)}</span>
+                      <span>Line total</span>
+                    </div>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between border-t pt-2">
+                  <span className="font-semibold">Grand Total</span>
+                  <span className="text-lg font-bold">${Number(latestFinalBill.total || 0).toFixed(2)}</span>
                 </div>
               </div>
+            ) : currentBill && currentBill.lineItems && currentBill.lineItems.length > 0 ? (
+              <div className="space-y-2 text-sm">
+                {currentBill.lineItems.map((item: any, idx: number) => (
+                  <div key={`${item.name}_${idx}`} className="rounded-md border px-3 py-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{item.name}</span>
+                      <span className="font-semibold">${Number(item.lineTotal || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{Number(item.quantity || 0)} x ${Number(item.unitPrice || 0).toFixed(2)}</span>
+                      <span>Line total</span>
+                    </div>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between border-t pt-2">
+                  <span className="font-semibold">Grand Total</span>
+                  <span className="text-lg font-bold">${Number(currentBill.total || 0).toFixed(2)}</span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No bill available yet.</p>
             )}
           </Card>
         )}
 
-        {phoneConfirmed && categories.map(category => {
+        {phoneConfirmed && activeTab === 'menu' && categories.map(category => {
           const categoryItems = menuItems.filter(item => String(item.categoryId) === String(category.id));
           if (categoryItems.length === 0) return null;
 
@@ -616,74 +670,6 @@ export default function CustomerOrderPage() {
       )}
     </div>
 
-      <Dialog open={showBillDialog} onOpenChange={setShowBillDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Final Bill</DialogTitle>
-            <DialogDescription>
-              Table {tableNumber} • Phone {customerPhone}
-            </DialogDescription>
-          </DialogHeader>
-
-          {latestFinalBill ? (
-            <div className="space-y-2 text-sm">
-              <div className="rounded-md border bg-gray-50 px-3 py-2 text-xs text-muted-foreground">
-                <div className="flex items-center justify-between">
-                  <span>Bill ID</span>
-                  <span className="font-semibold">#{latestFinalBill.id}</span>
-                </div>
-                <div className="mt-1 flex items-center justify-between">
-                  <span>Status</span>
-                  <span className={`font-semibold ${latestFinalBill.isPaid ? 'text-green-600' : 'text-amber-600'}`}>
-                    {latestFinalBill.isPaid ? 'PAID' : 'UNPAID'}
-                  </span>
-                </div>
-              </div>
-              {(latestFinalBill.lineItems || []).map((item: any, idx: number) => (
-                <div key={`${item.name}_${idx}`} className="rounded-md border px-3 py-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{item.name}</span>
-                    <span className="font-semibold">${Number(item.lineTotal || 0).toFixed(2)}</span>
-                  </div>
-                  <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{Number(item.quantity || 0)} x ${Number(item.unitPrice || 0).toFixed(2)}</span>
-                    <span>Line total</span>
-                  </div>
-                </div>
-              ))}
-              <div className="flex items-center justify-between border-t pt-2">
-                <span className="font-semibold">Grand Total</span>
-                <span className="text-lg font-bold">${Number(latestFinalBill.total || 0).toFixed(2)}</span>
-              </div>
-            </div>
-          ) : currentBill && currentBill.orders.length > 0 ? (
-            <div className="space-y-2 text-sm">
-              {currentBill.lineItems?.map((item: any, idx: number) => (
-                <div key={`${item.name}_${idx}`} className="rounded-md border px-3 py-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{item.name}</span>
-                    <span className="font-semibold">${Number(item.lineTotal || 0).toFixed(2)}</span>
-                  </div>
-                  <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{Number(item.quantity || 0)} x ${Number(item.unitPrice || 0).toFixed(2)}</span>
-                    <span>Line total</span>
-                  </div>
-                </div>
-              ))}
-              <div className="flex items-center justify-between border-t pt-2">
-                <span className="font-semibold">Grand Total</span>
-                <span className="text-lg font-bold">${Number(currentBill.total || 0).toFixed(2)}</span>
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No unpaid bill available yet.</p>
-          )}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowBillDialog(false)}>Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
