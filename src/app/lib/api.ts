@@ -431,6 +431,7 @@ export const getOrdersByTableAndPhone = async (tableNumber: number, phone: strin
     .eq('table_number', Number(tableNumber))
     .eq('customer_phone', phone)
     .eq('payment_status', 'UNPAID')
+    .neq('status', 'CANCELLED')
     .order('created_at', { ascending: false });
 
   if (error) {

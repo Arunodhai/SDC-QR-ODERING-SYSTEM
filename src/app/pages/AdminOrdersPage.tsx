@@ -132,23 +132,70 @@ export default function AdminOrdersPage() {
     const sorted = [...filteredOrders].sort(
       (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     );
-    const map = new Map<string, { tableNumber: number; customerPhone: string; orders: any[] }>();
+    const map = new Map<string, { tableNumber: number; customerPhone: string; customerName: string; orders: any[] }>();
     sorted.forEach((order) => {
-      const key = `${order.tableNumber}__${order.customerPhone || 'NO_PHONE'}`;
-      if (!map.has(key)) {
-        map.set(key, {
+      const baseKey = `${order.tableNumber}__${order.customerPhone || 'NO_PHONE'}`;
+      if (!map.has(baseKey)) {
+        map.set(baseKey, {
           tableNumber: order.tableNumber,
           customerPhone: order.customerPhone || '',
+          customerName: order.customerName || 'Guest',
           orders: [],
         });
       }
-      map.get(key)!.orders.push(order);
+      map.get(baseKey)!.orders.push(order);
     });
-    return Array.from(map.values()).sort((a, b) => {
-      const aLast = a.orders[a.orders.length - 1]?.createdAt || '';
-      const bLast = b.orders[b.orders.length - 1]?.createdAt || '';
-      return new Date(bLast).getTime() - new Date(aLast).getTime();
+    const sessionized: Array<{
+      tableNumber: number;
+      customerPhone: string;
+      customerName: string;
+      sessionIndex: number;
+      orders: any[];
+      startedAt: string;
+      endedAt: string;
+    }> = [];
+
+    Array.from(map.values()).forEach((group) => {
+      const ordered = [...group.orders].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      let currentSession: any[] = [];
+      let sessionIndex = 1;
+      for (let i = 0; i < ordered.length; i++) {
+        const current = ordered[i];
+        const prev = ordered[i - 1];
+        const startNew =
+          i > 0 &&
+          prev &&
+          prev.paymentStatus === 'PAID' &&
+          current.paymentStatus === 'UNPAID';
+        if (startNew && currentSession.length > 0) {
+          sessionized.push({
+            tableNumber: group.tableNumber,
+            customerPhone: group.customerPhone,
+            customerName: group.customerName,
+            sessionIndex,
+            orders: currentSession,
+            startedAt: currentSession[0].createdAt,
+            endedAt: currentSession[currentSession.length - 1].createdAt,
+          });
+          sessionIndex += 1;
+          currentSession = [];
+        }
+        currentSession.push(current);
+      }
+      if (currentSession.length > 0) {
+        sessionized.push({
+          tableNumber: group.tableNumber,
+          customerPhone: group.customerPhone,
+          customerName: group.customerName,
+          sessionIndex,
+          orders: currentSession,
+          startedAt: currentSession[0].createdAt,
+          endedAt: currentSession[currentSession.length - 1].createdAt,
+        });
+      }
     });
+
+    return sessionized.sort((a, b) => new Date(b.endedAt).getTime() - new Date(a.endedAt).getTime());
   }, [filteredOrders]);
 
   const calculateRevenue = () => {
@@ -263,7 +310,7 @@ export default function AdminOrdersPage() {
 
         <div className="space-y-4">
           {groupedOrders.map((group) => {
-            const groupKey = `${group.tableNumber}__${group.customerPhone || 'NO_PHONE'}`;
+            const groupKey = `${group.tableNumber}__${group.customerPhone || 'NO_PHONE'}__${group.sessionIndex}`;
             const unpaidOrders = group.orders.filter((o) => o.paymentStatus === 'UNPAID' && o.status !== 'CANCELLED');
             const groupTotal = group.orders
               .filter((o) => o.status !== 'CANCELLED')
@@ -272,12 +319,15 @@ export default function AdminOrdersPage() {
               <Card key={groupKey} className="glass-grid-card p-4">
                 <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <h3 className="text-lg font-bold">Table {group.tableNumber}</h3>
+                    <h3 className="text-lg font-bold">Table {group.tableNumber} • Session {group.sessionIndex}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Name: {group.customerName || 'Guest'}
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       Mobile: {group.customerPhone || '-'}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {group.orders.length} order(s) in this group
+                      {group.orders.length} round(s) • {format(new Date(group.startedAt), 'MMM dd, yyyy • h:mm a')}
                     </p>
                   </div>
                   <div className="text-right">

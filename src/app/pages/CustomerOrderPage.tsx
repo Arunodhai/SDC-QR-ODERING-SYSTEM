@@ -524,51 +524,52 @@ export default function CustomerOrderPage() {
               <p className="text-sm text-muted-foreground">No bill available yet.</p>
             )}
 
-            {paidBillHistory.length > 0 && (
-              <div className="mt-5">
-                <h4 className="font-semibold mb-2">Paid Bills History</h4>
-                <div className="space-y-2">
-                  {paidBillHistory.map((bill) => (
-                    <div key={bill.id} className="rounded-md border px-3 py-2 text-sm">
-                      <button
-                        type="button"
-                        className="w-full flex items-center justify-between"
-                        onClick={() =>
-                          setExpandedPaidBills((prev) => ({ ...prev, [bill.id]: !prev[bill.id] }))
-                        }
-                      >
-                        <span className="font-medium flex items-center gap-2">
-                          <ChevronDown className={`h-4 w-4 transition-transform ${expandedPaidBills[bill.id] ? 'rotate-180' : ''}`} />
-                          Bill #{bill.id}
-                        </span>
-                        <span className="font-semibold text-green-600">PAID</span>
-                      </button>
-                      <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                        <span>Table {bill.tableNumber}</span>
-                        <span>${Number(bill.total || 0).toFixed(2)}</span>
-                      </div>
-                      {expandedPaidBills[bill.id] && (
-                        <div className="mt-2 rounded-md border bg-gray-50 p-2">
-                          {(bill.rounds || []).map((round: any, idx: number) => (
-                            <div key={round.id} className="mb-2 last:mb-0">
-                              <p className="text-xs font-semibold">Round {idx + 1} • Order #{round.id}</p>
-                              <div className="mt-1 space-y-1">
-                                {(round.items || []).map((item: any, ii: number) => (
-                                  <div key={ii} className="flex items-center justify-between text-xs text-muted-foreground">
-                                    <span>{item.quantity}x {item.name}</span>
-                                    <span>${Number(item.price * item.quantity).toFixed(2)}</span>
-                                  </div>
-                                ))}
+          </Card>
+        )}
+
+        {phoneConfirmed && activeTab === 'bill' && paidBillHistory.length > 0 && (
+          <Card className="glass-grid-card p-4 mb-6">
+            <h4 className="font-semibold mb-2">Paid Bills History</h4>
+            <div className="space-y-2">
+              {paidBillHistory.map((bill) => (
+                <div key={bill.id} className="rounded-md border px-3 py-2 text-sm">
+                  <button
+                    type="button"
+                    className="w-full flex items-center justify-between"
+                    onClick={() =>
+                      setExpandedPaidBills((prev) => ({ ...prev, [bill.id]: !prev[bill.id] }))
+                    }
+                  >
+                    <span className="font-medium flex items-center gap-2">
+                      <ChevronDown className={`h-4 w-4 transition-transform ${expandedPaidBills[bill.id] ? 'rotate-180' : ''}`} />
+                      Bill #{bill.id}
+                    </span>
+                    <span className="font-semibold text-green-600">PAID</span>
+                  </button>
+                  <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Table {bill.tableNumber}</span>
+                    <span>${Number(bill.total || 0).toFixed(2)}</span>
+                  </div>
+                  {expandedPaidBills[bill.id] && (
+                    <div className="mt-2 rounded-md border bg-gray-50 p-2">
+                      {(bill.rounds || []).map((round: any, idx: number) => (
+                        <div key={round.id} className="mb-2 last:mb-0">
+                          <p className="text-xs font-semibold">Round {idx + 1} • Order #{round.id}</p>
+                          <div className="mt-1 space-y-1">
+                            {(round.items || []).map((item: any, ii: number) => (
+                              <div key={ii} className="flex items-center justify-between text-xs text-muted-foreground">
+                                <span>{item.quantity}x {item.name}</span>
+                                <span>${Number(item.price * item.quantity).toFixed(2)}</span>
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      )}
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
-              </div>
-            )}
+              ))}
+            </div>
           </Card>
         )}
 
