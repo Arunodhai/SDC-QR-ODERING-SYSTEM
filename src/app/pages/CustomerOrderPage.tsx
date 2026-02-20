@@ -18,6 +18,13 @@ const STATUS_TEXT_COLORS: Record<string, string> = {
   CANCELLED: 'text-red-600',
 };
 
+const sameIdSet = (a: string[], b: string[]) => {
+  if (a.length !== b.length) return false;
+  const aa = [...a].sort();
+  const bb = [...b].sort();
+  return aa.every((v, i) => v === bb[i]);
+};
+
 export default function CustomerOrderPage() {
   const { tableNumber } = useParams();
   const navigate = useNavigate();
@@ -166,12 +173,14 @@ export default function CustomerOrderPage() {
       try {
         setLatestFinalBill(null);
         const finalBillRes = await api.getLatestFinalBillByTableAndPhone(Number(tableNumber), trimmedPhone);
-        const noLiveOrdersAndNoUnpaid =
-          (activeRes.orders || []).length === 0 && Number(billRes.total || 0) === 0;
-        if (noLiveOrdersAndNoUnpaid) {
+        const currentUnpaidOrderIds = (billRes.orders || []).map((o: any) => String(o.id));
+        if (currentUnpaidOrderIds.length === 0) {
           setLatestFinalBill(null);
           latestFinalBillIdRef.current = '';
-        } else if (finalBillRes.bill) {
+        } else if (
+          finalBillRes.bill &&
+          sameIdSet(currentUnpaidOrderIds, (finalBillRes.bill.orderIds || []).map((id: any) => String(id)))
+        ) {
           setLatestFinalBill(finalBillRes.bill);
           if (latestFinalBillIdRef.current && latestFinalBillIdRef.current !== finalBillRes.bill.id) {
             setBillChangedHighlight(true);
@@ -424,7 +433,7 @@ export default function CustomerOrderPage() {
             <div className="mt-3 rounded-md border bg-gray-50 p-3">
               <div className="flex items-center justify-between text-sm font-semibold">
                 <span>Grand Total</span>
-                <span>${Number((latestFinalBill && !latestFinalBill.isPaid ? latestFinalBill.total : currentBill?.total) || 0).toFixed(2)}</span>
+                <span>${Number(currentBill?.total || 0).toFixed(2)}</span>
               </div>
             </div>
           </Card>
@@ -433,7 +442,32 @@ export default function CustomerOrderPage() {
         {phoneConfirmed && activeTab === 'bill' && (
           <Card className="glass-grid-card p-4 mb-6">
             <h3 className="font-semibold mb-2">Your Bill</h3>
-            {latestFinalBill ? (
+            {currentBill && currentBill.lineItems && currentBill.lineItems.length > 0 ? (
+              <div className="space-y-2 text-sm">
+                <div className="rounded-md border bg-gray-50 px-3 py-2 text-xs text-muted-foreground">
+                  <div className="flex items-center justify-between">
+                    <span>Status</span>
+                    <span className="font-semibold text-amber-600">UNPAID</span>
+                  </div>
+                </div>
+                {currentBill.lineItems.map((item: any, idx: number) => (
+                  <div key={`${item.name}_${idx}`} className="rounded-md border px-3 py-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{item.name}</span>
+                      <span className="font-semibold">${Number(item.lineTotal || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{Number(item.quantity || 0)} x ${Number(item.unitPrice || 0).toFixed(2)}</span>
+                      <span>Line total</span>
+                    </div>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between border-t pt-2">
+                  <span className="font-semibold">Grand Total</span>
+                  <span className="text-lg font-bold">${Number(currentBill.total || 0).toFixed(2)}</span>
+                </div>
+              </div>
+            ) : latestFinalBill ? (
               <div className="space-y-2 text-sm">
                 <div className="rounded-md border bg-gray-50 px-3 py-2 text-xs text-muted-foreground">
                   <div className="flex items-center justify-between">
@@ -462,25 +496,6 @@ export default function CustomerOrderPage() {
                 <div className="flex items-center justify-between border-t pt-2">
                   <span className="font-semibold">Grand Total</span>
                   <span className="text-lg font-bold">${Number(latestFinalBill.total || 0).toFixed(2)}</span>
-                </div>
-              </div>
-            ) : currentBill && currentBill.lineItems && currentBill.lineItems.length > 0 ? (
-              <div className="space-y-2 text-sm">
-                {currentBill.lineItems.map((item: any, idx: number) => (
-                  <div key={`${item.name}_${idx}`} className="rounded-md border px-3 py-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">{item.name}</span>
-                      <span className="font-semibold">${Number(item.lineTotal || 0).toFixed(2)}</span>
-                    </div>
-                    <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{Number(item.quantity || 0)} x ${Number(item.unitPrice || 0).toFixed(2)}</span>
-                      <span>Line total</span>
-                    </div>
-                  </div>
-                ))}
-                <div className="flex items-center justify-between border-t pt-2">
-                  <span className="font-semibold">Grand Total</span>
-                  <span className="text-lg font-bold">${Number(currentBill.total || 0).toFixed(2)}</span>
                 </div>
               </div>
             ) : (

@@ -1,11 +1,13 @@
 import { useMemo, useState, useEffect } from 'react';
 import { ChefHat, Clock, History } from 'lucide-react';
+import { useNavigate } from 'react-router';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import * as api from '../lib/api';
 import { format, formatDistanceToNow } from 'date-fns';
+import AdminNav from '../components/AdminNav';
 
 const STATUS_COLORS = {
   PENDING: 'bg-red-100 text-red-800',
@@ -32,16 +34,37 @@ const localDateKey = (d: Date) => {
 };
 
 export default function KitchenPage() {
+  const navigate = useNavigate();
   const [allOrders, setAllOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'active' | 'history'>('active');
   const [historyDate, setHistoryDate] = useState(localDateKey(new Date()));
 
   useEffect(() => {
-    loadOrders();
-    const interval = setInterval(loadOrders, 5000);
-    return () => clearInterval(interval);
-  }, []);
+    let interval: ReturnType<typeof setInterval> | null = null;
+    let mounted = true;
+
+    (async () => {
+      try {
+        const session = await api.getAdminSession();
+        if (!session) {
+          navigate('/admin/login');
+          return;
+        }
+        if (!mounted) return;
+        await loadOrders();
+        interval = setInterval(loadOrders, 5000);
+      } catch (error) {
+        console.error('Session check failed:', error);
+        navigate('/admin/login');
+      }
+    })();
+
+    return () => {
+      mounted = false;
+      if (interval) clearInterval(interval);
+    };
+  }, [navigate]);
 
   const loadOrders = async () => {
     try {
@@ -132,7 +155,9 @@ export default function KitchenPage() {
 
   return (
     <div className="page-shell">
-      <div className="sticky top-0 z-20 border-b bg-white/95">
+      <AdminNav />
+
+      <div className="border-b bg-white/95">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>

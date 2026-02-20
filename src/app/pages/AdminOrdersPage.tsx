@@ -86,10 +86,11 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const markAsPaid = async (orderId: string) => {
+  const markGroupPaid = async (ordersToPay: any[]) => {
     try {
-      await api.updateOrderPayment(orderId, 'PAID');
-      toast.success('Order marked as paid');
+      const ids = (ordersToPay || []).map((o: any) => String(o.id));
+      await api.markOrdersPaidBulk(ids);
+      toast.success('Group marked as paid');
       loadOrders();
     } catch (error) {
       console.error('Error updating payment status:', error);
@@ -205,13 +206,17 @@ export default function AdminOrdersPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <Card className="glass-grid-card p-4">
-              <div className="text-sm text-muted-foreground">Total Orders</div>
-              <div className="text-3xl font-bold">{filteredOrders.length}</div>
+              <div className="text-sm text-muted-foreground">Customer Bills</div>
+              <div className="text-3xl font-bold">{groupedOrders.length}</div>
             </Card>
             <Card className="glass-grid-card p-4">
-              <div className="text-sm text-muted-foreground">Unpaid Orders</div>
+              <div className="text-sm text-muted-foreground">Unpaid Bills</div>
               <div className="text-3xl font-bold">
-                {filteredOrders.filter((o) => o.paymentStatus === 'UNPAID').length}
+                {
+                  groupedOrders.filter((group) =>
+                    group.orders.some((o: any) => o.paymentStatus === 'UNPAID' && o.status !== 'CANCELLED')
+                  ).length
+                }
               </div>
             </Card>
             <Card className="glass-grid-card p-4 border-green-200/60 bg-green-100/35">
@@ -262,32 +267,40 @@ export default function AdminOrdersPage() {
                     <div className="text-lg font-bold">${groupTotal.toFixed(2)}</div>
                     <div className="text-xs text-muted-foreground">Payable (excludes cancelled)</div>
                     {group.customerPhone && unpaidOrders.length > 0 && (
-                      <Button
-                        className="mt-2"
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          generateFinalBill({
-                            tableNumber: group.tableNumber,
-                            customerPhone: group.customerPhone,
-                          })
-                        }
-                        disabled={billLoadingKey === groupKey}
-                      >
-                        <ReceiptText className="w-4 h-4 mr-1" />
-                        {billLoadingKey === groupKey ? 'Generating...' : 'Generate Final Bill'}
-                      </Button>
+                      <div className="mt-2 flex flex-col items-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            generateFinalBill({
+                              tableNumber: group.tableNumber,
+                              customerPhone: group.customerPhone,
+                            })
+                          }
+                          disabled={billLoadingKey === groupKey}
+                        >
+                          <ReceiptText className="w-4 h-4 mr-1" />
+                          {billLoadingKey === groupKey ? 'Generating...' : 'Generate Final Bill'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => markGroupPaid(unpaidOrders)}
+                        >
+                          Mark Group Paid
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  {group.orders.map((order) => (
+                  {group.orders.map((order, idx) => (
                     <div key={order.id} className="rounded-lg border bg-white p-3">
                       <div className="mb-2 flex items-start justify-between gap-2">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold">Order #{order.id}</span>
+                            <span className="font-semibold">Round {idx + 1}</span>
+                            <span className="text-xs text-muted-foreground">Order #{order.id}</span>
                             <Badge className={STATUS_COLORS[order.status as keyof typeof STATUS_COLORS]}>
                               {order.status}
                             </Badge>
@@ -308,11 +321,6 @@ export default function AdminOrdersPage() {
                             </div>
                           ) : (
                             <div className="font-bold">${Number(order.total || 0).toFixed(2)}</div>
-                          )}
-                          {order.paymentStatus === 'UNPAID' && order.status !== 'CANCELLED' && (
-                            <Button size="sm" className="mt-2" onClick={() => markAsPaid(order.id)}>
-                              Mark Paid
-                            </Button>
                           )}
                         </div>
                       </div>
