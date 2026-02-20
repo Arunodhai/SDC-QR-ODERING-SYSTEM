@@ -10,7 +10,7 @@ const STATUS_LABELS: Record<string, string> = {
   PENDING: 'Pending',
   PREPARING: 'Preparing',
   READY: 'Ready for pickup/serve',
-  COMPLETED: 'Completed',
+  COMPLETED: 'Served',
   CANCELLED: 'Cancelled',
 };
 
@@ -18,7 +18,7 @@ const STATUS_PROGRESS_LABELS: Record<string, string> = {
   PENDING: 'Pending',
   PREPARING: 'Preparing',
   READY: 'Ready',
-  COMPLETED: 'Done',
+  COMPLETED: 'Served',
 };
 
 const STATUS_TEXT_COLORS: Record<string, string> = {

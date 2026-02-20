@@ -23,6 +23,7 @@ const PAYMENT_COLORS = {
   PAID: 'bg-green-100 text-green-800',
   UNPAID: 'bg-orange-100 text-orange-800',
 };
+const statusLabel = (status: string) => (status === 'COMPLETED' ? 'SERVED' : status);
 
 const billingRef = (order: any) => {
   const phone = order.customerPhone || '';
@@ -374,7 +375,7 @@ export default function AdminOrdersPage() {
                             <span className="font-semibold">Round {idx + 1}</span>
                             <span className="text-xs text-muted-foreground">Order #{order.id}</span>
                             <Badge className={STATUS_COLORS[order.status as keyof typeof STATUS_COLORS]}>
-                              {order.status}
+                              {statusLabel(order.status)}
                             </Badge>
                             <Badge className={PAYMENT_COLORS[order.paymentStatus as keyof typeof PAYMENT_COLORS]}>
                               {order.paymentStatus}

@@ -25,6 +25,7 @@ const STATUS_TITLES: Record<string, string> = {
   PREPARING: 'In Preparation',
   READY: 'Ready to Serve',
 };
+const statusLabel = (status: string) => (status === 'COMPLETED' ? 'SERVED' : status);
 
 const localDateKey = (d: Date) => {
   const y = d.getFullYear();
@@ -96,7 +97,7 @@ export default function KitchenPage() {
       const newStatus = STATUS_FLOW[currentIndex + 1];
       try {
         await api.updateOrderStatus(orderId, newStatus);
-        toast.success(`Order status updated to ${newStatus}`);
+        toast.success(`Order status updated to ${statusLabel(newStatus)}`);
         loadOrders();
       } catch (error) {
         console.error('Error updating order status:', error);
@@ -269,7 +270,7 @@ export default function KitchenPage() {
                                     >
                                       {order.status === 'PENDING' && 'Start Preparing'}
                                       {order.status === 'PREPARING' && 'Mark Ready'}
-                                      {order.status === 'READY' && 'Complete'}
+                                      {order.status === 'READY' && 'Mark Served'}
                                     </Button>
                                   </div>
                                 ))}
@@ -304,7 +305,7 @@ export default function KitchenPage() {
                         <div className="flex items-center gap-2">
                           <span className="font-semibold">Order #{order.id}</span>
                           <Badge className={STATUS_COLORS[order.status as keyof typeof STATUS_COLORS]}>
-                            {order.status}
+                            {statusLabel(order.status)}
                           </Badge>
                         </div>
                         <span className="text-xs text-muted-foreground">

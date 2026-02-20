@@ -573,9 +573,35 @@ export const getPaidBillHistoryByPhone = async (phone: string) => {
     orderMap = new Map((orderRows || []).map((row: any) => [Number(row.id), toOrder(row)]));
   }
 
-  return {
-    bills: bills
-      .map((b) => ({
+  const enrichedBills = await Promise.all(
+    bills.map(async (b) => {
+      const includedRounds = b.orderIdsNum
+        .map((idNum: number) => orderMap.get(idNum))
+        .filter(Boolean)
+        .sort((a: any, c: any) => new Date(a.createdAt).getTime() - new Date(c.createdAt).getTime());
+
+      if (!includedRounds.length) return null;
+
+      const firstAt = includedRounds[0].createdAt;
+      const lastAt = includedRounds[includedRounds.length - 1].createdAt;
+
+      const { data: sessionRows, error: sessionError } = await supabase
+        .from('orders')
+        .select('id,created_at')
+        .eq('table_number', b.tableNumber)
+        .eq('customer_phone', b.customerPhone)
+        .gte('created_at', firstAt)
+        .lte('created_at', lastAt)
+        .order('created_at', { ascending: true });
+
+      if (sessionError) throw new Error(errMsg(sessionError, 'Failed to fetch bill session rounds'));
+
+      const roundByOrderId = new Map<number, number>();
+      (sessionRows || []).forEach((row: any, idx: number) => {
+        roundByOrderId.set(Number(row.id), idx + 1);
+      });
+
+      return {
         id: b.id,
         tableNumber: b.tableNumber,
         customerPhone: b.customerPhone,
@@ -585,10 +611,15 @@ export const getPaidBillHistoryByPhone = async (phone: string) => {
         isPaid: b.isPaid,
         createdAt: b.createdAt,
         paidAt: b.paidAt,
-        rounds: b.orderIdsNum
-          .map((idNum: number) => orderMap.get(idNum))
-          .filter(Boolean),
-      }))
-      .filter((bill) => bill.rounds.length > 0),
+        rounds: includedRounds.map((round: any, idx: number) => ({
+          ...round,
+          roundNumber: roundByOrderId.get(Number(round.id)) || idx + 1,
+        })),
+      };
+    }),
+  );
+
+  return {
+    bills: enrichedBills.filter(Boolean),
   };
 };

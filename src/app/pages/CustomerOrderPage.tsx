@@ -17,6 +17,7 @@ const STATUS_TEXT_COLORS: Record<string, string> = {
   COMPLETED: 'text-indigo-600',
   CANCELLED: 'text-red-600',
 };
+const statusLabel = (status: string) => (status === 'COMPLETED' ? 'SERVED' : status);
 
 const sameIdSet = (a: string[], b: string[]) => {
   if (a.length !== b.length) return false;
@@ -442,9 +443,9 @@ export default function CustomerOrderPage() {
                       <div>
                         <span className="font-medium text-black">Status: </span>
                         {o.status === 'COMPLETED' ? (
-                          <span className="inline-flex rounded px-2 py-0.5 bg-green-100 text-black font-medium">COMPLETED</span>
+                          <span className="inline-flex rounded px-2 py-0.5 bg-green-100 text-black font-medium">SERVED</span>
                         ) : (
-                          <span className={`font-medium ${STATUS_TEXT_COLORS[o.status] || 'text-muted-foreground'}`}>{o.status}</span>
+                          <span className={`font-medium ${STATUS_TEXT_COLORS[o.status] || 'text-muted-foreground'}`}>{statusLabel(o.status)}</span>
                         )}
                       </div>
                     </div>
@@ -577,7 +578,7 @@ export default function CustomerOrderPage() {
                     <div className="mt-2 rounded-md border bg-gray-50 p-2">
                       {(bill.rounds || []).map((round: any, idx: number) => (
                         <div key={round.id} className="mb-2 last:mb-0">
-                          <p className="text-xs font-semibold">Round {idx + 1} • Order #{round.id}</p>
+                          <p className="text-xs font-semibold">Round {round.roundNumber || idx + 1} • Order #{round.id}</p>
                           <div className="mt-1 space-y-1">
                             {(round.items || []).map((item: any, ii: number) => (
                               <div key={ii} className="flex items-center justify-between text-xs text-muted-foreground">
