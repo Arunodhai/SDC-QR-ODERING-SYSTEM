@@ -424,6 +424,24 @@ export const getActiveOrdersByTableAndPhone = async (tableNumber: number, phone:
   return { orders: (data || []).map(toOrder) };
 };
 
+export const getOrdersByTableAndPhone = async (tableNumber: number, phone: string) => {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*,order_items(*)')
+    .eq('table_number', Number(tableNumber))
+    .eq('customer_phone', phone)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    if (String(error.message || '').includes('customer_phone')) {
+      throw new Error('DB is missing customer_phone column. Run sql/add_customer_phone.sql in Supabase SQL editor.');
+    }
+    throw new Error(errMsg(error, 'Failed to fetch orders'));
+  }
+
+  return { orders: (data || []).map(toOrder) };
+};
+
 export const getLatestFinalBillByTableAndPhone = async (tableNumber: number, phone: string) => {
   const { data, error } = await supabase
     .from('final_bills')
@@ -511,4 +529,34 @@ export const markFinalBillPaid = async (billId: string) => {
   }
 
   return { success: true };
+};
+
+export const getPaidBillHistoryByPhone = async (phone: string) => {
+  const { data, error } = await supabase
+    .from('final_bills')
+    .select('*')
+    .eq('customer_phone', phone)
+    .eq('is_paid', true)
+    .order('paid_at', { ascending: false });
+
+  if (error) {
+    if (String(error.message || '').includes('final_bills')) {
+      throw new Error('DB is missing final_bills table. Run sql/create_final_bills.sql in Supabase SQL editor.');
+    }
+    throw new Error(errMsg(error, 'Failed to fetch paid bill history'));
+  }
+
+  return {
+    bills: (data || []).map((row: any) => ({
+      id: String(row.id),
+      tableNumber: Number(row.table_number),
+      customerPhone: row.customer_phone,
+      total: Number(row.total_amount || 0),
+      lineItems: row.line_items || [],
+      orderIds: (row.order_ids || []).map((id: any) => String(id)),
+      isPaid: Boolean(row.is_paid),
+      createdAt: row.created_at,
+      paidAt: row.paid_at || null,
+    })),
+  };
 };

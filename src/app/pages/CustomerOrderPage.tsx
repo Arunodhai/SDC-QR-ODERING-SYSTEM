@@ -35,7 +35,7 @@ export default function CustomerOrderPage() {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [phoneConfirmed, setPhoneConfirmed] = useState(false);
-  const [activeOrders, setActiveOrders] = useState<any[]>([]);
+  const [userOrders, setUserOrders] = useState<any[]>([]);
   const [currentBill, setCurrentBill] = useState<{
     orders: any[];
     total: number;
@@ -43,14 +43,13 @@ export default function CustomerOrderPage() {
   } | null>(null);
   const [latestFinalBill, setLatestFinalBill] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'menu' | 'bill'>('menu');
-  const [billChangedHighlight, setBillChangedHighlight] = useState(false);
+  const [paidBillHistory, setPaidBillHistory] = useState<any[]>([]);
   const [loadingActiveOrders, setLoadingActiveOrders] = useState(false);
   const [isCartSheetOpen, setIsCartSheetOpen] = useState(false);
   const [showSelectedItems, setShowSelectedItems] = useState(false);
   const [swipeStart, setSwipeStart] = useState<{ id: string; x: number } | null>(null);
   const [swipeOffsetById, setSwipeOffsetById] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
-  const previousBillTotalRef = useRef<number | null>(null);
   const latestFinalBillIdRef = useRef<string>('');
 
   useEffect(() => {
@@ -62,7 +61,7 @@ export default function CustomerOrderPage() {
       setCustomerPhone(fromQuery);
       if (returning && tableNumber) {
         setPhoneConfirmed(true);
-        loadActiveOrders(fromQuery);
+        loadCustomerData(fromQuery);
       }
     }
   }, [tableNumber]);
@@ -159,17 +158,19 @@ export default function CustomerOrderPage() {
 
   const isValidPhone = (value: string) => /^\d{8,15}$/.test(value.trim());
 
-  const loadActiveOrders = async (phone: string) => {
+  const loadCustomerData = async (phone: string) => {
     if (!tableNumber || !phone) return;
     setLoadingActiveOrders(true);
     try {
       const trimmedPhone = phone.trim();
-      const [activeRes, billRes] = await Promise.all([
-        api.getActiveOrdersByTableAndPhone(Number(tableNumber), trimmedPhone),
+      const [ordersRes, billRes, paidRes] = await Promise.all([
+        api.getOrdersByTableAndPhone(Number(tableNumber), trimmedPhone),
         api.getUnpaidBillByTableAndPhone(Number(tableNumber), trimmedPhone),
+        api.getPaidBillHistoryByPhone(trimmedPhone),
       ]);
-      setActiveOrders(activeRes.orders || []);
+      setUserOrders(ordersRes.orders || []);
       setCurrentBill(billRes);
+      setPaidBillHistory(paidRes.bills || []);
       try {
         setLatestFinalBill(null);
         const finalBillRes = await api.getLatestFinalBillByTableAndPhone(Number(tableNumber), trimmedPhone);
@@ -183,9 +184,7 @@ export default function CustomerOrderPage() {
         ) {
           setLatestFinalBill(finalBillRes.bill);
           if (latestFinalBillIdRef.current && latestFinalBillIdRef.current !== finalBillRes.bill.id) {
-            setBillChangedHighlight(true);
             setActiveTab('bill');
-            setTimeout(() => setBillChangedHighlight(false), 6000);
           }
           latestFinalBillIdRef.current = finalBillRes.bill.id;
         } else {
@@ -213,32 +212,16 @@ export default function CustomerOrderPage() {
     }
     const phone = customerPhone.trim();
     setPhoneConfirmed(true);
-    loadActiveOrders(phone);
+    loadCustomerData(phone);
   };
 
   useEffect(() => {
     if (!phoneConfirmed || !customerPhone || !tableNumber) return;
     const timer = setInterval(() => {
-      loadActiveOrders(customerPhone);
+      loadCustomerData(customerPhone);
     }, 5000);
     return () => clearInterval(timer);
   }, [phoneConfirmed, customerPhone, tableNumber]);
-
-  useEffect(() => {
-    const sourceTotal =
-      latestFinalBill && !latestFinalBill.isPaid
-        ? Number(latestFinalBill.total || 0)
-        : Number(currentBill?.total || 0);
-    if (sourceTotal === undefined || sourceTotal === null) return;
-    const total = Number(sourceTotal || 0);
-    if (previousBillTotalRef.current !== null && previousBillTotalRef.current !== total) {
-      setBillChangedHighlight(true);
-      const timer = setTimeout(() => setBillChangedHighlight(false), 6000);
-      previousBillTotalRef.current = total;
-      return () => clearTimeout(timer);
-    }
-    previousBillTotalRef.current = total;
-  }, [currentBill, latestFinalBill]);
 
   const placeOrder = async () => {
     if (Object.keys(cart).length === 0) {
@@ -336,9 +319,10 @@ export default function CustomerOrderPage() {
                   onClick={() => {
                     setPhoneConfirmed(false);
                     setActiveTab('menu');
-                    setActiveOrders([]);
+                    setUserOrders([]);
                     setCurrentBill(null);
                     setLatestFinalBill(null);
+                    setPaidBillHistory([]);
                     latestFinalBillIdRef.current = '';
                     setCustomerPhone('');
                     setCart({});
@@ -373,7 +357,7 @@ export default function CustomerOrderPage() {
               </Button>
               <Button
                 variant={activeTab === 'bill' ? 'default' : 'ghost'}
-                className={`w-full rounded-lg ${billChangedHighlight ? 'animate-pulse ring-1 ring-primary/50' : ''}`}
+                className="w-full rounded-lg"
                 onClick={() => setActiveTab('bill')}
               >
                 <ReceiptText className="w-4 h-4 mr-1" />
@@ -390,7 +374,7 @@ export default function CustomerOrderPage() {
           <Card className="glass-grid-card p-4 mb-6">
             <h3 className="font-semibold mb-2">Enter Mobile Number to Continue</h3>
             <p className="text-sm text-muted-foreground mb-3">
-              Use the same number later to retrieve your active orders.
+              Use the same number later to retrieve your orders and bill history.
             </p>
             <div className="flex flex-col sm:flex-row gap-2">
               <Input
@@ -405,12 +389,12 @@ export default function CustomerOrderPage() {
 
         {phoneConfirmed && activeTab === 'menu' && (
           <Card className="glass-grid-card p-4 mb-6">
-            <h3 className="font-semibold mb-2">Your Active Orders</h3>
-            {activeOrders.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No active orders for this number at Table {tableNumber}.</p>
+            <h3 className="font-semibold mb-2">Your Orders</h3>
+            {userOrders.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No orders for this number at Table {tableNumber}.</p>
             ) : (
               <div className="space-y-2">
-                {activeOrders.map((o) => (
+                {userOrders.map((o) => (
                   <div key={o.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
                     <div>
                       <div className="font-semibold">Order #{o.id}</div>
@@ -500,6 +484,26 @@ export default function CustomerOrderPage() {
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">No bill available yet.</p>
+            )}
+
+            {paidBillHistory.length > 0 && (
+              <div className="mt-5">
+                <h4 className="font-semibold mb-2">Paid Bill History</h4>
+                <div className="space-y-2">
+                  {paidBillHistory.map((bill) => (
+                    <div key={bill.id} className="rounded-md border px-3 py-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">Bill #{bill.id}</span>
+                        <span className="font-semibold text-green-600">PAID</span>
+                      </div>
+                      <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+                        <span>Table {bill.tableNumber}</span>
+                        <span>${Number(bill.total || 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </Card>
         )}

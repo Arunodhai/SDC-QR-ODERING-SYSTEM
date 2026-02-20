@@ -39,7 +39,6 @@ export default function OrderSuccessPage() {
   const [error, setError] = useState<string>('');
   const [cancelLoading, setCancelLoading] = useState(false);
   const [cancelled, setCancelled] = useState(false);
-  const [currentBill, setCurrentBill] = useState<{ orders: any[]; total: number } | null>(null);
   const billingRef =
     `T${table || order?.tableNumber || '-'}-P${phone ? phone.slice(-4) : '0000'}-O${orderId || '-'}`;
 
@@ -63,11 +62,6 @@ export default function OrderSuccessPage() {
         const res = await api.getOrderById(orderId);
         if (!mounted) return;
         setOrder(res.order);
-        if (table && phone) {
-          const billRes = await api.getUnpaidBillByTableAndPhone(Number(table), phone);
-          if (!mounted) return;
-          setCurrentBill(billRes);
-        }
         setError('');
       } catch (err) {
         if (!mounted) return;
@@ -197,31 +191,9 @@ export default function OrderSuccessPage() {
                   <span className="font-semibold">${(item.price * item.quantity).toFixed(2)}</span>
                 </div>
               ))}
-              <div className="flex items-center justify-between pt-1 text-sm">
-                <span className="font-semibold">Total</span>
-                <span className="font-bold">${Number(order.total || 0).toFixed(2)}</span>
-              </div>
             </div>
           )}
         </div>
-
-        {currentBill && currentBill.orders.length > 0 && (
-          <div className="mt-4 rounded-lg border bg-gray-50 p-3 text-sm">
-            <div className="mb-2 font-semibold">Your Bill (Unpaid)</div>
-            <div className="space-y-1">
-              {currentBill.orders.map((o) => (
-                <div key={o.id} className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Order #{o.id}</span>
-                  <span>${Number(o.total || 0).toFixed(2)}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-2 flex items-center justify-between">
-              <span className="font-semibold">Grand Total</span>
-              <span className="font-bold">${Number(currentBill.total || 0).toFixed(2)}</span>
-            </div>
-          </div>
-        )}
 
         <div className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
           <Coffee className="w-4 h-4" />
