@@ -279,7 +279,7 @@ export const createOrder = async (order: any) => {
   const itemsPayload = (order.items || []).map((item: any) => ({
     order_id: createdOrder.id,
     menu_item_id: item.id ? Number(item.id) : null,
-    item_name: item.name,
+    item_name: item.note ? `${item.name} (Note: ${item.note})` : item.name,
     unit_price: Number(item.price || 0),
     quantity: Number(item.quantity || 0),
     line_total: Number(item.price || 0) * Number(item.quantity || 0),

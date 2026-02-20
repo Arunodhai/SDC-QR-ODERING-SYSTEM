@@ -16,6 +16,7 @@ export default function CustomerOrderPage() {
   const [categories, setCategories] = useState<any[]>([]);
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [cart, setCart] = useState<Record<string, number>>({});
+  const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [phoneConfirmed, setPhoneConfirmed] = useState(false);
@@ -91,6 +92,11 @@ export default function CustomerOrderPage() {
 
       return next;
     });
+    setItemNotes((prev) => {
+      const next = { ...prev };
+      delete next[itemId];
+      return next;
+    });
   };
 
   const getCartTotal = () => {
@@ -111,9 +117,10 @@ export default function CustomerOrderPage() {
           qty,
           price: Number(item.price || 0),
           subtotal: Number(item.price || 0) * qty,
+          note: itemNotes[itemId] || '',
         };
       })
-      .filter(Boolean) as Array<{ id: string; name: string; qty: number; price: number; subtotal: number }>;
+      .filter(Boolean) as Array<{ id: string; name: string; qty: number; price: number; subtotal: number; note: string }>;
   };
 
   const getCartItemCount = () => {
@@ -164,6 +171,7 @@ export default function CustomerOrderPage() {
           name: item.name,
           price: item.price,
           quantity: qty,
+          note: (itemNotes[itemId] || '').trim(),
         };
       });
 
@@ -274,6 +282,7 @@ export default function CustomerOrderPage() {
                     setActiveOrders([]);
                     setCustomerPhone('');
                     setCart({});
+                    setItemNotes({});
                     setCustomerName('');
                   }}
                 >
@@ -379,7 +388,10 @@ export default function CustomerOrderPage() {
                 <div className="mt-2 max-h-32 overflow-y-auto rounded-md border bg-gray-50 p-2">
                   {getCartDetails().map((ci) => (
                     <div key={ci.id} className="flex items-center justify-between py-1 text-sm">
-                      <span>{ci.qty}x {ci.name}</span>
+                      <div>
+                        <div>{ci.qty}x {ci.name}</div>
+                        {ci.note ? <div className="text-xs text-muted-foreground">Note: {ci.note}</div> : null}
+                      </div>
                       <span className="font-semibold">${ci.subtotal.toFixed(2)}</span>
                     </div>
                   ))}
@@ -449,6 +461,15 @@ export default function CustomerOrderPage() {
                             </div>
                             <div className="font-semibold">${ci.subtotal.toFixed(2)}</div>
                           </div>
+                          <div className="mt-2">
+                            <Input
+                              placeholder="Add note (e.g., less spicy, no onion)"
+                              value={itemNotes[ci.id] || ''}
+                              onChange={(e) =>
+                                setItemNotes((prev) => ({ ...prev, [ci.id]: e.target.value }))
+                              }
+                            />
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -472,20 +493,6 @@ export default function CustomerOrderPage() {
                   </SheetFooter>
                 </SheetContent>
               </Sheet>
-            </div>
-            <div className="mb-3">
-              <Input
-                placeholder="Mobile number"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value.replace(/[^\d]/g, ''))}
-              />
-            </div>
-            <div className="mb-3">
-              <Input
-                placeholder="Your name (optional)"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-              />
             </div>
             <Separator className="mb-3" />
             <div className="flex items-center justify-between mb-3">
