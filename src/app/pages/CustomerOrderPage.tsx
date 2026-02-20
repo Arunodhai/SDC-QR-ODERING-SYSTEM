@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router';
 import { useState, useEffect } from 'react';
-import { Plus, Minus, ShoppingCart, Coffee, Trash2 } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, Coffee, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -22,20 +22,17 @@ export default function CustomerOrderPage() {
   const [activeOrders, setActiveOrders] = useState<any[]>([]);
   const [loadingActiveOrders, setLoadingActiveOrders] = useState(false);
   const [isCartSheetOpen, setIsCartSheetOpen] = useState(false);
+  const [showSelectedItems, setShowSelectedItems] = useState(false);
   const [swipeStart, setSwipeStart] = useState<{ id: string; x: number } | null>(null);
   const [swipeOffsetById, setSwipeOffsetById] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
-  const phoneKey = `stories_phone_table_${tableNumber}`;
 
   useEffect(() => {
     loadMenu();
     const params = new URLSearchParams(window.location.search);
     const fromQuery = (params.get('phone') || '').replace(/[^\d]/g, '');
-    const storedPhone = fromQuery || localStorage.getItem(phoneKey);
-    if (storedPhone) {
-      setCustomerPhone(storedPhone);
-      setPhoneConfirmed(true);
-      loadActiveOrders(storedPhone);
+    if (fromQuery) {
+      setCustomerPhone(fromQuery);
     }
   }, []);
 
@@ -145,7 +142,6 @@ export default function CustomerOrderPage() {
       return;
     }
     const phone = customerPhone.trim();
-    localStorage.setItem(phoneKey, phone);
     setPhoneConfirmed(true);
     loadActiveOrders(phone);
   };
@@ -274,9 +270,11 @@ export default function CustomerOrderPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    localStorage.removeItem(phoneKey);
                     setPhoneConfirmed(false);
                     setActiveOrders([]);
+                    setCustomerPhone('');
+                    setCart({});
+                    setCustomerName('');
                   }}
                 >
                   Change Number
@@ -304,16 +302,13 @@ export default function CustomerOrderPage() {
           </Card>
         )}
 
-        {categories.map(category => {
+        {phoneConfirmed && categories.map(category => {
           const categoryItems = menuItems.filter(item => String(item.categoryId) === String(category.id));
           if (categoryItems.length === 0) return null;
 
           return (
             <div key={category.id} className="mb-8">
               <h2 className="text-xl font-bold mb-4">{category.name}</h2>
-              {!phoneConfirmed && (
-                <p className="mb-3 text-sm text-muted-foreground">Enter mobile number above to start ordering.</p>
-              )}
               <div className="grid gap-4">
                 {categoryItems.map(item => (
                   <Card key={item.id} className="glass-grid-card p-4">
@@ -372,15 +367,24 @@ export default function CustomerOrderPage() {
         <div className="fixed bottom-0 left-0 right-0 z-30 border-t bg-white shadow-2xl">
           <div className="max-w-5xl mx-auto px-4 py-4">
             <div className="mb-3">
-              <h3 className="text-sm font-semibold mb-2">Selected Items</h3>
-              <div className="max-h-32 overflow-y-auto rounded-md border bg-gray-50 p-2">
-                {getCartDetails().map((ci) => (
-                  <div key={ci.id} className="flex items-center justify-between py-1 text-sm">
-                    <span>{ci.qty}x {ci.name}</span>
-                    <span className="font-semibold">${ci.subtotal.toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
+              <button
+                type="button"
+                className="flex w-full items-center justify-between rounded-md border bg-gray-50 px-3 py-2 text-sm font-semibold"
+                onClick={() => setShowSelectedItems((v) => !v)}
+              >
+                <span>Selected Items ({getCartItemCount()})</span>
+                {showSelectedItems ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              </button>
+              {showSelectedItems && (
+                <div className="mt-2 max-h-32 overflow-y-auto rounded-md border bg-gray-50 p-2">
+                  {getCartDetails().map((ci) => (
+                    <div key={ci.id} className="flex items-center justify-between py-1 text-sm">
+                      <span>{ci.qty}x {ci.name}</span>
+                      <span className="font-semibold">${ci.subtotal.toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="mb-3">
               <Sheet open={isCartSheetOpen} onOpenChange={setIsCartSheetOpen}>
