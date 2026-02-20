@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Plus, Minus, ShoppingCart, Coffee, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
@@ -7,6 +7,7 @@ import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { toast } from 'sonner';
 import * as api from '../lib/api';
 
@@ -22,21 +23,29 @@ export default function CustomerOrderPage() {
   const [phoneConfirmed, setPhoneConfirmed] = useState(false);
   const [activeOrders, setActiveOrders] = useState<any[]>([]);
   const [currentBill, setCurrentBill] = useState<{ orders: any[]; total: number } | null>(null);
+  const [showBillDialog, setShowBillDialog] = useState(false);
+  const [billChangedHighlight, setBillChangedHighlight] = useState(false);
   const [loadingActiveOrders, setLoadingActiveOrders] = useState(false);
   const [isCartSheetOpen, setIsCartSheetOpen] = useState(false);
   const [showSelectedItems, setShowSelectedItems] = useState(false);
   const [swipeStart, setSwipeStart] = useState<{ id: string; x: number } | null>(null);
   const [swipeOffsetById, setSwipeOffsetById] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const previousBillTotalRef = useRef<number | null>(null);
 
   useEffect(() => {
     loadMenu();
     const params = new URLSearchParams(window.location.search);
     const fromQuery = (params.get('phone') || '').replace(/[^\d]/g, '');
+    const returning = params.get('returning') === '1';
     if (fromQuery) {
       setCustomerPhone(fromQuery);
+      if (returning && tableNumber) {
+        setPhoneConfirmed(true);
+        loadActiveOrders(fromQuery);
+      }
     }
-  }, []);
+  }, [tableNumber]);
 
   const loadMenu = async () => {
     try {
@@ -167,6 +176,18 @@ export default function CustomerOrderPage() {
     return () => clearInterval(timer);
   }, [phoneConfirmed, customerPhone, tableNumber]);
 
+  useEffect(() => {
+    if (!currentBill) return;
+    const total = Number(currentBill.total || 0);
+    if (previousBillTotalRef.current !== null && previousBillTotalRef.current !== total) {
+      setBillChangedHighlight(true);
+      const timer = setTimeout(() => setBillChangedHighlight(false), 6000);
+      previousBillTotalRef.current = total;
+      return () => clearTimeout(timer);
+    }
+    previousBillTotalRef.current = total;
+  }, [currentBill]);
+
   const placeOrder = async () => {
     if (Object.keys(cart).length === 0) {
       toast.error('Your cart is empty');
@@ -239,6 +260,7 @@ export default function CustomerOrderPage() {
   }
 
   return (
+    <>
     <div className="page-shell pb-36">
       {/* Header */}
       <div className="sticky top-0 z-20 border-b bg-white/95">
@@ -285,8 +307,22 @@ export default function CustomerOrderPage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
               <h3 className="font-semibold">Your Active Orders</h3>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => loadActiveOrders(customerPhone)} disabled={loadingActiveOrders}>
-                  {loadingActiveOrders ? 'Refreshing...' : 'Refresh'}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={billChangedHighlight ? 'relative border-primary text-primary animate-pulse' : ''}
+                  onClick={() => {
+                    if (!currentBill || currentBill.orders.length === 0) {
+                      toast.info('No unpaid bill found yet.');
+                      return;
+                    }
+                    setShowBillDialog(true);
+                  }}
+                >
+                  {billChangedHighlight && (
+                    <span className="mr-1 inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
+                  )}
+                  View Bill
                 </Button>
                 <Button
                   variant="outline"
@@ -538,5 +574,38 @@ export default function CustomerOrderPage() {
         </div>
       )}
     </div>
+
+      <Dialog open={showBillDialog} onOpenChange={setShowBillDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Final Bill</DialogTitle>
+            <DialogDescription>
+              Table {tableNumber} • Phone {customerPhone}
+            </DialogDescription>
+          </DialogHeader>
+
+          {currentBill && currentBill.orders.length > 0 ? (
+            <div className="space-y-2 text-sm">
+              {currentBill.orders.map((o) => (
+                <div key={o.id} className="flex items-center justify-between rounded-md border px-3 py-2">
+                  <span>Order #{o.id}</span>
+                  <span className="font-semibold">${Number(o.total || 0).toFixed(2)}</span>
+                </div>
+              ))}
+              <div className="flex items-center justify-between border-t pt-2">
+                <span className="font-semibold">Grand Total</span>
+                <span className="text-lg font-bold">${Number(currentBill.total || 0).toFixed(2)}</span>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No unpaid bill available yet.</p>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBillDialog(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

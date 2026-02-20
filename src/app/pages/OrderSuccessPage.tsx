@@ -220,7 +220,13 @@ export default function OrderSuccessPage() {
 
         <div className="mt-3 text-center">
           <Link
-            to={table ? `/table/${table}${phone ? `?phone=${encodeURIComponent(phone)}` : ''}` : '/'}
+            to={
+              table
+                ? `/table/${table}${
+                    phone ? `?phone=${encodeURIComponent(phone)}&returning=1` : ''
+                  }`
+                : '/'
+            }
             className="text-sm text-primary underline"
           >
             Back to menu
