@@ -161,12 +161,11 @@ export default function AdminOrdersPage() {
       let sessionIndex = 1;
       for (let i = 0; i < ordered.length; i++) {
         const current = ordered[i];
-        const prev = ordered[i - 1];
         const startNew =
           i > 0 &&
-          prev &&
-          prev.paymentStatus === 'PAID' &&
-          current.paymentStatus === 'UNPAID';
+          current.paymentStatus === 'UNPAID' &&
+          current.status !== 'CANCELLED' &&
+          currentSession.some((o) => o.paymentStatus === 'PAID');
         if (startNew && currentSession.length > 0) {
           sessionized.push({
             tableNumber: group.tableNumber,
@@ -310,7 +309,8 @@ export default function AdminOrdersPage() {
 
         <div className="space-y-4">
           {groupedOrders.map((group) => {
-            const groupKey = `${group.tableNumber}__${group.customerPhone || 'NO_PHONE'}__${group.sessionIndex}`;
+            const groupKey = `${group.tableNumber}__${group.customerPhone || 'NO_PHONE'}__${group.startedAt}`;
+            const loadingKey = `${group.tableNumber}__${group.customerPhone || ''}`;
             const unpaidOrders = group.orders.filter((o) => o.paymentStatus === 'UNPAID' && o.status !== 'CANCELLED');
             const groupTotal = group.orders
               .filter((o) => o.status !== 'CANCELLED')
@@ -319,7 +319,7 @@ export default function AdminOrdersPage() {
               <Card key={groupKey} className="glass-grid-card p-4">
                 <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <h3 className="text-lg font-bold">Table {group.tableNumber} • Session {group.sessionIndex}</h3>
+                    <h3 className="text-lg font-bold">Table {group.tableNumber}</h3>
                     <p className="text-sm text-muted-foreground">
                       Name: {group.customerName || 'Guest'}
                     </p>
@@ -344,10 +344,10 @@ export default function AdminOrdersPage() {
                               customerPhone: group.customerPhone,
                             })
                           }
-                          disabled={billLoadingKey === groupKey}
+                          disabled={billLoadingKey === loadingKey}
                         >
                           <ReceiptText className="w-4 h-4 mr-1" />
-                          {billLoadingKey === groupKey ? 'Generating...' : 'Generate Final Bill'}
+                          {billLoadingKey === loadingKey ? 'Generating...' : 'Generate Final Bill'}
                         </Button>
                         <Button
                           size="sm"
