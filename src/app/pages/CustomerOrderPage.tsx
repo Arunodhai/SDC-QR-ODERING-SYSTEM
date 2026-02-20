@@ -64,6 +64,7 @@ export default function CustomerOrderPage() {
   const [swipeStart, setSwipeStart] = useState<{ id: string; x: number } | null>(null);
   const [swipeOffsetById, setSwipeOffsetById] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [categoryJump, setCategoryJump] = useState<string>('');
   const latestFinalBillIdRef = useRef<string>('');
   const roundByOrderId = userOrders
     .slice()
@@ -73,6 +74,9 @@ export default function CustomerOrderPage() {
       return acc;
     }, {});
   const visibleUserOrders = userOrders.filter((o) => o.status !== 'CANCELLED');
+  const menuCategories = categories.filter((category) =>
+    menuItems.some((item) => String(item.categoryId) === String(category.id)),
+  );
 
   useEffect(() => {
     loadMenu();
@@ -338,7 +342,7 @@ export default function CustomerOrderPage() {
     <>
     <div className="page-shell pb-36">
       {/* Header */}
-      <div className="sticky top-0 z-20 border-b bg-white/95">
+      <div className="border-b bg-white/95">
         <div className="max-w-5xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -465,12 +469,6 @@ export default function CustomerOrderPage() {
                 ))}
               </div>
             )}
-            <div className="mt-3 rounded-md border bg-gray-50 p-3">
-              <div className="flex items-center justify-between text-sm font-semibold">
-                <span>Grand Total</span>
-                <span>${Number(currentBill?.total || 0).toFixed(2)}</span>
-              </div>
-            </div>
           </Card>
         )}
 
@@ -602,12 +600,54 @@ export default function CustomerOrderPage() {
           </Card>
         )}
 
-        {phoneConfirmed && activeTab === 'menu' && categories.map(category => {
+        {phoneConfirmed && activeTab === 'menu' && menuCategories.length > 0 && (
+          <Card className="glass-grid-card p-3 mb-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm font-medium">Browse by category</p>
+              <select
+                className="h-9 rounded-md border px-3 text-sm"
+                value={categoryJump}
+                onChange={(e) => {
+                  const selected = e.target.value;
+                  setCategoryJump(selected);
+                  const el = document.getElementById(`category-${selected}`);
+                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+              >
+                <option value="">Jump to category</option>
+                {menuCategories.map((category) => (
+                  <option key={category.id} value={String(category.id)}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+              {menuCategories.map((category) => (
+                <Button
+                  key={category.id}
+                  variant={categoryJump === String(category.id) ? 'default' : 'outline'}
+                  size="sm"
+                  className="whitespace-nowrap"
+                  onClick={() => {
+                    setCategoryJump(String(category.id));
+                    const el = document.getElementById(`category-${category.id}`);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                >
+                  {category.name}
+                </Button>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {phoneConfirmed && activeTab === 'menu' && menuCategories.map(category => {
           const categoryItems = menuItems.filter(item => String(item.categoryId) === String(category.id));
           if (categoryItems.length === 0) return null;
 
           return (
-            <div key={category.id} className="mb-8">
+            <div key={category.id} id={`category-${category.id}`} className="mb-8">
               <h2 className="text-xl font-bold mb-4">{category.name}</h2>
               <div className="grid gap-4">
                 {categoryItems.map(item => (

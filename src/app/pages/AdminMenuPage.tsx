@@ -219,17 +219,22 @@ export default function AdminMenuPage() {
     <div className="page-shell">
       <AdminNav sticky={false} />
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="mb-4 flex items-center gap-2 text-sm">
-          <span className="font-semibold">Backend:</span>
-          {apiConnected === null && <span className="text-muted-foreground">Checking...</span>}
-          {apiConnected === true && <span className="text-green-700">Connected</span>}
-          {apiConnected === false && <span className="text-red-700">Not connected</span>}
-        </div>
-        <div className="mb-6 flex items-center gap-3 text-sm">
-          <span className="rounded-md bg-gray-100 px-2 py-1">Categories: {categories.length}</span>
-          <span className="rounded-md bg-gray-100 px-2 py-1">Items: {menuItems.length}</span>
-          <Button variant="outline" size="sm" onClick={loadData}>Refresh</Button>
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="brand-display text-3xl font-bold">Menu Management</h2>
+            <div className="mt-1 flex items-center gap-2 text-sm">
+              <span className="font-semibold">Backend:</span>
+              {apiConnected === null && <span className="text-muted-foreground">Checking...</span>}
+              {apiConnected === true && <span className="text-green-700">Connected</span>}
+              {apiConnected === false && <span className="text-red-700">Not connected</span>}
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-sm lg:justify-end">
+            <span className="rounded-md bg-gray-100 px-2 py-1">Categories: {categories.length}</span>
+            <span className="rounded-md bg-gray-100 px-2 py-1">Items: {menuItems.length}</span>
+            <Button variant="outline" size="sm" onClick={loadData}>Refresh</Button>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

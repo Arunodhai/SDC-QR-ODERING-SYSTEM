@@ -308,7 +308,7 @@ export default function AdminOrdersPage() {
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
           {groupedOrders.map((group) => {
             const groupKey = `${group.tableNumber}__${group.customerPhone || 'NO_PHONE'}__${group.startedAt}`;
             const loadingKey = `${group.tableNumber}__${group.customerPhone || ''}`;
@@ -317,7 +317,7 @@ export default function AdminOrdersPage() {
               .filter((o) => o.status !== 'CANCELLED')
               .reduce((sum, o) => sum + Number(o.total || 0), 0);
             return (
-              <Card key={groupKey} className="glass-grid-card p-4">
+              <Card key={groupKey} className="glass-grid-card p-4 h-fit">
                 <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <h3 className="text-lg font-bold">Table {group.tableNumber}</h3>
@@ -416,7 +416,7 @@ export default function AdminOrdersPage() {
           })}
 
           {groupedOrders.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">
+            <div className="text-center py-12 text-muted-foreground col-span-full">
               <p>No orders found</p>
             </div>
           )}
