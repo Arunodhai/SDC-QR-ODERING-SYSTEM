@@ -41,6 +41,27 @@ const toOrder = (row: any) => ({
   createdAt: row.created_at,
 });
 
+const aggregateBillLineItems = (orders: any[]) => {
+  const map = new Map<string, { name: string; quantity: number; unitPrice: number; lineTotal: number }>();
+  (orders || []).forEach((order) => {
+    (order.items || []).forEach((item: any) => {
+      const key = `${item.name}__${Number(item.price || 0)}`;
+      const existing = map.get(key) || {
+        name: item.name,
+        quantity: 0,
+        unitPrice: Number(item.price || 0),
+        lineTotal: 0,
+      };
+      const qty = Number(item.quantity || 0);
+      const unit = Number(item.price || 0);
+      existing.quantity += qty;
+      existing.lineTotal += qty * unit;
+      map.set(key, existing);
+    });
+  });
+  return Array.from(map.values());
+};
+
 export const adminSignIn = async (email: string, password: string) => {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw new Error(errMsg(error, 'Admin login failed'));
@@ -331,12 +352,14 @@ export const getUnpaidBillByTableAndPhone = async (tableNumber: number, phone: s
     .eq('table_number', Number(tableNumber))
     .eq('customer_phone', phone)
     .eq('payment_status', 'UNPAID')
+    .neq('status', 'CANCELLED')
     .order('created_at', { ascending: true });
 
   if (error) throw new Error(errMsg(error, 'Failed to fetch unpaid bill'));
   const orders = (data || []).map(toOrder);
   const total = orders.reduce((sum, o) => sum + Number(o.total || 0), 0);
-  return { orders, total };
+  const lineItems = aggregateBillLineItems(orders);
+  return { orders, total, lineItems };
 };
 
 export const markOrdersPaidBulk = async (orderIds: string[]) => {
@@ -399,4 +422,93 @@ export const getActiveOrdersByTableAndPhone = async (tableNumber: number, phone:
   }
 
   return { orders: (data || []).map(toOrder) };
+};
+
+export const getLatestFinalBillByTableAndPhone = async (tableNumber: number, phone: string) => {
+  const { data, error } = await supabase
+    .from('final_bills')
+    .select('*')
+    .eq('table_number', Number(tableNumber))
+    .eq('customer_phone', phone)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    if (String(error.message || '').includes('final_bills')) {
+      throw new Error('DB is missing final_bills table. Run sql/create_final_bills.sql in Supabase SQL editor.');
+    }
+    throw new Error(errMsg(error, 'Failed to fetch final bill'));
+  }
+  if (!data) return { bill: null };
+
+  return {
+    bill: {
+      id: String(data.id),
+      tableNumber: Number(data.table_number),
+      customerPhone: data.customer_phone,
+      total: Number(data.total_amount || 0),
+      lineItems: data.line_items || [],
+      orderIds: (data.order_ids || []).map((id: any) => String(id)),
+      isPaid: Boolean(data.is_paid),
+      createdAt: data.created_at,
+      paidAt: data.paid_at || null,
+    },
+  };
+};
+
+export const generateFinalBillByTableAndPhone = async (tableNumber: number, phone: string) => {
+  const bill = await getUnpaidBillByTableAndPhone(tableNumber, phone);
+  if (!bill.orders.length) {
+    return { bill: null };
+  }
+
+  const payload = {
+    table_number: Number(tableNumber),
+    customer_phone: phone,
+    order_ids: bill.orders.map((o: any) => Number(o.id)),
+    line_items: bill.lineItems,
+    total_amount: Number(bill.total || 0),
+    is_paid: false,
+  };
+
+  const { data, error } = await supabase.from('final_bills').insert(payload).select().single();
+  if (error) {
+    if (String(error.message || '').includes('final_bills')) {
+      throw new Error('DB is missing final_bills table. Run sql/create_final_bills.sql in Supabase SQL editor.');
+    }
+    throw new Error(errMsg(error, 'Failed to generate final bill'));
+  }
+
+  return {
+    bill: {
+      id: String(data.id),
+      tableNumber: Number(data.table_number),
+      customerPhone: data.customer_phone,
+      total: Number(data.total_amount || 0),
+      lineItems: data.line_items || [],
+      orderIds: (data.order_ids || []).map((id: any) => String(id)),
+      isPaid: Boolean(data.is_paid),
+      createdAt: data.created_at,
+      paidAt: data.paid_at || null,
+    },
+  };
+};
+
+export const markFinalBillPaid = async (billId: string) => {
+  const { data, error } = await supabase
+    .from('final_bills')
+    .update({ is_paid: true, paid_at: new Date().toISOString() })
+    .eq('id', Number(billId))
+    .select('*')
+    .single();
+
+  if (error) throw new Error(errMsg(error, 'Failed to mark final bill as paid'));
+
+  const orderIds = (data.order_ids || []).map((id: any) => String(id));
+  if (orderIds.length) {
+    await markOrdersPaidBulk(orderIds);
+  }
+
+  return { success: true };
 };

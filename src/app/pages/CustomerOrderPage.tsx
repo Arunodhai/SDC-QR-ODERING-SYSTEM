@@ -22,7 +22,12 @@ export default function CustomerOrderPage() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [phoneConfirmed, setPhoneConfirmed] = useState(false);
   const [activeOrders, setActiveOrders] = useState<any[]>([]);
-  const [currentBill, setCurrentBill] = useState<{ orders: any[]; total: number } | null>(null);
+  const [currentBill, setCurrentBill] = useState<{
+    orders: any[];
+    total: number;
+    lineItems?: Array<{ name: string; quantity: number; unitPrice: number; lineTotal: number }>;
+  } | null>(null);
+  const [latestFinalBill, setLatestFinalBill] = useState<any>(null);
   const [showBillDialog, setShowBillDialog] = useState(false);
   const [billChangedHighlight, setBillChangedHighlight] = useState(false);
   const [loadingActiveOrders, setLoadingActiveOrders] = useState(false);
@@ -32,6 +37,7 @@ export default function CustomerOrderPage() {
   const [swipeOffsetById, setSwipeOffsetById] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const previousBillTotalRef = useRef<number | null>(null);
+  const latestFinalBillIdRef = useRef<string>('');
 
   useEffect(() => {
     loadMenu();
@@ -150,6 +156,23 @@ export default function CustomerOrderPage() {
       ]);
       setActiveOrders(activeRes.orders || []);
       setCurrentBill(billRes);
+      try {
+        const finalBillRes = await api.getLatestFinalBillByTableAndPhone(Number(tableNumber), trimmedPhone);
+        if (finalBillRes.bill) {
+          setLatestFinalBill(finalBillRes.bill);
+          if (latestFinalBillIdRef.current && latestFinalBillIdRef.current !== finalBillRes.bill.id) {
+            setBillChangedHighlight(true);
+            setShowBillDialog(true);
+            setTimeout(() => setBillChangedHighlight(false), 6000);
+          }
+          latestFinalBillIdRef.current = finalBillRes.bill.id;
+        } else {
+          setLatestFinalBill(null);
+        }
+      } catch (err) {
+        // Keep customer flow functional even if final_bills migration is not applied yet.
+        console.error('Final bill sync warning:', err);
+      }
     } catch (error) {
       console.error('Error loading active orders:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to load your active orders');
@@ -177,8 +200,12 @@ export default function CustomerOrderPage() {
   }, [phoneConfirmed, customerPhone, tableNumber]);
 
   useEffect(() => {
-    if (!currentBill) return;
-    const total = Number(currentBill.total || 0);
+    const sourceTotal =
+      latestFinalBill && !latestFinalBill.isPaid
+        ? Number(latestFinalBill.total || 0)
+        : Number(currentBill?.total || 0);
+    if (sourceTotal === undefined || sourceTotal === null) return;
+    const total = Number(sourceTotal || 0);
     if (previousBillTotalRef.current !== null && previousBillTotalRef.current !== total) {
       setBillChangedHighlight(true);
       const timer = setTimeout(() => setBillChangedHighlight(false), 6000);
@@ -186,7 +213,7 @@ export default function CustomerOrderPage() {
       return () => clearTimeout(timer);
     }
     previousBillTotalRef.current = total;
-  }, [currentBill]);
+  }, [currentBill, latestFinalBill]);
 
   const placeOrder = async () => {
     if (Object.keys(cart).length === 0) {
@@ -313,6 +340,10 @@ export default function CustomerOrderPage() {
                   className={billChangedHighlight ? 'relative border-primary text-primary animate-pulse' : ''}
                   onClick={() => {
                     if (!currentBill || currentBill.orders.length === 0) {
+                      if (latestFinalBill) {
+                        setShowBillDialog(true);
+                        return;
+                      }
                       toast.info('No unpaid bill found yet.');
                       return;
                     }
@@ -584,12 +615,49 @@ export default function CustomerOrderPage() {
             </DialogDescription>
           </DialogHeader>
 
-          {currentBill && currentBill.orders.length > 0 ? (
+          {latestFinalBill ? (
             <div className="space-y-2 text-sm">
-              {currentBill.orders.map((o) => (
-                <div key={o.id} className="flex items-center justify-between rounded-md border px-3 py-2">
-                  <span>Order #{o.id}</span>
-                  <span className="font-semibold">${Number(o.total || 0).toFixed(2)}</span>
+              <div className="rounded-md border bg-gray-50 px-3 py-2 text-xs text-muted-foreground">
+                <div className="flex items-center justify-between">
+                  <span>Bill ID</span>
+                  <span className="font-semibold">#{latestFinalBill.id}</span>
+                </div>
+                <div className="mt-1 flex items-center justify-between">
+                  <span>Status</span>
+                  <span className={`font-semibold ${latestFinalBill.isPaid ? 'text-green-600' : 'text-amber-600'}`}>
+                    {latestFinalBill.isPaid ? 'PAID' : 'UNPAID'}
+                  </span>
+                </div>
+              </div>
+              {(latestFinalBill.lineItems || []).map((item: any, idx: number) => (
+                <div key={`${item.name}_${idx}`} className="rounded-md border px-3 py-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{item.name}</span>
+                    <span className="font-semibold">${Number(item.lineTotal || 0).toFixed(2)}</span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{Number(item.quantity || 0)} x ${Number(item.unitPrice || 0).toFixed(2)}</span>
+                    <span>Line total</span>
+                  </div>
+                </div>
+              ))}
+              <div className="flex items-center justify-between border-t pt-2">
+                <span className="font-semibold">Grand Total</span>
+                <span className="text-lg font-bold">${Number(latestFinalBill.total || 0).toFixed(2)}</span>
+              </div>
+            </div>
+          ) : currentBill && currentBill.orders.length > 0 ? (
+            <div className="space-y-2 text-sm">
+              {currentBill.lineItems?.map((item: any, idx: number) => (
+                <div key={`${item.name}_${idx}`} className="rounded-md border px-3 py-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{item.name}</span>
+                    <span className="font-semibold">${Number(item.lineTotal || 0).toFixed(2)}</span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{Number(item.quantity || 0)} x ${Number(item.unitPrice || 0).toFixed(2)}</span>
+                    <span>Line total</span>
+                  </div>
                 </div>
               ))}
               <div className="flex items-center justify-between border-t pt-2">

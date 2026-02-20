@@ -36,10 +36,14 @@ export default function AdminOrdersPage() {
   const [filter, setFilter] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [billPreview, setBillPreview] = useState<{
+    id?: string;
     tableNumber: number;
     phone: string;
-    orders: any[];
+    lineItems: Array<{ name: string; quantity: number; unitPrice: number; lineTotal: number }>;
+    orderIds: string[];
     total: number;
+    isPaid?: boolean;
+    createdAt?: string;
   } | null>(null);
   const [billLoadingKey, setBillLoadingKey] = useState<string>('');
   const [markingGroupPaid, setMarkingGroupPaid] = useState(false);
@@ -144,16 +148,20 @@ export default function AdminOrdersPage() {
     const key = `${group.tableNumber}__${group.customerPhone}`;
     setBillLoadingKey(key);
     try {
-      const bill = await api.getUnpaidBillByTableAndPhone(group.tableNumber, group.customerPhone);
-      if (!bill.orders.length) {
+      const res = await api.generateFinalBillByTableAndPhone(group.tableNumber, group.customerPhone);
+      if (!res.bill) {
         toast.info('No unpaid orders found for this customer at this table.');
         return;
       }
       setBillPreview({
-        tableNumber: group.tableNumber,
-        phone: group.customerPhone,
-        orders: bill.orders,
-        total: bill.total,
+        id: res.bill.id,
+        tableNumber: res.bill.tableNumber,
+        phone: res.bill.customerPhone,
+        lineItems: res.bill.lineItems || [],
+        orderIds: res.bill.orderIds || [],
+        total: res.bill.total,
+        isPaid: res.bill.isPaid,
+        createdAt: res.bill.createdAt,
       });
     } catch (error) {
       console.error('Error generating combined bill:', error);
@@ -164,11 +172,11 @@ export default function AdminOrdersPage() {
   };
 
   const markBillPaid = async () => {
-    if (!billPreview) return;
+    if (!billPreview || !billPreview.id) return;
     setMarkingGroupPaid(true);
     try {
-      await api.markOrdersPaidBulk(billPreview.orders.map((o) => o.id));
-      toast.success(`Marked ${billPreview.orders.length} orders as paid.`);
+      await api.markFinalBillPaid(billPreview.id);
+      toast.success('Final bill marked as paid.');
       setBillPreview(null);
       loadOrders();
     } catch (error) {
@@ -335,16 +343,27 @@ export default function AdminOrdersPage() {
 
           {billPreview && (
             <div className="space-y-2 text-sm">
-              {billPreview.orders.map((o) => (
-                <div key={o.id} className="flex items-center justify-between rounded-md border px-3 py-2">
-                  <span>Order #{o.id}</span>
-                  <span className="font-semibold">${Number(o.total || 0).toFixed(2)}</span>
+              {billPreview.lineItems.map((item, idx) => (
+                <div key={`${item.name}_${idx}`} className="rounded-md border px-3 py-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{item.name}</span>
+                    <span className="font-semibold">${Number(item.lineTotal || 0).toFixed(2)}</span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{item.quantity} x ${Number(item.unitPrice || 0).toFixed(2)}</span>
+                    <span>Line total</span>
+                  </div>
                 </div>
               ))}
               <div className="flex items-center justify-between border-t pt-2">
                 <span className="font-semibold">Grand Total</span>
                 <span className="text-lg font-bold">${Number(billPreview.total || 0).toFixed(2)}</span>
               </div>
+              {billPreview.createdAt && (
+                <p className="text-xs text-muted-foreground">
+                  Generated at {format(new Date(billPreview.createdAt), 'MMM dd, yyyy • h:mm a')}
+                </p>
+              )}
             </div>
           )}
 
@@ -352,8 +371,8 @@ export default function AdminOrdersPage() {
             <Button variant="outline" onClick={() => setBillPreview(null)} disabled={markingGroupPaid}>
               Close
             </Button>
-            <Button onClick={markBillPaid} disabled={markingGroupPaid || !billPreview}>
-              {markingGroupPaid ? 'Marking...' : 'Mark All as Paid'}
+            <Button onClick={markBillPaid} disabled={markingGroupPaid || !billPreview || billPreview.isPaid}>
+              {markingGroupPaid ? 'Marking...' : billPreview?.isPaid ? 'Already Paid' : 'Mark All as Paid'}
             </Button>
           </DialogFooter>
         </DialogContent>
