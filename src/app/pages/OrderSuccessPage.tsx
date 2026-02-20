@@ -12,6 +12,13 @@ const STATUS_LABELS: Record<string, string> = {
   COMPLETED: 'Completed',
 };
 
+const STATUS_PROGRESS_LABELS: Record<string, string> = {
+  PENDING: 'Pending',
+  PREPARING: 'Preparing',
+  READY: 'Ready',
+  COMPLETED: 'Done',
+};
+
 export default function OrderSuccessPage() {
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('orderId') || '';
@@ -91,17 +98,26 @@ export default function OrderSuccessPage() {
 
         <div className="mt-5">
           <div className="mb-2 text-sm font-semibold">Progress</div>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="relative px-1">
+            <div className="absolute left-4 right-4 top-3 h-0.5 bg-gray-200" />
+            <div
+              className="absolute left-4 top-3 h-0.5 bg-primary transition-all duration-300"
+              style={{ width: `calc((100% - 2rem) * ${activeStep / (STATUS_STEPS.length - 1)})` }}
+            />
+            <div className="grid grid-cols-4 gap-1">
             {STATUS_STEPS.map((step, idx) => (
-              <div
-                key={step}
-                className={`rounded-md border px-2 py-2 text-center text-xs ${
-                  idx <= activeStep ? 'bg-primary text-white border-primary' : 'bg-white text-muted-foreground'
-                }`}
-              >
-                {STATUS_LABELS[step]}
+              <div key={step} className="text-center">
+                <div
+                  className={`mx-auto mb-2 h-6 w-6 rounded-full border-2 ${
+                    idx <= activeStep ? 'border-primary bg-primary' : 'border-gray-300 bg-white'
+                  }`}
+                />
+                <div className={`text-[11px] ${idx <= activeStep ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>
+                  {STATUS_PROGRESS_LABELS[step]}
+                </div>
               </div>
             ))}
+            </div>
           </div>
         </div>
 

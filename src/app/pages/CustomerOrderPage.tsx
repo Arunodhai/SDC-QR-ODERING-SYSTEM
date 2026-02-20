@@ -1,11 +1,12 @@
 import { useParams, useNavigate } from 'react-router';
 import { useState, useEffect } from 'react';
-import { Plus, Minus, ShoppingCart, Coffee } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, Coffee, Trash2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet';
 import { toast } from 'sonner';
 import * as api from '../lib/api';
 
@@ -20,6 +21,9 @@ export default function CustomerOrderPage() {
   const [phoneConfirmed, setPhoneConfirmed] = useState(false);
   const [activeOrders, setActiveOrders] = useState<any[]>([]);
   const [loadingActiveOrders, setLoadingActiveOrders] = useState(false);
+  const [isCartSheetOpen, setIsCartSheetOpen] = useState(false);
+  const [swipeStart, setSwipeStart] = useState<{ id: string; x: number } | null>(null);
+  const [swipeOffsetById, setSwipeOffsetById] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const phoneKey = `stories_phone_table_${tableNumber}`;
 
@@ -55,6 +59,10 @@ export default function CustomerOrderPage() {
     setCart(prev => ({ ...prev, [itemId]: (prev[itemId] || 0) + 1 }));
   };
 
+  const cartQtyCount = (cartState: Record<string, number>) => Object.values(cartState).reduce((sum, qty) => sum + qty, 0);
+
+  const confirmCartEmpty = () => window.confirm('Your cart will become empty. Continue?');
+
   const removeFromCart = (itemId: string) => {
     setCart(prev => {
       const newCart = { ...prev };
@@ -63,7 +71,28 @@ export default function CustomerOrderPage() {
       } else {
         delete newCart[itemId];
       }
+
+      if (cartQtyCount(newCart) === 0) {
+        const ok = confirmCartEmpty();
+        if (!ok) return prev;
+        toast.info('Cart is now empty');
+      }
       return newCart;
+    });
+  };
+
+  const removeItemFromCart = (itemId: string) => {
+    setCart(prev => {
+      const next = { ...prev };
+      delete next[itemId];
+
+      if (cartQtyCount(next) === 0) {
+        const ok = confirmCartEmpty();
+        if (!ok) return prev;
+        toast.info('Cart is now empty');
+      }
+
+      return next;
     });
   };
 
@@ -72,6 +101,22 @@ export default function CustomerOrderPage() {
       const item = menuItems.find(i => i.id === itemId);
       return sum + (item?.price || 0) * qty;
     }, 0);
+  };
+
+  const getCartDetails = () => {
+    return Object.entries(cart)
+      .map(([itemId, qty]) => {
+        const item = menuItems.find(i => i.id === itemId);
+        if (!item) return null;
+        return {
+          id: itemId,
+          name: item.name,
+          qty,
+          price: Number(item.price || 0),
+          subtotal: Number(item.price || 0) * qty,
+        };
+      })
+      .filter(Boolean) as Array<{ id: string; name: string; qty: number; price: number; subtotal: number }>;
   };
 
   const getCartItemCount = () => {
@@ -142,6 +187,26 @@ export default function CustomerOrderPage() {
       console.error('Error placing order:', error);
       toast.error('Failed to place order');
     }
+  };
+
+  const handleRowTouchStart = (id: string, x: number) => {
+    setSwipeStart({ id, x });
+  };
+
+  const handleRowTouchMove = (id: string, x: number) => {
+    if (!swipeStart || swipeStart.id !== id) return;
+    const delta = x - swipeStart.x;
+    const clamped = Math.max(-120, Math.min(0, delta));
+    setSwipeOffsetById((prev) => ({ ...prev, [id]: clamped }));
+  };
+
+  const handleRowTouchEnd = (id: string) => {
+    const offset = swipeOffsetById[id] || 0;
+    if (offset <= -80) {
+      removeItemFromCart(id);
+    }
+    setSwipeOffsetById((prev) => ({ ...prev, [id]: 0 }));
+    setSwipeStart(null);
   };
 
   if (loading) {
@@ -306,6 +371,104 @@ export default function CustomerOrderPage() {
       {getCartItemCount() > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-30 border-t bg-white shadow-2xl">
           <div className="max-w-5xl mx-auto px-4 py-4">
+            <div className="mb-3">
+              <h3 className="text-sm font-semibold mb-2">Selected Items</h3>
+              <div className="max-h-32 overflow-y-auto rounded-md border bg-gray-50 p-2">
+                {getCartDetails().map((ci) => (
+                  <div key={ci.id} className="flex items-center justify-between py-1 text-sm">
+                    <span>{ci.qty}x {ci.name}</span>
+                    <span className="font-semibold">${ci.subtotal.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="mb-3">
+              <Sheet open={isCartSheetOpen} onOpenChange={setIsCartSheetOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" className="w-full">Edit Cart</Button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="max-h-[85vh] rounded-t-2xl p-0">
+                  <SheetHeader className="border-b">
+                    <SheetTitle>Edit Cart</SheetTitle>
+                    <SheetDescription>Review items before placing order. Swipe left on mobile to remove.</SheetDescription>
+                  </SheetHeader>
+
+                  <div className="max-h-[55vh] overflow-y-auto p-4 space-y-3">
+                    {getCartDetails().length === 0 && (
+                      <p className="text-sm text-muted-foreground">Your cart is empty.</p>
+                    )}
+                    {getCartDetails().map((ci) => (
+                      <div key={ci.id} className="relative overflow-hidden rounded-lg border">
+                        <div className="absolute inset-y-0 right-0 flex w-24 items-center justify-center bg-red-500 text-white text-xs font-semibold">
+                          Remove
+                        </div>
+                        <div
+                          className="relative bg-white p-3 transition-transform duration-150"
+                          style={{ transform: `translateX(${swipeOffsetById[ci.id] || 0}px)` }}
+                          onTouchStart={(e) => handleRowTouchStart(ci.id, e.touches[0].clientX)}
+                          onTouchMove={(e) => handleRowTouchMove(ci.id, e.touches[0].clientX)}
+                          onTouchEnd={() => handleRowTouchEnd(ci.id)}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div>
+                              <div className="font-semibold text-sm">{ci.name}</div>
+                              <div className="text-xs text-muted-foreground">${ci.price.toFixed(2)} each</div>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => removeItemFromCart(ci.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <div className="mt-3 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => removeFromCart(ci.id)}
+                              >
+                                <Minus className="h-4 w-4" />
+                              </Button>
+                              <span className="w-8 text-center font-semibold">{ci.qty}</span>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => addToCart(ci.id)}
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <div className="font-semibold">${ci.subtotal.toFixed(2)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <SheetFooter className="border-t bg-white">
+                    <div className="flex items-center justify-between text-sm mb-1">
+                      <span className="font-semibold">Items</span>
+                      <span>{getCartItemCount()}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-base">
+                      <span className="font-bold">Total</span>
+                      <span className="font-bold">${getCartTotal().toFixed(2)}</span>
+                    </div>
+                    <Button
+                      className="w-full mt-2"
+                      onClick={() => setIsCartSheetOpen(false)}
+                    >
+                      Done
+                    </Button>
+                  </SheetFooter>
+                </SheetContent>
+              </Sheet>
+            </div>
             <div className="mb-3">
               <Input
                 placeholder="Mobile number"
