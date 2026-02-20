@@ -15,8 +15,8 @@ const STATUS_COLORS = {
   PENDING: 'bg-red-100 text-red-800',
   PREPARING: 'bg-yellow-100 text-yellow-800',
   READY: 'bg-green-100 text-green-800',
-  COMPLETED: 'bg-gray-100 text-gray-800',
-  CANCELLED: 'bg-gray-200 text-gray-700',
+  COMPLETED: 'bg-blue-100 text-blue-800',
+  CANCELLED: 'bg-red-100 text-red-800',
 };
 
 const PAYMENT_COLORS = {
@@ -242,8 +242,10 @@ export default function AdminOrdersPage() {
         <div className="space-y-4">
           {groupedOrders.map((group) => {
             const groupKey = `${group.tableNumber}__${group.customerPhone || 'NO_PHONE'}`;
-            const unpaidOrders = group.orders.filter((o) => o.paymentStatus === 'UNPAID');
-            const groupTotal = group.orders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+            const unpaidOrders = group.orders.filter((o) => o.paymentStatus === 'UNPAID' && o.status !== 'CANCELLED');
+            const groupTotal = group.orders
+              .filter((o) => o.status !== 'CANCELLED')
+              .reduce((sum, o) => sum + Number(o.total || 0), 0);
             return (
               <Card key={groupKey} className="glass-grid-card p-4">
                 <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
@@ -258,6 +260,7 @@ export default function AdminOrdersPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-lg font-bold">${groupTotal.toFixed(2)}</div>
+                    <div className="text-xs text-muted-foreground">Payable (excludes cancelled)</div>
                     {group.customerPhone && unpaidOrders.length > 0 && (
                       <Button
                         className="mt-2"
@@ -298,8 +301,15 @@ export default function AdminOrdersPage() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <div className="font-bold">${Number(order.total || 0).toFixed(2)}</div>
-                          {order.paymentStatus === 'UNPAID' && (
+                          {order.status === 'CANCELLED' ? (
+                            <div>
+                              <div className="font-bold text-red-700">$0.00</div>
+                              <div className="text-xs text-red-600">Cancelled (excluded)</div>
+                            </div>
+                          ) : (
+                            <div className="font-bold">${Number(order.total || 0).toFixed(2)}</div>
+                          )}
+                          {order.paymentStatus === 'UNPAID' && order.status !== 'CANCELLED' && (
                             <Button size="sm" className="mt-2" onClick={() => markAsPaid(order.id)}>
                               Mark Paid
                             </Button>

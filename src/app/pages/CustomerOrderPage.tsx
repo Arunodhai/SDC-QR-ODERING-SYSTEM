@@ -11,6 +11,14 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from 'sonner';
 import * as api from '../lib/api';
 
+const STATUS_TEXT_COLORS: Record<string, string> = {
+  PENDING: 'text-amber-600',
+  PREPARING: 'text-blue-600',
+  READY: 'text-green-600',
+  COMPLETED: 'text-indigo-600',
+  CANCELLED: 'text-red-600',
+};
+
 export default function CustomerOrderPage() {
   const { tableNumber } = useParams();
   const navigate = useNavigate();
@@ -381,7 +389,9 @@ export default function CustomerOrderPage() {
                   <div key={o.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
                     <div>
                       <div className="font-semibold">Order #{o.id}</div>
-                      <div className="text-muted-foreground">Status: {o.status}</div>
+                      <div className={`font-medium ${STATUS_TEXT_COLORS[o.status] || 'text-muted-foreground'}`}>
+                        Status: {o.status}
+                      </div>
                     </div>
                     <Button variant="outline" size="sm" onClick={() => navigate(`/order/success?orderId=${o.id}&table=${tableNumber}&phone=${encodeURIComponent(customerPhone)}`)}>
                       View

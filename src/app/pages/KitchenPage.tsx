@@ -11,8 +11,8 @@ const STATUS_COLORS = {
   PENDING: 'bg-red-100 text-red-800',
   PREPARING: 'bg-yellow-100 text-yellow-800',
   READY: 'bg-green-100 text-green-800',
-  COMPLETED: 'bg-gray-100 text-gray-800',
-  CANCELLED: 'bg-gray-200 text-gray-700',
+  COMPLETED: 'bg-blue-100 text-blue-800',
+  CANCELLED: 'bg-red-100 text-red-800',
 };
 
 const STATUS_FLOW = ['PENDING', 'PREPARING', 'READY', 'COMPLETED'];
@@ -134,37 +134,41 @@ export default function KitchenPage() {
     <div className="page-shell">
       <div className="sticky top-0 z-20 border-b bg-white/95">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <h1 className="brand-display text-2xl font-bold flex items-center gap-2">
-            <ChefHat className="w-6 h-6" />
-            Kitchen Orders
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {viewMode === 'active' ? `${activeOrders.length} active orders` : `${historyOrders.length} historical orders`}
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Button
-              size="sm"
-              variant={viewMode === 'active' ? 'default' : 'outline'}
-              onClick={() => setViewMode('active')}
-            >
-              Active
-            </Button>
-            <Button
-              size="sm"
-              variant={viewMode === 'history' ? 'default' : 'outline'}
-              onClick={() => setViewMode('history')}
-            >
-              <History className="h-4 w-4 mr-1" />
-              History
-            </Button>
-            {viewMode === 'history' && (
-              <input
-                type="date"
-                value={historyDate}
-                onChange={(e) => setHistoryDate(e.target.value)}
-                className="h-9 rounded-md border px-3 text-sm"
-              />
-            )}
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="brand-display text-2xl font-bold flex items-center gap-2">
+                <ChefHat className="w-6 h-6" />
+                Kitchen Orders
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {viewMode === 'active' ? `${activeOrders.length} active orders` : `${historyOrders.length} historical orders`}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+              <Button
+                size="sm"
+                variant={viewMode === 'active' ? 'default' : 'outline'}
+                onClick={() => setViewMode('active')}
+              >
+                Active
+              </Button>
+              <Button
+                size="sm"
+                variant={viewMode === 'history' ? 'default' : 'outline'}
+                onClick={() => setViewMode('history')}
+              >
+                <History className="h-4 w-4 mr-1" />
+                History
+              </Button>
+              {viewMode === 'history' && (
+                <input
+                  type="date"
+                  value={historyDate}
+                  onChange={(e) => setHistoryDate(e.target.value)}
+                  className="h-9 rounded-md border px-3 text-sm"
+                />
+              )}
+            </div>
           </div>
         </div>
       </div>

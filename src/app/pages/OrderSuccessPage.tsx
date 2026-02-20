@@ -21,6 +21,14 @@ const STATUS_PROGRESS_LABELS: Record<string, string> = {
   COMPLETED: 'Done',
 };
 
+const STATUS_TEXT_COLORS: Record<string, string> = {
+  PENDING: 'text-amber-600',
+  PREPARING: 'text-blue-600',
+  READY: 'text-green-600',
+  COMPLETED: 'text-indigo-600',
+  CANCELLED: 'text-red-600',
+};
+
 export default function OrderSuccessPage() {
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('orderId') || '';
@@ -128,7 +136,9 @@ export default function OrderSuccessPage() {
           </div>
           <div className="mt-1 flex items-center justify-between">
             <span className="text-muted-foreground">Current Status</span>
-            <span className="font-semibold">{cancelled ? 'Cancelled' : (STATUS_LABELS[status] || status)}</span>
+            <span className={`font-semibold ${STATUS_TEXT_COLORS[status] || ''}`}>
+              {cancelled ? 'Cancelled' : (STATUS_LABELS[status] || status)}
+            </span>
           </div>
           <div className="mt-1 flex items-center justify-between">
             <span className="text-muted-foreground">Billing Ref</span>
