@@ -2,6 +2,7 @@ import { CheckCircle, Coffee, Clock3, ChefHat, PartyPopper } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import * as api from '../lib/api';
+import { Button } from '../components/ui/button';
 
 const STATUS_STEPS = ['PENDING', 'PREPARING', 'READY', 'COMPLETED'] as const;
 
@@ -27,6 +28,8 @@ export default function OrderSuccessPage() {
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelled, setCancelled] = useState(false);
 
   useEffect(() => {
     if (!orderId) {
@@ -70,6 +73,24 @@ export default function OrderSuccessPage() {
     return <CheckCircle className="w-18 h-18 text-green-600 mx-auto mb-4" />;
   }, [status]);
 
+  const cancelOrder = async () => {
+    if (!orderId) return;
+    const ok = window.confirm('Cancel this order? This is only possible while it is pending.');
+    if (!ok) return;
+
+    setCancelLoading(true);
+    try {
+      await api.cancelPendingOrder(orderId, phone || undefined);
+      setCancelled(true);
+      setOrder(null);
+      setError('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to cancel order');
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
   return (
     <div className="page-shell flex items-center justify-center p-4">
       <div className="max-w-xl w-full rounded-2xl border bg-card p-6 shadow-lg">
@@ -92,7 +113,7 @@ export default function OrderSuccessPage() {
           </div>
           <div className="mt-1 flex items-center justify-between">
             <span className="text-muted-foreground">Current Status</span>
-            <span className="font-semibold">{STATUS_LABELS[status] || status}</span>
+            <span className="font-semibold">{cancelled ? 'Cancelled' : (STATUS_LABELS[status] || status)}</span>
           </div>
         </div>
 
@@ -120,6 +141,14 @@ export default function OrderSuccessPage() {
             </div>
           </div>
         </div>
+
+        {!cancelled && status === 'PENDING' && !loading && !error && (
+          <div className="mt-4">
+            <Button variant="outline" className="w-full text-red-600 border-red-200 hover:bg-red-50" onClick={cancelOrder} disabled={cancelLoading}>
+              {cancelLoading ? 'Cancelling...' : 'Cancel Order'}
+            </Button>
+          </div>
+        )}
 
         <div className="mt-5">
           <div className="mb-2 text-sm font-semibold">Items</div>

@@ -324,6 +324,42 @@ export const updateOrderPayment = async (id: string, paymentStatus: string) => {
   return { order: toOrder(data) };
 };
 
+export const getUnpaidBillByTableAndPhone = async (tableNumber: number, phone: string) => {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*,order_items(*)')
+    .eq('table_number', Number(tableNumber))
+    .eq('customer_phone', phone)
+    .eq('payment_status', 'UNPAID')
+    .order('created_at', { ascending: true });
+
+  if (error) throw new Error(errMsg(error, 'Failed to fetch unpaid bill'));
+  const orders = (data || []).map(toOrder);
+  const total = orders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+  return { orders, total };
+};
+
+export const markOrdersPaidBulk = async (orderIds: string[]) => {
+  if (!orderIds.length) return { success: true };
+  const ids = orderIds.map((id) => Number(id));
+  const { error } = await supabase
+    .from('orders')
+    .update({ payment_status: 'PAID' })
+    .in('id', ids);
+
+  if (error) throw new Error(errMsg(error, 'Failed to mark orders as paid'));
+  return { success: true };
+};
+
+export const cancelPendingOrder = async (id: string, phone?: string) => {
+  let query = supabase.from('orders').delete().eq('id', Number(id)).eq('status', 'PENDING');
+  if (phone) query = query.eq('customer_phone', phone);
+  const { error } = await query;
+
+  if (error) throw new Error(errMsg(error, 'Failed to cancel order'));
+  return { success: true };
+};
+
 export const getActiveOrdersByTableAndPhone = async (tableNumber: number, phone: string) => {
   const { data, error } = await supabase
     .from('orders')

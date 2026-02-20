@@ -77,6 +77,36 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const settleCombinedBill = async (order: any) => {
+    if (!order.customerPhone) {
+      toast.error('Customer mobile number missing for this order.');
+      return;
+    }
+
+    try {
+      const bill = await api.getUnpaidBillByTableAndPhone(order.tableNumber, order.customerPhone);
+      if (!bill.orders.length) {
+        toast.info('No unpaid orders found for this customer at this table.');
+        return;
+      }
+
+      const orderLines = bill.orders
+        .map((o) => `#${o.id} - $${Number(o.total || 0).toFixed(2)}`)
+        .join('\\n');
+      const ok = window.confirm(
+        `Final Bill\\nTable: ${order.tableNumber}\\nPhone: ${order.customerPhone}\\n\\nOrders:\\n${orderLines}\\n\\nGrand Total: $${bill.total.toFixed(2)}\\n\\nMark all as paid?`,
+      );
+      if (!ok) return;
+
+      await api.markOrdersPaidBulk(bill.orders.map((o) => o.id));
+      toast.success(`Bill settled. ${bill.orders.length} orders marked paid.`);
+      loadOrders();
+    } catch (error) {
+      console.error('Error settling combined bill:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to settle combined bill');
+    }
+  };
+
   const filteredOrders = orders.filter(order => {
     if (filter === 'all') return true;
     if (filter === 'today') {
@@ -164,6 +194,7 @@ export default function AdminOrdersPage() {
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">{order.customerName}</p>
+                  <p className="text-xs text-muted-foreground">{order.customerPhone ? `Mobile: ${order.customerPhone}` : 'Mobile: -'}</p>
                   <p className="text-xs text-muted-foreground">
                     {format(new Date(order.createdAt), 'MMM dd, yyyy • h:mm a')}
                   </p>
@@ -171,13 +202,23 @@ export default function AdminOrdersPage() {
                 <div className="text-right">
                   <div className="text-2xl font-bold">${order.total.toFixed(2)}</div>
                   {order.paymentStatus === 'UNPAID' && (
-                    <Button
-                      size="sm"
-                      className="mt-2"
-                      onClick={() => markAsPaid(order.id)}
-                    >
-                      Mark as Paid
-                    </Button>
+                    <div className="mt-2 flex flex-col gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => markAsPaid(order.id)}
+                      >
+                        Mark this Paid
+                      </Button>
+                      {order.customerPhone && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => settleCombinedBill(order)}
+                        >
+                          Generate + Settle Final Bill
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
