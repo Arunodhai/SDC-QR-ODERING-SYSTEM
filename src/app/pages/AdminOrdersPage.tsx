@@ -20,8 +20,8 @@ const STATUS_COLORS = {
 };
 
 const PAYMENT_COLORS = {
-  PAID: 'bg-green-100 text-green-800',
-  UNPAID: 'bg-orange-100 text-orange-800',
+  PAID: 'bg-green-100 text-green-800 !rounded-sm',
+  UNPAID: 'bg-orange-100 text-orange-800 !rounded-sm',
 };
 const statusLabel = (status: string) => (status === 'COMPLETED' ? 'SERVED' : status);
 
