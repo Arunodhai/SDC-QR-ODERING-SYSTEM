@@ -330,7 +330,7 @@ export default function AdminOrdersPage() {
           </div>
         </div>
 
-        <div className="columns-1 xl:columns-2 2xl:columns-3 gap-4 [column-fill:_balance]">
+        <div className="columns-1 md:columns-2 xl:columns-3 gap-4 [column-fill:_balance]">
           {groupedOrders.map((group) => {
             const groupKey = `${group.tableNumber}__${group.customerPhone || 'NO_PHONE'}__${group.startedAt}`;
             const loadingKey = `${group.tableNumber}__${group.customerPhone || ''}`;
@@ -389,13 +389,11 @@ export default function AdminOrdersPage() {
                   </div>
                 </div>
 
-                <div className="mb-3 flex items-center justify-between rounded-lg border bg-white px-3 py-2">
-                  <p className="text-sm text-muted-foreground">
-                    {group.orders.length} round(s) hidden
-                  </p>
+                <div className="mb-2 flex items-center justify-end">
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
+                    className="h-8 px-2"
                     onClick={() =>
                       setExpandedGroups((prev) => ({ ...prev, [groupKey]: !prev[groupKey] }))
                     }

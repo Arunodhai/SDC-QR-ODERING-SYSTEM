@@ -10,6 +10,7 @@ type HourBucket = { label: string; count: number };
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<any[]>([]);
+  const [finalBills, setFinalBills] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,8 +40,12 @@ export default function AdminDashboardPage() {
 
   const loadData = async () => {
     try {
-      const res = await api.getOrders();
-      setOrders(res.orders || []);
+      const [ordersRes, billsRes] = await Promise.all([
+        api.getOrders(),
+        api.getFinalBills().catch(() => ({ bills: [] })),
+      ]);
+      setOrders(ordersRes.orders || []);
+      setFinalBills(billsRes.bills || []);
     } finally {
       setLoading(false);
     }
@@ -56,13 +61,47 @@ export default function AdminDashboardPage() {
     const paid = todayOrders.filter((o) => o.paymentStatus === 'PAID');
     const served = todayOrders.filter((o) => o.status === 'COMPLETED');
     const revenue = paid.reduce((sum, o) => sum + Number(o.total || 0), 0);
-    return {
-      total: todayOrders.length,
-      unpaid: unpaid.length,
-      served: served.length,
-      revenue,
-    };
+    return { unpaid: unpaid.length, served: served.length, revenue };
   }, [todayOrders]);
+
+  const todaySessionCount = useMemo(() => {
+    const map = new Map<string, any[]>();
+    todayOrders.forEach((order) => {
+      const key = `${order.tableNumber}__${order.customerPhone || 'NO_PHONE'}`;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(order);
+    });
+
+    let count = 0;
+    Array.from(map.values()).forEach((groupOrders) => {
+      const ordered = [...groupOrders].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      const tableNumber = Number(ordered[0]?.tableNumber || 0);
+      const phone = ordered[0]?.customerPhone || '';
+      const paidBills = (finalBills || []).filter(
+        (b: any) => b.isPaid && b.tableNumber === tableNumber && (b.customerPhone || '') === phone,
+      );
+
+      if (paidBills.length > 0) {
+        const orderById = new Map(ordered.map((o) => [String(o.id), o]));
+        const sessionBoundaryOrderIds = new Set<string>();
+        paidBills.forEach((bill: any) => {
+          const billOrders = (bill.orderIds || [])
+            .map((id: string) => orderById.get(String(id)))
+            .filter(Boolean)
+            .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          const lastOrderInBill = billOrders[billOrders.length - 1];
+          if (lastOrderInBill) sessionBoundaryOrderIds.add(String(lastOrderInBill.id));
+        });
+        for (let i = 0; i < ordered.length; i++) {
+          if (i === 0 || sessionBoundaryOrderIds.has(String(ordered[i - 1].id))) count += 1;
+        }
+      } else if (ordered.length > 0) {
+        count += 1;
+      }
+    });
+
+    return count;
+  }, [todayOrders, finalBills]);
 
   const statusDistribution = useMemo(() => {
     const keys = ['PENDING', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED'];
@@ -125,7 +164,7 @@ export default function AdminDashboardPage() {
             <div className="text-sm text-muted-foreground flex items-center gap-2">
               <ListOrdered className="w-4 h-4" /> Orders Today
             </div>
-            <div className="text-3xl font-bold mt-2">{stats.total}</div>
+            <div className="text-3xl font-bold mt-2">{todaySessionCount}</div>
           </Card>
           <Card className="glass-grid-card p-4">
             <div className="text-sm text-muted-foreground flex items-center gap-2">
