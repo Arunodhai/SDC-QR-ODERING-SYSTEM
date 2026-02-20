@@ -180,17 +180,31 @@ export default function OrderSuccessPage() {
         )}
 
         <div className="mt-5">
-          <div className="mb-2 text-sm font-semibold">Items</div>
+          <div className="mb-2 text-sm font-semibold">Items, Qty, Price</div>
           {loading && <p className="text-sm text-muted-foreground">Loading order details...</p>}
           {!loading && error && <p className="text-sm text-red-600">{error}</p>}
           {!loading && !error && order?.items?.length > 0 && (
             <div className="space-y-2">
-              {order.items.map((item: any, idx: number) => (
-                <div key={idx} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-                  <span>{item.quantity}x {item.name}</span>
-                  <span className="font-semibold">${(item.price * item.quantity).toFixed(2)}</span>
+              <div className="rounded-md border">
+                <div className="grid grid-cols-12 gap-2 border-b bg-gray-50 px-3 py-2 text-xs font-semibold text-muted-foreground">
+                  <span className="col-span-5">Item</span>
+                  <span className="col-span-2 text-center">Qty</span>
+                  <span className="col-span-2 text-right">Price</span>
+                  <span className="col-span-3 text-right">Total</span>
                 </div>
-              ))}
+                {order.items.map((item: any, idx: number) => (
+                  <div key={idx} className="grid grid-cols-12 gap-2 px-3 py-2 text-sm border-b last:border-b-0">
+                    <span className="col-span-5">{item.name}</span>
+                    <span className="col-span-2 text-center">{item.quantity}</span>
+                    <span className="col-span-2 text-right">${Number(item.price || 0).toFixed(2)}</span>
+                    <span className="col-span-3 text-right font-semibold">${(item.price * item.quantity).toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-semibold">Items Total</span>
+                <span className="font-bold">${Number(order.total || 0).toFixed(2)}</span>
+              </div>
             </div>
           )}
         </div>

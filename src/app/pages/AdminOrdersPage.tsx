@@ -86,11 +86,28 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const markGroupPaid = async (ordersToPay: any[]) => {
+  const markGroupPaid = async (group: { tableNumber: number; customerPhone: string }, ordersToPay: any[]) => {
     try {
-      const ids = (ordersToPay || []).map((o: any) => String(o.id));
-      await api.markOrdersPaidBulk(ids);
+      // Reuse currently generated preview bill when possible to avoid duplicate bill snapshots.
+      if (
+        billPreview?.id &&
+        !billPreview.isPaid &&
+        billPreview.tableNumber === group.tableNumber &&
+        billPreview.phone === group.customerPhone
+      ) {
+        await api.markFinalBillPaid(billPreview.id);
+      } else {
+        // Ensure payment is tracked in final_bills (for customer paid history), then mark paid.
+        const generated = await api.generateFinalBillByTableAndPhone(group.tableNumber, group.customerPhone);
+        if (generated.bill?.id) {
+          await api.markFinalBillPaid(generated.bill.id);
+        } else {
+          const ids = (ordersToPay || []).map((o: any) => String(o.id));
+          await api.markOrdersPaidBulk(ids);
+        }
+      }
       toast.success('Group marked as paid');
+      setBillPreview(null);
       loadOrders();
     } catch (error) {
       console.error('Error updating payment status:', error);
@@ -206,11 +223,11 @@ export default function AdminOrdersPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <Card className="glass-grid-card p-4">
-              <div className="text-sm text-muted-foreground">Total Orders</div>
+              <div className="text-sm text-muted-foreground">Customer Bills</div>
               <div className="text-3xl font-bold">{groupedOrders.length}</div>
             </Card>
             <Card className="glass-grid-card p-4">
-              <div className="text-sm text-muted-foreground">Unpaid Orders</div>
+              <div className="text-sm text-muted-foreground">Unpaid Bills</div>
               <div className="text-3xl font-bold">
                 {
                   groupedOrders.filter((group) =>
@@ -284,7 +301,12 @@ export default function AdminOrdersPage() {
                         </Button>
                         <Button
                           size="sm"
-                          onClick={() => markGroupPaid(unpaidOrders)}
+                          onClick={() =>
+                            markGroupPaid(
+                              { tableNumber: group.tableNumber, customerPhone: group.customerPhone },
+                              unpaidOrders,
+                            )
+                          }
                         >
                           Mark as Paid
                         </Button>

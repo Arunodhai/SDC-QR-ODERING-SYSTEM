@@ -430,6 +430,7 @@ export const getOrdersByTableAndPhone = async (tableNumber: number, phone: strin
     .select('*,order_items(*)')
     .eq('table_number', Number(tableNumber))
     .eq('customer_phone', phone)
+    .eq('payment_status', 'UNPAID')
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -546,17 +547,48 @@ export const getPaidBillHistoryByPhone = async (phone: string) => {
     throw new Error(errMsg(error, 'Failed to fetch paid bill history'));
   }
 
+  const bills = (data || []).map((row: any) => ({
+    idNum: Number(row.id),
+    id: String(row.id),
+    tableNumber: Number(row.table_number),
+    customerPhone: row.customer_phone,
+    total: Number(row.total_amount || 0),
+    lineItems: row.line_items || [],
+    orderIds: (row.order_ids || []).map((id: any) => String(id)),
+    orderIdsNum: (row.order_ids || []).map((id: any) => Number(id)),
+    isPaid: Boolean(row.is_paid),
+    createdAt: row.created_at,
+    paidAt: row.paid_at || null,
+  }));
+
+  const allOrderIds = Array.from(new Set(bills.flatMap((b) => b.orderIdsNum))).filter(Boolean);
+  let orderMap = new Map<number, any>();
+  if (allOrderIds.length) {
+    const { data: orderRows, error: orderError } = await supabase
+      .from('orders')
+      .select('*,order_items(*)')
+      .in('id', allOrderIds)
+      .order('created_at', { ascending: true });
+    if (orderError) throw new Error(errMsg(orderError, 'Failed to fetch bill round details'));
+    orderMap = new Map((orderRows || []).map((row: any) => [Number(row.id), toOrder(row)]));
+  }
+
   return {
-    bills: (data || []).map((row: any) => ({
-      id: String(row.id),
-      tableNumber: Number(row.table_number),
-      customerPhone: row.customer_phone,
-      total: Number(row.total_amount || 0),
-      lineItems: row.line_items || [],
-      orderIds: (row.order_ids || []).map((id: any) => String(id)),
-      isPaid: Boolean(row.is_paid),
-      createdAt: row.created_at,
-      paidAt: row.paid_at || null,
-    })),
+    bills: bills
+      .map((b) => ({
+        id: b.id,
+        tableNumber: b.tableNumber,
+        customerPhone: b.customerPhone,
+        total: b.total,
+        lineItems: b.lineItems,
+        orderIds: b.orderIds,
+        isPaid: b.isPaid,
+        createdAt: b.createdAt,
+        paidAt: b.paidAt,
+        rounds: b.orderIdsNum
+          .map((idNum: number) => orderMap.get(idNum))
+          .filter(Boolean),
+      }))
+      .filter((bill) => bill.rounds.length > 0),
   };
 };

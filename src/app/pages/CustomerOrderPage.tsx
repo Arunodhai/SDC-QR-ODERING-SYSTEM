@@ -44,6 +44,7 @@ export default function CustomerOrderPage() {
   const [latestFinalBill, setLatestFinalBill] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'menu' | 'bill'>('menu');
   const [paidBillHistory, setPaidBillHistory] = useState<any[]>([]);
+  const [expandedPaidBills, setExpandedPaidBills] = useState<Record<string, boolean>>({});
   const [loadingActiveOrders, setLoadingActiveOrders] = useState(false);
   const [isCartSheetOpen, setIsCartSheetOpen] = useState(false);
   const [showSelectedItems, setShowSelectedItems] = useState(false);
@@ -57,8 +58,11 @@ export default function CustomerOrderPage() {
     const params = new URLSearchParams(window.location.search);
     const fromQuery = (params.get('phone') || '').replace(/[^\d]/g, '');
     const returning = params.get('returning') === '1';
+    const nameKey = `sdc:first_name:${tableNumber || 'unknown'}:${fromQuery}`;
+    const storedName = fromQuery ? (sessionStorage.getItem(nameKey) || '') : '';
     if (fromQuery) {
       setCustomerPhone(fromQuery);
+      if (storedName) setCustomerName(storedName);
       if (returning && tableNumber) {
         setPhoneConfirmed(true);
         loadCustomerData(fromQuery);
@@ -157,6 +161,7 @@ export default function CustomerOrderPage() {
   };
 
   const isValidPhone = (value: string) => /^\d{8,15}$/.test(value.trim());
+  const isValidFirstName = (value: string) => /^[A-Za-z][A-Za-z\s]{0,29}$/.test(value.trim());
 
   const loadCustomerData = async (phone: string) => {
     if (!tableNumber || !phone) return;
@@ -198,19 +203,25 @@ export default function CustomerOrderPage() {
         latestFinalBillIdRef.current = '';
       }
     } catch (error) {
-      console.error('Error loading active orders:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to load your active orders');
+      console.error('Error loading orders:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to load your orders');
     } finally {
       setLoadingActiveOrders(false);
     }
   };
 
   const confirmPhone = () => {
+    if (!isValidFirstName(customerName)) {
+      toast.error('Enter first name (letters only)');
+      return;
+    }
     if (!isValidPhone(customerPhone)) {
       toast.error('Enter a valid mobile number (8-15 digits)');
       return;
     }
     const phone = customerPhone.trim();
+    const name = customerName.trim();
+    sessionStorage.setItem(`sdc:first_name:${tableNumber || 'unknown'}:${phone}`, name);
     setPhoneConfirmed(true);
     loadCustomerData(phone);
   };
@@ -232,6 +243,10 @@ export default function CustomerOrderPage() {
       toast.error('Enter a valid mobile number before placing order');
       return;
     }
+    if (!isValidFirstName(customerName)) {
+      toast.error('Enter first name before placing order');
+      return;
+    }
 
     try {
       const orderItems = Object.entries(cart).map(([itemId, qty]) => {
@@ -248,7 +263,7 @@ export default function CustomerOrderPage() {
       const res = await api.createOrder({
         tableId: tableNumber,
         tableNumber: Number(tableNumber),
-        customerName: customerName || 'Guest',
+        customerName: customerName.trim(),
         customerPhone: customerPhone.trim(),
         items: orderItems,
         total: getCartTotal(),
@@ -325,6 +340,7 @@ export default function CustomerOrderPage() {
                     setPaidBillHistory([]);
                     latestFinalBillIdRef.current = '';
                     setCustomerPhone('');
+                    setExpandedPaidBills({});
                     setCart({});
                     setItemNotes({});
                     setCustomerName('');
@@ -361,7 +377,7 @@ export default function CustomerOrderPage() {
                 onClick={() => setActiveTab('bill')}
               >
                 <ReceiptText className="w-4 h-4 mr-1" />
-                Your Bill
+                Your Bills
               </Button>
             </div>
           </div>
@@ -377,6 +393,11 @@ export default function CustomerOrderPage() {
               Use the same number later to retrieve your orders and bill history.
             </p>
             <div className="flex flex-col sm:flex-row gap-2">
+              <Input
+                placeholder="First name"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value.replace(/[^A-Za-z\s]/g, ''))}
+              />
               <Input
                 placeholder="Mobile number"
                 value={customerPhone}
@@ -400,7 +421,11 @@ export default function CustomerOrderPage() {
                       <div className="font-semibold">Order #{o.id}</div>
                       <div>
                         <span className="font-medium text-black">Status: </span>
-                        <span className={`font-medium ${STATUS_TEXT_COLORS[o.status] || 'text-muted-foreground'}`}>{o.status}</span>
+                        {o.status === 'COMPLETED' ? (
+                          <span className="inline-flex rounded px-2 py-0.5 bg-green-100 text-black font-medium">COMPLETED</span>
+                        ) : (
+                          <span className={`font-medium ${STATUS_TEXT_COLORS[o.status] || 'text-muted-foreground'}`}>{o.status}</span>
+                        )}
                       </div>
                     </div>
                     <Button
@@ -450,6 +475,19 @@ export default function CustomerOrderPage() {
                   <span className="font-semibold">Grand Total</span>
                   <span className="text-lg font-bold">${Number(currentBill.total || 0).toFixed(2)}</span>
                 </div>
+                {currentBill.orders?.length > 0 && (
+                  <div className="rounded-md border px-3 py-2">
+                    <p className="text-xs font-semibold mb-1">Rounds</p>
+                    <div className="space-y-1">
+                      {currentBill.orders.map((o: any, idx: number) => (
+                        <div key={o.id} className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>Round {idx + 1} • Order #{o.id}</span>
+                          <span>${Number(o.total || 0).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : latestFinalBill ? (
               <div className="space-y-2 text-sm">
@@ -488,18 +526,44 @@ export default function CustomerOrderPage() {
 
             {paidBillHistory.length > 0 && (
               <div className="mt-5">
-                <h4 className="font-semibold mb-2">Paid Bill History</h4>
+                <h4 className="font-semibold mb-2">Paid Bills History</h4>
                 <div className="space-y-2">
                   {paidBillHistory.map((bill) => (
                     <div key={bill.id} className="rounded-md border px-3 py-2 text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">Bill #{bill.id}</span>
+                      <button
+                        type="button"
+                        className="w-full flex items-center justify-between"
+                        onClick={() =>
+                          setExpandedPaidBills((prev) => ({ ...prev, [bill.id]: !prev[bill.id] }))
+                        }
+                      >
+                        <span className="font-medium flex items-center gap-2">
+                          <ChevronDown className={`h-4 w-4 transition-transform ${expandedPaidBills[bill.id] ? 'rotate-180' : ''}`} />
+                          Bill #{bill.id}
+                        </span>
                         <span className="font-semibold text-green-600">PAID</span>
-                      </div>
+                      </button>
                       <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
                         <span>Table {bill.tableNumber}</span>
                         <span>${Number(bill.total || 0).toFixed(2)}</span>
                       </div>
+                      {expandedPaidBills[bill.id] && (
+                        <div className="mt-2 rounded-md border bg-gray-50 p-2">
+                          {(bill.rounds || []).map((round: any, idx: number) => (
+                            <div key={round.id} className="mb-2 last:mb-0">
+                              <p className="text-xs font-semibold">Round {idx + 1} • Order #{round.id}</p>
+                              <div className="mt-1 space-y-1">
+                                {(round.items || []).map((item: any, ii: number) => (
+                                  <div key={ii} className="flex items-center justify-between text-xs text-muted-foreground">
+                                    <span>{item.quantity}x {item.name}</span>
+                                    <span>${Number(item.price * item.quantity).toFixed(2)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
