@@ -519,6 +519,33 @@ export const getLatestFinalBillByTableAndPhone = async (tableNumber: number, pho
   };
 };
 
+export const getFinalBills = async () => {
+  const { data, error } = await supabase
+    .from('final_bills')
+    .select('*')
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    if (String(error.message || '').includes('final_bills')) {
+      throw new Error('DB is missing final_bills table. Run sql/create_final_bills.sql in Supabase SQL editor.');
+    }
+    throw new Error(errMsg(error, 'Failed to fetch final bills'));
+  }
+
+  return {
+    bills: (data || []).map((row: any) => ({
+      id: String(row.id),
+      tableNumber: Number(row.table_number),
+      customerPhone: row.customer_phone || '',
+      orderIds: (row.order_ids || []).map((id: any) => String(id)),
+      isPaid: Boolean(row.is_paid),
+      total: Number(row.total_amount || 0),
+      createdAt: row.created_at,
+      paidAt: row.paid_at || null,
+    })),
+  };
+};
+
 export const generateFinalBillByTableAndPhone = async (tableNumber: number, phone: string) => {
   const bill = await getUnpaidBillByTableAndPhone(tableNumber, phone);
   if (!bill.orders.length) {

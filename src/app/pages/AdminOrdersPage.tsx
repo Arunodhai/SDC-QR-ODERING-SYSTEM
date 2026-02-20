@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import { DollarSign, Filter, ReceiptText } from 'lucide-react';
+import { ChevronDown, ChevronUp, Filter, ReceiptText } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -34,6 +34,7 @@ const billingRef = (order: any) => {
 export default function AdminOrdersPage() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<any[]>([]);
+  const [finalBills, setFinalBills] = useState<any[]>([]);
   const [filter, setFilter] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [billPreview, setBillPreview] = useState<{
@@ -48,6 +49,7 @@ export default function AdminOrdersPage() {
   } | null>(null);
   const [billLoadingKey, setBillLoadingKey] = useState<string>('');
   const [markingGroupPaid, setMarkingGroupPaid] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
@@ -77,8 +79,15 @@ export default function AdminOrdersPage() {
 
   const loadOrders = async () => {
     try {
-      const res = await api.getOrders();
-      setOrders(res.orders);
+      const [ordersRes, billsRes] = await Promise.all([
+        api.getOrders(),
+        api.getFinalBills().catch((err) => {
+          console.warn('Final bills not available for session split fallback:', err);
+          return { bills: [] };
+        }),
+      ]);
+      setOrders(ordersRes.orders);
+      setFinalBills(billsRes.bills || []);
     } catch (error) {
       console.error('Error loading orders:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to load orders');
@@ -158,30 +167,73 @@ export default function AdminOrdersPage() {
 
     Array.from(map.values()).forEach((group) => {
       const ordered = [...group.orders].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-      let currentSession: any[] = [];
+      const paidBills = (finalBills || []).filter(
+        (b: any) => b.isPaid && b.tableNumber === group.tableNumber && (b.customerPhone || '') === (group.customerPhone || ''),
+      );
+
       let sessionIndex = 1;
-      for (let i = 0; i < ordered.length; i++) {
-        const current = ordered[i];
-        const startNew =
-          i > 0 &&
-          current.paymentStatus === 'UNPAID' &&
-          current.status !== 'CANCELLED' &&
-          currentSession.some((o) => o.paymentStatus === 'PAID');
-        if (startNew && currentSession.length > 0) {
-          sessionized.push({
-            tableNumber: group.tableNumber,
-            customerPhone: group.customerPhone,
-            customerName: group.customerName,
-            sessionIndex,
-            orders: currentSession,
-            startedAt: currentSession[0].createdAt,
-            endedAt: currentSession[currentSession.length - 1].createdAt,
-          });
-          sessionIndex += 1;
-          currentSession = [];
+      let currentSession: any[] = [];
+
+      if (paidBills.length > 0) {
+        const orderById = new Map(ordered.map((o) => [String(o.id), o]));
+        const sessionBoundaryOrderIds = new Set<string>();
+
+        paidBills.forEach((bill: any) => {
+          const billOrders = (bill.orderIds || [])
+            .map((id: string) => orderById.get(String(id)))
+            .filter(Boolean)
+            .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          const lastOrderInBill = billOrders[billOrders.length - 1];
+          if (lastOrderInBill) {
+            sessionBoundaryOrderIds.add(String(lastOrderInBill.id));
+          }
+        });
+
+        for (let i = 0; i < ordered.length; i++) {
+          const current = ordered[i];
+          currentSession.push(current);
+          const shouldCloseSession =
+            i < ordered.length - 1 && sessionBoundaryOrderIds.has(String(current.id));
+          if (shouldCloseSession) {
+            sessionized.push({
+              tableNumber: group.tableNumber,
+              customerPhone: group.customerPhone,
+              customerName: group.customerName,
+              sessionIndex,
+              orders: currentSession,
+              startedAt: currentSession[0].createdAt,
+              endedAt: currentSession[currentSession.length - 1].createdAt,
+            });
+            sessionIndex += 1;
+            currentSession = [];
+          }
         }
-        currentSession.push(current);
+      } else {
+        // Fallback for legacy data without final_bills.
+        for (let i = 0; i < ordered.length; i++) {
+          const current = ordered[i];
+          const startNew =
+            i > 0 &&
+            current.paymentStatus === 'UNPAID' &&
+            current.status !== 'CANCELLED' &&
+            currentSession.some((o) => o.paymentStatus === 'PAID');
+          if (startNew && currentSession.length > 0) {
+            sessionized.push({
+              tableNumber: group.tableNumber,
+              customerPhone: group.customerPhone,
+              customerName: group.customerName,
+              sessionIndex,
+              orders: currentSession,
+              startedAt: currentSession[0].createdAt,
+              endedAt: currentSession[currentSession.length - 1].createdAt,
+            });
+            sessionIndex += 1;
+            currentSession = [];
+          }
+          currentSession.push(current);
+        }
       }
+
       if (currentSession.length > 0) {
         sessionized.push({
           tableNumber: group.tableNumber,
@@ -196,13 +248,7 @@ export default function AdminOrdersPage() {
     });
 
     return sessionized.sort((a, b) => new Date(b.endedAt).getTime() - new Date(a.endedAt).getTime());
-  }, [filteredOrders]);
-
-  const calculateRevenue = () => {
-    return filteredOrders
-      .filter((order) => order.paymentStatus === 'PAID')
-      .reduce((sum, order) => sum + order.total, 0);
-  };
+  }, [filteredOrders, finalBills]);
 
   const generateFinalBill = async (group: { tableNumber: number; customerPhone: string }) => {
     if (!group.customerPhone) {
@@ -268,30 +314,6 @@ export default function AdminOrdersPage() {
         <div className="mb-6">
           <h2 className="brand-display text-3xl font-bold mb-4">Orders</h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <Card className="glass-grid-card p-4">
-              <div className="text-sm text-muted-foreground">Total Orders</div>
-              <div className="text-3xl font-bold">{groupedOrders.length}</div>
-            </Card>
-            <Card className="glass-grid-card p-4">
-              <div className="text-sm text-muted-foreground">Unpaid Orders</div>
-              <div className="text-3xl font-bold">
-                {
-                  groupedOrders.filter((group) =>
-                    group.orders.some((o: any) => o.paymentStatus === 'UNPAID' && o.status !== 'CANCELLED')
-                  ).length
-                }
-              </div>
-            </Card>
-            <Card className="glass-grid-card p-4 border-green-200/60 bg-green-100/35">
-              <div className="text-sm text-muted-foreground flex items-center gap-1">
-                <DollarSign className="w-4 h-4" />
-                Revenue (Paid)
-              </div>
-              <div className="text-3xl font-bold text-green-700">${calculateRevenue().toFixed(2)}</div>
-            </Card>
-          </div>
-
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4" />
             <Select value={filter} onValueChange={setFilter}>
@@ -308,7 +330,7 @@ export default function AdminOrdersPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
+        <div className="columns-1 xl:columns-2 2xl:columns-3 gap-4 [column-fill:_balance]">
           {groupedOrders.map((group) => {
             const groupKey = `${group.tableNumber}__${group.customerPhone || 'NO_PHONE'}__${group.startedAt}`;
             const loadingKey = `${group.tableNumber}__${group.customerPhone || ''}`;
@@ -316,8 +338,9 @@ export default function AdminOrdersPage() {
             const groupTotal = group.orders
               .filter((o) => o.status !== 'CANCELLED')
               .reduce((sum, o) => sum + Number(o.total || 0), 0);
+            const isExpanded = Boolean(expandedGroups[groupKey]);
             return (
-              <Card key={groupKey} className="glass-grid-card p-4 h-fit">
+              <Card key={groupKey} className="glass-grid-card p-4 h-fit mb-4 break-inside-avoid">
                 <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <h3 className="text-lg font-bold">Table {group.tableNumber}</h3>
@@ -366,51 +389,78 @@ export default function AdminOrdersPage() {
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  {group.orders.map((order, idx) => (
-                    <div key={order.id} className="rounded-lg border bg-white p-3">
-                      <div className="mb-2 flex items-start justify-between gap-2">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold">Round {idx + 1}</span>
-                            <span className="text-xs text-muted-foreground">Order #{order.id}</span>
-                            <Badge className={STATUS_COLORS[order.status as keyof typeof STATUS_COLORS]}>
-                              {statusLabel(order.status)}
-                            </Badge>
-                            <Badge className={PAYMENT_COLORS[order.paymentStatus as keyof typeof PAYMENT_COLORS]}>
-                              {order.paymentStatus}
-                            </Badge>
-                          </div>
-                          <p className="text-xs font-semibold text-primary mt-1">Billing Ref: {billingRef(order)}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {format(new Date(order.createdAt), 'MMM dd, yyyy • h:mm a')}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          {order.status === 'CANCELLED' ? (
-                            <div>
-                              <div className="font-bold text-red-700">$0.00</div>
-                              <div className="text-xs text-red-600">Cancelled (excluded)</div>
-                            </div>
-                          ) : (
-                            <div className="font-bold">${Number(order.total || 0).toFixed(2)}</div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        {order.items.map((item: any, idx: number) => (
-                          <div key={idx} className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">
-                              {item.quantity}x {item.name}
-                            </span>
-                            <span>${(item.price * item.quantity).toFixed(2)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                <div className="mb-3 flex items-center justify-between rounded-lg border bg-white px-3 py-2">
+                  <p className="text-sm text-muted-foreground">
+                    {group.orders.length} round(s) hidden
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setExpandedGroups((prev) => ({ ...prev, [groupKey]: !prev[groupKey] }))
+                    }
+                  >
+                    {isExpanded ? (
+                      <>
+                        <ChevronUp className="w-4 h-4 mr-1" />
+                        Collapse
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="w-4 h-4 mr-1" />
+                        Expand
+                      </>
+                    )}
+                  </Button>
                 </div>
+
+                {isExpanded && (
+                  <div className="space-y-3">
+                    {group.orders.map((order, idx) => (
+                      <div key={order.id} className="rounded-lg border bg-white p-3">
+                        <div className="mb-2 flex items-start justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold">Round {idx + 1}</span>
+                              <span className="text-xs text-muted-foreground">Order #{order.id}</span>
+                              <Badge className={STATUS_COLORS[order.status as keyof typeof STATUS_COLORS]}>
+                                {statusLabel(order.status)}
+                              </Badge>
+                              <Badge className={PAYMENT_COLORS[order.paymentStatus as keyof typeof PAYMENT_COLORS]}>
+                                {order.paymentStatus}
+                              </Badge>
+                            </div>
+                            <p className="text-xs font-semibold text-primary mt-1">Billing Ref: {billingRef(order)}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(order.createdAt), 'MMM dd, yyyy • h:mm a')}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            {order.status === 'CANCELLED' ? (
+                              <div>
+                                <div className="font-bold text-red-700">$0.00</div>
+                                <div className="text-xs text-red-600">Cancelled (excluded)</div>
+                              </div>
+                            ) : (
+                              <div className="font-bold">${Number(order.total || 0).toFixed(2)}</div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          {order.items.map((item: any, idx: number) => (
+                            <div key={idx} className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">
+                                {item.quantity}x {item.name}
+                              </span>
+                              <span>${(item.price * item.quantity).toFixed(2)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </Card>
             );
           })}

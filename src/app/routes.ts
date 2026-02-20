@@ -7,6 +7,7 @@ import AdminLoginPage from "./pages/AdminLoginPage";
 import AdminMenuPage from "./pages/AdminMenuPage";
 import AdminTablesPage from "./pages/AdminTablesPage";
 import AdminOrdersPage from "./pages/AdminOrdersPage";
+import AdminDashboardPage from "./pages/AdminDashboardPage";
 import NotFoundPage from "./pages/NotFoundPage";
 
 export const router = createBrowserRouter([
@@ -33,6 +34,10 @@ export const router = createBrowserRouter([
   {
     path: "/admin/menu",
     Component: AdminMenuPage,
+  },
+  {
+    path: "/admin/dashboard",
+    Component: AdminDashboardPage,
   },
   {
     path: "/admin/tables",

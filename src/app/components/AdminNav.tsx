@@ -1,4 +1,4 @@
-import { Coffee, LayoutGrid, Table2, Receipt, LogOut, ChefHat } from 'lucide-react';
+import { Coffee, LayoutGrid, Table2, Receipt, LogOut, ChefHat, BarChart3 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router';
 import { Button } from './ui/button';
 import * as api from '../lib/api';
@@ -18,6 +18,7 @@ export default function AdminNav({ sticky = true }: { sticky?: boolean }) {
   };
 
   const navItems = [
+    { path: '/admin/dashboard', label: 'Dashboard', icon: BarChart3 },
     { path: '/admin/menu', label: 'Menu', icon: LayoutGrid },
     { path: '/admin/tables', label: 'Tables', icon: Table2 },
     { path: '/admin/orders', label: 'Orders', icon: Receipt },

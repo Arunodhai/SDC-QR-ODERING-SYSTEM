@@ -17,7 +17,7 @@ export default function AdminLoginPage() {
     (async () => {
       try {
         const session = await api.getAdminSession();
-        if (session) navigate('/admin/menu');
+        if (session) navigate('/admin/dashboard');
       } catch {
         // ignore session read failures on login page
       }
@@ -31,7 +31,7 @@ export default function AdminLoginPage() {
     try {
       await api.adminSignIn(email.trim(), password);
       toast.success('Login successful');
-      navigate('/admin/menu');
+      navigate('/admin/dashboard');
     } catch (error) {
       console.error('Admin login failed:', error);
       toast.error(error instanceof Error ? error.message : 'Invalid credentials');
