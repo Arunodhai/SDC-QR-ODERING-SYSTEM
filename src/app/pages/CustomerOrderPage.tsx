@@ -79,14 +79,17 @@ export default function CustomerOrderPage() {
     const params = new URLSearchParams(window.location.search);
     const fromQuery = (params.get('phone') || '').replace(/[^\d]/g, '');
     const returning = params.get('returning') === '1';
-    const nameKey = `sdc:first_name:${tableNumber || 'unknown'}:${fromQuery}`;
-    const storedName = fromQuery ? (sessionStorage.getItem(nameKey) || '') : '';
-    if (fromQuery) {
-      setCustomerPhone(fromQuery);
+    const activePhoneKey = `sdc:active_phone:${tableNumber || 'unknown'}`;
+    const fallbackPhone = (sessionStorage.getItem(activePhoneKey) || '').replace(/[^\d]/g, '');
+    const initialPhone = fromQuery || fallbackPhone;
+    const nameKey = `sdc:first_name:${tableNumber || 'unknown'}:${initialPhone}`;
+    const storedName = initialPhone ? (sessionStorage.getItem(nameKey) || '') : '';
+    if (initialPhone) {
+      setCustomerPhone(initialPhone);
       if (storedName) setCustomerName(storedName);
-      if (returning && tableNumber) {
+      if ((returning && tableNumber) || (!fromQuery && fallbackPhone)) {
         setPhoneConfirmed(true);
-        loadCustomerData(fromQuery);
+        loadCustomerData(initialPhone);
       }
     }
   }, [tableNumber]);
@@ -243,6 +246,7 @@ export default function CustomerOrderPage() {
     const phone = customerPhone.trim();
     const name = customerName.trim();
     sessionStorage.setItem(`sdc:first_name:${tableNumber || 'unknown'}:${phone}`, name);
+    sessionStorage.setItem(`sdc:active_phone:${tableNumber || 'unknown'}`, phone);
     setPhoneConfirmed(true);
     loadCustomerData(phone);
   };
@@ -360,6 +364,7 @@ export default function CustomerOrderPage() {
                     setLatestFinalBill(null);
                     setPaidBillHistory([]);
                     latestFinalBillIdRef.current = '';
+                    sessionStorage.removeItem(`sdc:active_phone:${tableNumber || 'unknown'}`);
                     setCustomerPhone('');
                     setExpandedPaidBills({});
                     setCart({});
@@ -398,7 +403,7 @@ export default function CustomerOrderPage() {
                 onClick={() => setActiveTab('bill')}
               >
                 <ReceiptText className="w-4 h-4 mr-1" />
-                Your Bills
+                Your Orders & Bills
               </Button>
             </div>
           </div>
@@ -409,7 +414,7 @@ export default function CustomerOrderPage() {
       <div className="max-w-5xl mx-auto px-4 py-6">
         {!phoneConfirmed && (
           <Card className="glass-grid-card p-4 mb-6">
-            <h3 className="font-semibold mb-2">Enter Mobile Number to Continue</h3>
+            <h3 className="font-semibold mb-2">Enter Name and Mobile number to continue</h3>
             <p className="text-sm text-muted-foreground mb-3">
               Use the same number later to retrieve your orders and bill history.
             </p>
@@ -429,7 +434,7 @@ export default function CustomerOrderPage() {
           </Card>
         )}
 
-        {phoneConfirmed && activeTab === 'menu' && (
+        {phoneConfirmed && activeTab === 'bill' && (
           <Card className="glass-grid-card p-4 mb-6">
             <h3 className="font-semibold mb-2">Your Orders</h3>
             {visibleUserOrders.length === 0 ? (
