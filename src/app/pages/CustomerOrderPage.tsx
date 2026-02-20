@@ -166,7 +166,12 @@ export default function CustomerOrderPage() {
       try {
         setLatestFinalBill(null);
         const finalBillRes = await api.getLatestFinalBillByTableAndPhone(Number(tableNumber), trimmedPhone);
-        if (finalBillRes.bill) {
+        const noLiveOrdersAndNoUnpaid =
+          (activeRes.orders || []).length === 0 && Number(billRes.total || 0) === 0;
+        if (noLiveOrdersAndNoUnpaid) {
+          setLatestFinalBill(null);
+          latestFinalBillIdRef.current = '';
+        } else if (finalBillRes.bill) {
           setLatestFinalBill(finalBillRes.bill);
           if (latestFinalBillIdRef.current && latestFinalBillIdRef.current !== finalBillRes.bill.id) {
             setBillChangedHighlight(true);
@@ -343,29 +348,32 @@ export default function CustomerOrderPage() {
               )}
             </div>
           </div>
-          {phoneConfirmed && (
-            <div className="mt-3 flex gap-1 rounded-xl border bg-white p-1 w-fit">
+        </div>
+      </div>
+
+      {phoneConfirmed && (
+        <div className="border-b bg-white/95">
+          <div className="max-w-5xl mx-auto px-4 py-3">
+            <div className="grid grid-cols-2 gap-2 rounded-xl border bg-white p-1">
               <Button
                 variant={activeTab === 'menu' ? 'default' : 'ghost'}
-                className="rounded-lg"
-                size="sm"
+                className="w-full rounded-lg"
                 onClick={() => setActiveTab('menu')}
               >
                 Menu
               </Button>
               <Button
                 variant={activeTab === 'bill' ? 'default' : 'ghost'}
-                className={`rounded-lg ${billChangedHighlight ? 'animate-pulse ring-1 ring-primary/50' : ''}`}
-                size="sm"
+                className={`w-full rounded-lg ${billChangedHighlight ? 'animate-pulse ring-1 ring-primary/50' : ''}`}
                 onClick={() => setActiveTab('bill')}
               >
                 <ReceiptText className="w-4 h-4 mr-1" />
                 Your Bill
               </Button>
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Menu */}
       <div className="max-w-5xl mx-auto px-4 py-6">
@@ -402,6 +410,13 @@ export default function CustomerOrderPage() {
                         <span className={`font-medium ${STATUS_TEXT_COLORS[o.status] || 'text-muted-foreground'}`}>{o.status}</span>
                       </div>
                     </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/order/success?orderId=${o.id}&table=${tableNumber}&phone=${encodeURIComponent(customerPhone)}`)}
+                    >
+                      View
+                    </Button>
                   </div>
                 ))}
               </div>

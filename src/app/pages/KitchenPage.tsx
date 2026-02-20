@@ -134,7 +134,7 @@ export default function KitchenPage() {
     <div className="page-shell">
       <div className="sticky top-0 z-20 border-b bg-white/95">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h1 className="brand-display text-2xl font-bold flex items-center gap-2">
                 <ChefHat className="w-6 h-6" />
