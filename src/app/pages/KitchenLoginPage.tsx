@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { ChefHat, Lock } from 'lucide-react';
+import { ChefHat, Lock, ArrowLeft } from 'lucide-react';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
@@ -37,6 +37,15 @@ export default function KitchenLoginPage() {
   return (
     <div className="page-shell flex items-center justify-center p-4">
       <Card className="max-w-md w-full p-8 bg-card/90">
+        <Button
+          variant="ghost"
+          className="mb-4 -ml-2"
+          onClick={() => navigate('/')}
+          type="button"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Access Selection
+        </Button>
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
             <ChefHat className="w-8 h-8 text-amber-700" />

@@ -1,9 +1,18 @@
 import { useMemo, useState, useEffect } from 'react';
-import { ChefHat, Clock, History } from 'lucide-react';
+import { ChefHat, ChevronDown, Clock, History, KeyRound, LogOut } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
 import * as api from '../lib/api';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -41,6 +50,11 @@ export default function KitchenPage() {
   const [viewMode, setViewMode] = useState<'active' | 'history'>('active');
   const [historyDate, setHistoryDate] = useState(localDateKey(new Date()));
   const [kitchenUserName, setKitchenUserName] = useState('Kitchen Manager');
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [updatingPassword, setUpdatingPassword] = useState(false);
   const isAdminKitchen = location.pathname.startsWith('/admin/');
 
   useEffect(() => {
@@ -83,6 +97,28 @@ export default function KitchenPage() {
   const handleKitchenLogout = async () => {
     await api.kitchenSignOut();
     navigate('/kitchen/login');
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast.error('New password and confirmation do not match');
+      return;
+    }
+
+    setUpdatingPassword(true);
+    try {
+      await api.changeKitchenPassword(currentPassword, newPassword);
+      toast.success('Kitchen password updated');
+      setShowPasswordDialog(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update password');
+    } finally {
+      setUpdatingPassword(false);
+    }
   };
 
   const loadOrders = async () => {
@@ -226,14 +262,25 @@ export default function KitchenPage() {
             <div className="flex items-center gap-4 rounded-xl border bg-white px-4 py-3">
               <div className="min-w-0">
                 <p className="truncate text-base font-semibold text-black">{kitchenUserName}</p>
-                <p className="mt-0.5 flex items-center gap-1.5 text-xs uppercase tracking-wide text-muted-foreground">
-                  <span className="inline-block h-2 w-2 rounded-full bg-[#00ff00] animate-pulse" />
-                  Kitchen manager access
-                </p>
+                <p className="mt-0.5 text-xs uppercase tracking-wide text-muted-foreground">Kitchen manager access</p>
               </div>
-              <Button variant="outline" size="sm" onClick={handleKitchenLogout}>
-                Logout
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="shrink-0">
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem onClick={() => setShowPasswordDialog(true)}>
+                    <KeyRound className="h-4 w-4" />
+                    Change Password
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleKitchenLogout}>
+                    <LogOut className="h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
         </div>
@@ -364,6 +411,53 @@ export default function KitchenPage() {
           </div>
         )}
       </div>
+
+      {!isAdminKitchen && (
+        <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Change Kitchen Password</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="current-kitchen-password">Current Password</Label>
+                <Input
+                  id="current-kitchen-password"
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-kitchen-password">New Password</Label>
+                <Input
+                  id="new-kitchen-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                  minLength={6}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-kitchen-password">Confirm New Password</Label>
+                <Input
+                  id="confirm-kitchen-password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  minLength={6}
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={updatingPassword}>
+                {updatingPassword ? 'Updating Password...' : 'Update Password'}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

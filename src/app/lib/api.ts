@@ -6,6 +6,14 @@ const supabase = createClient(supabaseUrl, publicAnonKey);
 const imageBucket = 'menu-images';
 const kitchenSessionKey = 'sdc:kitchen-session-v1';
 
+const kitchenAuthSetupHint =
+  'Kitchen auth is not configured in DB. Run sql/create_kitchen_auth.sql in Supabase SQL editor.';
+
+const isMissingKitchenAuthRpc = (error: any) => {
+  const message = String(error?.message || '');
+  return message.includes('verify_kitchen_password') || message.includes('change_kitchen_password');
+};
+
 const errMsg = (error: any, fallback: string) => {
   if (!error) return fallback;
   return error.message || error.error_description || fallback;
@@ -82,10 +90,23 @@ export const getAdminSession = async () => {
 };
 
 export const kitchenSignIn = async (password: string, name = 'Kitchen Manager') => {
-  const configuredPassword = import.meta.env.VITE_KITCHEN_PASSWORD || 'kitchen123';
-  if (String(password || '').trim() !== configuredPassword) {
+  const enteredPassword = String(password || '').trim();
+  if (!enteredPassword) {
+    throw new Error('Kitchen password is required');
+  }
+
+  const { data, error } = await supabase.rpc('verify_kitchen_password', { p_password: enteredPassword });
+  if (error) {
+    if (isMissingKitchenAuthRpc(error)) {
+      throw new Error(kitchenAuthSetupHint);
+    }
+    throw new Error(errMsg(error, 'Failed to verify kitchen password'));
+  }
+
+  if (!data) {
     throw new Error('Invalid kitchen password');
   }
+
   const session = {
     role: 'kitchen',
     name: String(name || 'Kitchen Manager').trim() || 'Kitchen Manager',
@@ -108,6 +129,29 @@ export const getKitchenSession = async () => {
 
 export const kitchenSignOut = async () => {
   localStorage.removeItem(kitchenSessionKey);
+  return { success: true };
+};
+
+export const changeKitchenPassword = async (currentPassword: string, nextPassword: string) => {
+  const trimmedNext = String(nextPassword || '').trim();
+  if (trimmedNext.length < 6) {
+    throw new Error('New password must be at least 6 characters');
+  }
+
+  const { data, error } = await supabase.rpc('change_kitchen_password', {
+    p_current: String(currentPassword || '').trim(),
+    p_next: trimmedNext,
+  });
+  if (error) {
+    if (isMissingKitchenAuthRpc(error)) {
+      throw new Error(kitchenAuthSetupHint);
+    }
+    throw new Error(errMsg(error, 'Failed to update kitchen password'));
+  }
+  if (!data) {
+    throw new Error('Current password is incorrect');
+  }
+
   return { success: true };
 };
 
