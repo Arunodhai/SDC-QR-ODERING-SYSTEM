@@ -476,7 +476,6 @@ export default function CustomerOrderPage() {
                 className="w-full rounded-lg"
                 onClick={() => setActiveTab('bill')}
               >
-                <ReceiptText className="w-4 h-4 mr-1" />
                 Orders & Bills
               </Button>
             </div>
