@@ -325,7 +325,13 @@ export default function AdminOrdersPage() {
 
           <div className="flex flex-wrap items-center gap-2">
             <Filter className="w-4 h-4" />
-            <Select value={filter} onValueChange={setFilter}>
+            <Select
+              value={filter}
+              onValueChange={(value) => {
+                setFilter(value);
+                if (value === 'today') setFilterDate('');
+              }}
+            >
               <SelectTrigger className="w-48">
                 <SelectValue />
               </SelectTrigger>
@@ -336,17 +342,21 @@ export default function AdminOrdersPage() {
                 <SelectItem value="UNPAID">Unpaid Only</SelectItem>
               </SelectContent>
             </Select>
-            <input
-              type="date"
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
-              className="h-9 rounded-md border px-3 text-sm"
-              aria-label="Filter by date"
-            />
-            {filterDate && (
-              <Button variant="outline" size="sm" onClick={() => setFilterDate('')}>
-                Clear Date
-              </Button>
+            {filter !== 'today' && (
+              <>
+                <input
+                  type="date"
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                  className="h-9 rounded-md border px-3 text-sm"
+                  aria-label="Filter by date"
+                />
+                {filterDate && (
+                  <Button variant="outline" size="sm" onClick={() => setFilterDate('')}>
+                    Clear Date
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </div>

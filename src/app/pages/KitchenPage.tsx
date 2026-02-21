@@ -220,9 +220,10 @@ export default function KitchenPage() {
                   <Card key={group.phone} className="glass-grid-card p-4">
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                       <div>
-                        <p className="text-sm text-muted-foreground">Name: {group.customerName || 'Guest'}</p>
-                        <h3 className="text-lg font-bold">Mobile: {phoneLabel}</h3>
                         <p className="text-sm text-muted-foreground">Table(s): {tables}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Name: {group.customerName || 'Guest'} • Mobile: {phoneLabel}
+                        </p>
                       </div>
                       <p className="text-xs text-muted-foreground">
                         First order {formatDistanceToNow(new Date(group.firstAt), { addSuffix: true })}
@@ -249,7 +250,6 @@ export default function KitchenPage() {
                                     <div className="flex items-start justify-between mb-1">
                                       <div>
                                         <p className="text-sm font-semibold">Order #{order.id}</p>
-                                        <p className="text-xs text-muted-foreground">Table {order.tableNumber}</p>
                                       </div>
                                       <span className="text-xs text-muted-foreground flex items-center gap-1">
                                         <Clock className="w-3 h-3" />
