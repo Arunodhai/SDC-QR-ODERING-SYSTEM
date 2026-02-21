@@ -125,7 +125,7 @@ export default function OrderSuccessPage() {
   };
 
   return (
-    <div className="page-shell flex items-center justify-center bg-[radial-gradient(circle_at_20%_10%,rgba(56,189,248,0.14),transparent_35%),radial-gradient(circle_at_85%_90%,rgba(20,184,166,0.16),transparent_30%),linear-gradient(180deg,#f8fafc,#eef2ff)] p-4">
+    <div className="page-shell flex items-center justify-center bg-[radial-gradient(circle_at_18%_10%,rgba(20,184,166,0.18),transparent_34%),radial-gradient(circle_at_86%_90%,rgba(16,185,129,0.2),transparent_32%),linear-gradient(180deg,#f0fdf4,#ecfdf5)] p-4">
       <div className="max-w-xl w-full rounded-3xl border border-white/70 bg-white/70 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.12)] backdrop-blur-xl">
         <div className="text-center">
           {statusIcon}
@@ -160,7 +160,7 @@ export default function OrderSuccessPage() {
           <div className="mb-3 flex items-center justify-between">
             <div className="text-sm font-semibold">Progress</div>
             {status !== 'CANCELLED' && (
-              <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
                 Step {activeStep + 1} / {STATUS_STEPS.length}
               </span>
             )}
@@ -170,12 +170,7 @@ export default function OrderSuccessPage() {
               Order Cancelled
             </div>
           ) : (
-          <div className="relative px-2">
-            <div className="absolute left-6 right-6 top-5 h-2 rounded-full bg-white/70 shadow-inner" />
-            <div
-              className="absolute left-6 top-5 h-2 rounded-full bg-gradient-to-r from-cyan-400 via-teal-400 to-indigo-500 transition-all duration-500"
-              style={{ width: `calc((100% - 3rem) * ${activeStep / (STATUS_STEPS.length - 1)})` }}
-            />
+          <div className="rounded-2xl border border-white/80 bg-white/55 p-3 backdrop-blur-sm">
             <div className="relative grid grid-cols-4 gap-2">
             {STATUS_STEPS.map((step, idx) => {
               const isActive = idx <= activeStep;
@@ -183,10 +178,10 @@ export default function OrderSuccessPage() {
               return (
               <div key={step} className="text-center">
                 <div
-                  className={`mx-auto mb-2 mt-1 flex h-10 w-10 items-center justify-center rounded-full ring-4 transition-all ${
+                  className={`mx-auto mb-2 flex h-9 w-full max-w-[78px] items-center justify-center rounded-xl border transition-all ${
                     isActive
-                      ? `bg-gradient-to-br ${stepStyle.dot} ${stepStyle.ring} shadow-[0_8px_24px_rgba(14,116,144,0.25)]`
-                      : 'bg-white/80 ring-slate-200/80'
+                      ? `bg-gradient-to-r ${stepStyle.dot} border-white/80 shadow-[0_10px_22px_rgba(5,150,105,0.25)]`
+                      : 'bg-white/90 border-slate-200/80'
                   }`}
                 >
                   <span className={`h-2.5 w-2.5 rounded-full ${isActive ? 'bg-white/95' : 'bg-slate-300'}`} />
@@ -215,7 +210,6 @@ export default function OrderSuccessPage() {
         )}
 
         <div className="mt-5">
-          <div className="mb-2 text-sm font-semibold">Items, Qty, Price</div>
           {loading && <p className="text-sm text-muted-foreground">Loading order details...</p>}
           {!loading && error && <p className="text-sm text-red-600">{error}</p>}
           {!loading && !error && order?.items?.length > 0 && (
