@@ -119,7 +119,12 @@ export default function KitchenPage() {
         const sorted = [...groupOrders].sort(
           (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
         );
-        return { phone, orders: sorted, firstAt: sorted[0]?.createdAt };
+        return {
+          phone,
+          customerName: sorted.find((o: any) => o.customerName)?.customerName || 'Guest',
+          orders: sorted,
+          firstAt: sorted[0]?.createdAt,
+        };
       })
       .sort((a, b) => new Date(a.firstAt).getTime() - new Date(b.firstAt).getTime());
   }, [activeOrders]);
@@ -138,6 +143,7 @@ export default function KitchenPage() {
         key,
         tableNumber: Number(tableStr),
         phone: phone === 'NO_PHONE' ? '' : phone,
+        customerName: orders.find((o: any) => o.customerName)?.customerName || 'Guest',
         orders,
       };
     });
@@ -214,6 +220,7 @@ export default function KitchenPage() {
                   <Card key={group.phone} className="glass-grid-card p-4">
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                       <div>
+                        <p className="text-sm text-muted-foreground">Name: {group.customerName || 'Guest'}</p>
                         <h3 className="text-lg font-bold">Mobile: {phoneLabel}</h3>
                         <p className="text-sm text-muted-foreground">Table(s): {tables}</p>
                       </div>
@@ -291,6 +298,7 @@ export default function KitchenPage() {
               <Card key={group.key} className="glass-grid-card p-4">
                 <div className="mb-3">
                   <h3 className="text-lg font-bold">Table {group.tableNumber}</h3>
+                  <p className="text-sm text-muted-foreground">Name: {group.customerName || 'Guest'}</p>
                   <p className="text-sm text-muted-foreground">Mobile: {group.phone || '-'}</p>
                 </div>
                 <div className="space-y-2">

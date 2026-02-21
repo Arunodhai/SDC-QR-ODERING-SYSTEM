@@ -36,6 +36,7 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [finalBills, setFinalBills] = useState<any[]>([]);
   const [filter, setFilter] = useState<string>('all');
+  const [filterDate, setFilterDate] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [billPreview, setBillPreview] = useState<{
     id?: string;
@@ -128,6 +129,14 @@ export default function AdminOrdersPage() {
   const filteredOrders = useMemo(
     () =>
       orders.filter((order) => {
+        if (filterDate) {
+          const orderDate = new Date(order.createdAt);
+          const y = orderDate.getFullYear();
+          const m = String(orderDate.getMonth() + 1).padStart(2, '0');
+          const d = String(orderDate.getDate()).padStart(2, '0');
+          const key = `${y}-${m}-${d}`;
+          if (key !== filterDate) return false;
+        }
         if (filter === 'all') return true;
         if (filter === 'today') {
           const today = new Date().toDateString();
@@ -135,7 +144,7 @@ export default function AdminOrdersPage() {
         }
         return order.paymentStatus === filter;
       }),
-    [orders, filter],
+    [orders, filter, filterDate],
   );
 
   const groupedOrders = useMemo(() => {
@@ -314,7 +323,7 @@ export default function AdminOrdersPage() {
         <div className="mb-6">
           <h2 className="brand-display text-3xl font-bold mb-4">Orders</h2>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Filter className="w-4 h-4" />
             <Select value={filter} onValueChange={setFilter}>
               <SelectTrigger className="w-48">
@@ -327,6 +336,18 @@ export default function AdminOrdersPage() {
                 <SelectItem value="UNPAID">Unpaid Only</SelectItem>
               </SelectContent>
             </Select>
+            <input
+              type="date"
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+              className="h-9 rounded-md border px-3 text-sm"
+              aria-label="Filter by date"
+            />
+            {filterDate && (
+              <Button variant="outline" size="sm" onClick={() => setFilterDate('')}>
+                Clear Date
+              </Button>
+            )}
           </div>
         </div>
 
