@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router';
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Minus, ShoppingCart, Coffee, Trash2, ChevronDown, ChevronUp, ReceiptText } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, Coffee, Trash2, ChevronDown, ChevronUp, ReceiptText, BellRing } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -60,6 +60,9 @@ export default function CustomerOrderPage() {
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
+  const [itemModifiers, setItemModifiers] = useState<
+    Record<string, { spice?: string; sugar?: string; addons?: string }>
+  >({});
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [phoneConfirmed, setPhoneConfirmed] = useState(false);
@@ -76,6 +79,7 @@ export default function CustomerOrderPage() {
   const [loadingActiveOrders, setLoadingActiveOrders] = useState(false);
   const [isCartSheetOpen, setIsCartSheetOpen] = useState(false);
   const [showSelectedItems, setShowSelectedItems] = useState(false);
+  const [placingOrder, setPlacingOrder] = useState(false);
   const [swipeStart, setSwipeStart] = useState<{ id: string; x: number } | null>(null);
   const [swipeOffsetById, setSwipeOffsetById] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -174,6 +178,11 @@ export default function CustomerOrderPage() {
       delete next[itemId];
       return next;
     });
+    setItemModifiers((prev) => {
+      const next = { ...prev };
+      delete next[itemId];
+      return next;
+    });
   };
 
   const getCartTotal = () => {
@@ -181,6 +190,16 @@ export default function CustomerOrderPage() {
       const item = menuItems.find(i => i.id === itemId);
       return sum + (item?.price || 0) * qty;
     }, 0);
+  };
+
+  const formatModifierLabel = (itemId: string) => {
+    const mods = itemModifiers[itemId];
+    if (!mods) return '';
+    const parts: string[] = [];
+    if (mods.spice) parts.push(`Spice: ${mods.spice}`);
+    if (mods.sugar) parts.push(`Sugar: ${mods.sugar}`);
+    if ((mods.addons || '').trim()) parts.push(`Add-ons: ${mods.addons?.trim()}`);
+    return parts.join(', ');
   };
 
   const getCartDetails = () => {
@@ -195,9 +214,10 @@ export default function CustomerOrderPage() {
           price: Number(item.price || 0),
           subtotal: Number(item.price || 0) * qty,
           note: itemNotes[itemId] || '',
+          modifiers: formatModifierLabel(itemId),
         };
       })
-      .filter(Boolean) as Array<{ id: string; name: string; qty: number; price: number; subtotal: number; note: string }>;
+      .filter(Boolean) as Array<{ id: string; name: string; qty: number; price: number; subtotal: number; note: string; modifiers: string }>;
   };
 
   const getCartItemCount = () => {
@@ -279,7 +299,20 @@ export default function CustomerOrderPage() {
     return () => clearInterval(timer);
   }, [phoneConfirmed, customerPhone, tableNumber]);
 
+  useEffect(() => {
+    if (!phoneConfirmed || !tableNumber || !customerPhone) return;
+    const unsubscribe = api.subscribeToOrderChanges((payload) => {
+      const row = payload?.new || payload?.old;
+      if (!row) return;
+      if (Number(row.table_number) !== Number(tableNumber)) return;
+      if ((row.customer_phone || '') !== customerPhone) return;
+      loadCustomerData(customerPhone);
+    });
+    return () => unsubscribe();
+  }, [phoneConfirmed, tableNumber, customerPhone]);
+
   const placeOrder = async () => {
+    if (placingOrder) return;
     if (Object.keys(cart).length === 0) {
       toast.error('Your cart is empty');
       return;
@@ -293,15 +326,28 @@ export default function CustomerOrderPage() {
       return;
     }
 
+    const throttleKey = `sdc:last-order-submit:${tableNumber}:${customerPhone.trim()}`;
+    const lastSubmitAt = Number(sessionStorage.getItem(throttleKey) || 0);
+    const now = Date.now();
+    if (now - lastSubmitAt < 7000) {
+      toast.error('Please wait a few seconds before placing another order.');
+      return;
+    }
+
     try {
+      setPlacingOrder(true);
+      sessionStorage.setItem(throttleKey, String(now));
       const orderItems = Object.entries(cart).map(([itemId, qty]) => {
         const item = menuItems.find(i => i.id === itemId);
+        const modifierText = formatModifierLabel(itemId);
+        const freeNote = (itemNotes[itemId] || '').trim();
+        const finalNote = [modifierText, freeNote].filter(Boolean).join(' | ');
         return {
           id: itemId,
           name: item.name,
           price: item.price,
           quantity: qty,
-          note: (itemNotes[itemId] || '').trim(),
+          note: finalNote,
         };
       });
 
@@ -320,6 +366,24 @@ export default function CustomerOrderPage() {
     } catch (error) {
       console.error('Error placing order:', error);
       toast.error('Failed to place order');
+      sessionStorage.removeItem(throttleKey);
+    } finally {
+      setPlacingOrder(false);
+    }
+  };
+
+  const callStaff = async () => {
+    if (!phoneConfirmed || !tableNumber) return;
+    try {
+      await api.createServiceRequest({
+        tableNumber: Number(tableNumber),
+        customerName: customerName.trim() || 'Guest',
+        customerPhone: customerPhone.trim(),
+        message: 'Customer requested assistance',
+      });
+      toast.success('Staff has been notified.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to notify staff');
     }
   };
 
@@ -389,10 +453,17 @@ export default function CustomerOrderPage() {
                     setExpandedPaidBills({});
                     setCart({});
                     setItemNotes({});
+                    setItemModifiers({});
                     setCustomerName('');
                   }}
                 >
                   Change Number
+                </Button>
+              )}
+              {phoneConfirmed && (
+                <Button variant="outline" size="sm" onClick={callStaff}>
+                  <BellRing className="w-4 h-4 mr-1" />
+                  Need Assistance
                 </Button>
               )}
               {getCartItemCount() > 0 && (
@@ -766,6 +837,7 @@ export default function CustomerOrderPage() {
                       <div>
                         <div>{ci.qty}x {ci.name}</div>
                         {ci.note ? <div className="text-xs text-muted-foreground">Note: {ci.note}</div> : null}
+                        {ci.modifiers ? <div className="text-xs text-muted-foreground">Options: {ci.modifiers}</div> : null}
                       </div>
                       <span className="font-semibold">${ci.subtotal.toFixed(2)}</span>
                     </div>
@@ -837,6 +909,48 @@ export default function CustomerOrderPage() {
                             <div className="font-semibold">${ci.subtotal.toFixed(2)}</div>
                           </div>
                           <div className="mt-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
+                              <select
+                                className="h-9 rounded-md border px-2 text-xs"
+                                value={itemModifiers[ci.id]?.spice || ''}
+                                onChange={(e) =>
+                                  setItemModifiers((prev) => ({
+                                    ...prev,
+                                    [ci.id]: { ...(prev[ci.id] || {}), spice: e.target.value || undefined },
+                                  }))
+                                }
+                              >
+                                <option value="">Spice level</option>
+                                <option value="Mild">Mild</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Hot">Hot</option>
+                              </select>
+                              <select
+                                className="h-9 rounded-md border px-2 text-xs"
+                                value={itemModifiers[ci.id]?.sugar || ''}
+                                onChange={(e) =>
+                                  setItemModifiers((prev) => ({
+                                    ...prev,
+                                    [ci.id]: { ...(prev[ci.id] || {}), sugar: e.target.value || undefined },
+                                  }))
+                                }
+                              >
+                                <option value="">Sugar</option>
+                                <option value="No sugar">No sugar</option>
+                                <option value="Less sugar">Less sugar</option>
+                                <option value="Normal">Normal</option>
+                              </select>
+                              <Input
+                                placeholder="Add-ons"
+                                value={itemModifiers[ci.id]?.addons || ''}
+                                onChange={(e) =>
+                                  setItemModifiers((prev) => ({
+                                    ...prev,
+                                    [ci.id]: { ...(prev[ci.id] || {}), addons: e.target.value },
+                                  }))
+                                }
+                              />
+                            </div>
                             <Input
                               placeholder="Add note (e.g., less spicy, no onion)"
                               value={itemNotes[ci.id] || ''}
@@ -874,8 +988,8 @@ export default function CustomerOrderPage() {
               <span className="text-base font-semibold md:text-lg">Total</span>
               <span className="text-xl font-bold md:text-2xl">${getCartTotal().toFixed(2)}</span>
             </div>
-            <Button onClick={placeOrder} className="w-full" size="lg">
-              Place Order
+            <Button onClick={placeOrder} className="w-full" size="lg" disabled={placingOrder}>
+              {placingOrder ? 'Placing Order...' : 'Place Order'}
             </Button>
           </div>
         </div>

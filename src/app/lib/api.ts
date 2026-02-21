@@ -854,3 +854,79 @@ export const getPaidBillHistoryByPhone = async (phone: string) => {
     bills: enrichedBills.filter(Boolean),
   };
 };
+
+export const subscribeToOrderChanges = (onChange: (payload: any) => void) => {
+  const channel = supabase
+    .channel(`orders-live-${Math.random().toString(36).slice(2)}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'orders' },
+      (payload) => onChange(payload),
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+};
+
+export const createServiceRequest = async ({
+  tableNumber,
+  customerName,
+  customerPhone,
+  type = 'ASSISTANCE',
+  message = 'Need assistance at table',
+}: {
+  tableNumber: number;
+  customerName?: string;
+  customerPhone?: string;
+  type?: string;
+  message?: string;
+}) => {
+  const { data, error } = await supabase
+    .from('service_requests')
+    .insert({
+      table_number: Number(tableNumber),
+      customer_name: customerName || null,
+      customer_phone: customerPhone || null,
+      request_type: type,
+      message,
+      status: 'OPEN',
+    })
+    .select()
+    .single();
+
+  if (error) {
+    if (String(error.message || '').includes('service_requests')) {
+      throw new Error('DB is missing service_requests table. Run sql/create_service_requests.sql in Supabase SQL editor.');
+    }
+    throw new Error(errMsg(error, 'Failed to create service request'));
+  }
+
+  return { request: data };
+};
+
+export const getOpenServiceRequests = async () => {
+  const { data, error } = await supabase
+    .from('service_requests')
+    .select('*')
+    .eq('status', 'OPEN')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    if (String(error.message || '').includes('service_requests')) {
+      throw new Error('DB is missing service_requests table. Run sql/create_service_requests.sql in Supabase SQL editor.');
+    }
+    throw new Error(errMsg(error, 'Failed to fetch service requests'));
+  }
+  return { requests: data || [] };
+};
+
+export const resolveServiceRequest = async (id: string) => {
+  const { error } = await supabase
+    .from('service_requests')
+    .update({ status: 'RESOLVED' })
+    .eq('id', Number(id));
+  if (error) throw new Error(errMsg(error, 'Failed to resolve service request'));
+  return { success: true };
+};

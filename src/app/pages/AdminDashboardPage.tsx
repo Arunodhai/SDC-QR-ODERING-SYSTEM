@@ -8,6 +8,7 @@ import {
   DollarSign,
   ListChecks,
   ListOrdered,
+  Printer,
   TrendingUp,
   Users,
 } from 'lucide-react';
@@ -278,6 +279,61 @@ export default function AdminDashboardPage() {
 
   const currentQueue = stats.preparing + stats.ready + stats.unpaid;
 
+  const dailyClose = useMemo(() => {
+    const paidOrders = todayOrders.filter((o) => o.paymentStatus === 'PAID' && o.status !== 'CANCELLED');
+    const unpaidOrders = todayOrders.filter((o) => o.paymentStatus === 'UNPAID' && o.status !== 'CANCELLED');
+    const cancelledOrders = todayOrders.filter((o) => o.status === 'CANCELLED');
+    return {
+      paidCount: paidOrders.length,
+      unpaidCount: unpaidOrders.length,
+      cancelledCount: cancelledOrders.length,
+      paidTotal: paidOrders.reduce((s, o) => s + Number(o.total || 0), 0),
+      unpaidTotal: unpaidOrders.reduce((s, o) => s + Number(o.total || 0), 0),
+      cancelledTotal: cancelledOrders.reduce((s, o) => s + Number(o.total || 0), 0),
+    };
+  }, [todayOrders]);
+
+  const printDailyCloseReport = () => {
+    const topRows = topItems
+      .map(
+        (item, i) =>
+          `<tr>
+            <td style="padding:8px;border-bottom:1px solid #ddd">${i + 1}. ${item.name}</td>
+            <td style="padding:8px;border-bottom:1px solid #ddd;text-align:center">${item.qty}</td>
+            <td style="padding:8px;border-bottom:1px solid #ddd;text-align:right">${formatCurrency(item.sales)}</td>
+          </tr>`,
+      )
+      .join('');
+    const html = `
+      <html><head><title>Daily Close Report</title></head>
+      <body style="font-family:Arial,sans-serif;padding:20px;color:#111">
+        <h2 style="margin:0 0 10px">Stories de Café - Daily Close Report</h2>
+        <p style="margin:0 0 2px">Date: ${new Date().toLocaleDateString()}</p>
+        <p style="margin:0 0 14px">Generated: ${new Date().toLocaleString()}</p>
+        <h3 style="margin:10px 0 8px">Order Summary</h3>
+        <p style="margin:2px 0">Paid: ${dailyClose.paidCount} (${formatCurrency(dailyClose.paidTotal)})</p>
+        <p style="margin:2px 0">Unpaid: ${dailyClose.unpaidCount} (${formatCurrency(dailyClose.unpaidTotal)})</p>
+        <p style="margin:2px 0">Cancelled: ${dailyClose.cancelledCount} (${formatCurrency(dailyClose.cancelledTotal)})</p>
+        <h3 style="margin:14px 0 8px">Top Items</h3>
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr>
+            <th style="text-align:left;padding:8px;border-bottom:1px solid #333">Item</th>
+            <th style="text-align:center;padding:8px;border-bottom:1px solid #333">Qty</th>
+            <th style="text-align:right;padding:8px;border-bottom:1px solid #333">Sales</th>
+          </tr></thead>
+          <tbody>${topRows || '<tr><td colspan="3" style="padding:8px">No item activity</td></tr>'}</tbody>
+        </table>
+      </body></html>
+    `;
+    const win = window.open('', '_blank', 'width=900,height=700');
+    if (!win) return;
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    win.print();
+  };
+
   if (loading) {
     return (
       <div className="page-shell flex items-center justify-center">
@@ -308,6 +364,16 @@ export default function AdminDashboardPage() {
                   <p className="text-xs text-muted-foreground">Peak hour</p>
                   <p className="text-lg font-semibold text-slate-900">{peakHour}</p>
                 </div>
+                <button
+                  type="button"
+                  onClick={printDailyCloseReport}
+                  className="col-span-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <Printer className="h-4 w-4" />
+                    Print Daily Close Report
+                  </span>
+                </button>
               </div>
             </div>
           </div>

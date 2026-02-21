@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { ChefHat, ChevronDown, Clock, History, KeyRound, LogOut, UserRoundPen } from 'lucide-react';
+import { BellRing, ChefHat, ChevronDown, Clock, History, KeyRound, LogOut, UserRoundPen } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
@@ -50,6 +50,7 @@ export default function KitchenPage() {
   const [viewMode, setViewMode] = useState<'active' | 'history'>('active');
   const [historyDate, setHistoryDate] = useState(localDateKey(new Date()));
   const [kitchenUserName, setKitchenUserName] = useState('Kitchen Manager');
+  const [serviceRequests, setServiceRequests] = useState<any[]>([]);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showUsernameDialog, setShowUsernameDialog] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -63,6 +64,7 @@ export default function KitchenPage() {
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
+    let unsubscribe: (() => void) | null = null;
     let mounted = true;
 
     (async () => {
@@ -86,6 +88,9 @@ export default function KitchenPage() {
         if (!mounted) return;
         await loadOrders();
         interval = setInterval(loadOrders, 5000);
+        unsubscribe = api.subscribeToOrderChanges(() => {
+          loadOrders();
+        });
       } catch (error) {
         console.error('Session check failed:', error);
         navigate(isAdminKitchen ? '/admin/login' : '/kitchen/login');
@@ -95,6 +100,7 @@ export default function KitchenPage() {
     return () => {
       mounted = false;
       if (interval) clearInterval(interval);
+      if (unsubscribe) unsubscribe();
     };
   }, [navigate, isAdminKitchen]);
 
@@ -145,8 +151,12 @@ export default function KitchenPage() {
 
   const loadOrders = async () => {
     try {
-      const res = await api.getOrders();
-      setAllOrders(res.orders || []);
+      const [ordersRes, requestsRes] = await Promise.all([
+        api.getOrders(),
+        api.getOpenServiceRequests().catch(() => ({ requests: [] })),
+      ]);
+      setAllOrders(ordersRes.orders || []);
+      setServiceRequests(requestsRes.requests || []);
     } catch (error) {
       console.error('Error loading orders:', error);
     } finally {
@@ -308,6 +318,41 @@ export default function KitchenPage() {
             </div>
           )}
         </div>
+        {viewMode === 'active' && serviceRequests.length > 0 && (
+          <Card className="glass-grid-card mb-4 p-4">
+            <div className="mb-2 flex items-center gap-2">
+              <BellRing className="h-4 w-4 text-amber-600" />
+              <h3 className="font-semibold">Need Assistance Requests</h3>
+            </div>
+            <div className="space-y-2">
+              {serviceRequests.slice(0, 5).map((request: any) => (
+                <div key={request.id} className="flex items-center justify-between rounded-md border bg-white px-3 py-2 text-sm">
+                  <div>
+                    <p className="font-medium">Table {request.table_number}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {request.customer_name || 'Guest'} • {request.customer_phone || '-'} • {request.message}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        await api.resolveServiceRequest(String(request.id));
+                        toast.success('Request marked as assisted');
+                        loadOrders();
+                      } catch (error) {
+                        toast.error(error instanceof Error ? error.message : 'Failed to update request');
+                      }
+                    }}
+                  >
+                    Mark Assisted
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
         {viewMode === 'active' ? (
           activeGroupedByPhone.length === 0 ? (
             <div className="text-center py-12">

@@ -73,6 +73,7 @@ export default function OrderSuccessPage() {
 
     let mounted = true;
     let timer: ReturnType<typeof setInterval> | null = null;
+    let unsubscribe: (() => void) | null = null;
 
     const loadOrder = async () => {
       try {
@@ -90,10 +91,17 @@ export default function OrderSuccessPage() {
 
     loadOrder();
     timer = setInterval(loadOrder, 5000);
+    unsubscribe = api.subscribeToOrderChanges((payload) => {
+      const row = payload?.new || payload?.old;
+      if (!row) return;
+      if (Number(row.id) !== Number(orderId)) return;
+      loadOrder();
+    });
 
     return () => {
       mounted = false;
       if (timer) clearInterval(timer);
+      if (unsubscribe) unsubscribe();
     };
   }, [orderId, table, phone, cancelled]);
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import { Banknote, ChevronDown, CreditCard, Filter, ReceiptText, Smartphone } from 'lucide-react';
+import { Banknote, ChevronDown, CreditCard, Filter, Printer, ReceiptText, Smartphone } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -76,6 +76,7 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
+    let unsubscribe: (() => void) | null = null;
     let mounted = true;
 
     (async () => {
@@ -88,6 +89,7 @@ export default function AdminOrdersPage() {
         if (!mounted) return;
         await loadOrders();
         interval = setInterval(loadOrders, 8000);
+        unsubscribe = api.subscribeToOrderChanges(() => loadOrders());
       } catch (error) {
         console.error('Session check failed:', error);
         navigate('/admin/login');
@@ -97,8 +99,62 @@ export default function AdminOrdersPage() {
     return () => {
       mounted = false;
       if (interval) clearInterval(interval);
+      if (unsubscribe) unsubscribe();
     };
   }, [navigate]);
+
+  const printBill = (bill: {
+    id?: string;
+    tableNumber: number;
+    phone: string;
+    lineItems: Array<{ name: string; quantity: number; unitPrice: number; lineTotal: number }>;
+    total: number;
+    createdAt?: string;
+  }) => {
+    const rows = (bill.lineItems || [])
+      .map(
+        (item) =>
+          `<tr>
+            <td style="padding:8px;border-bottom:1px solid #ddd">${item.name}</td>
+            <td style="padding:8px;border-bottom:1px solid #ddd;text-align:center">${item.quantity}</td>
+            <td style="padding:8px;border-bottom:1px solid #ddd;text-align:right">$${Number(item.unitPrice || 0).toFixed(2)}</td>
+            <td style="padding:8px;border-bottom:1px solid #ddd;text-align:right">$${Number(item.lineTotal || 0).toFixed(2)}</td>
+          </tr>`,
+      )
+      .join('');
+
+    const html = `
+      <html>
+        <head><title>Final Bill</title></head>
+        <body style="font-family:Arial,sans-serif;padding:20px;color:#111">
+          <h2 style="margin:0 0 8px">Stories de Café - Final Bill</h2>
+          <p style="margin:0 0 4px">Bill ID: #${bill.id || '-'}</p>
+          <p style="margin:0 0 4px">Table: ${bill.tableNumber}</p>
+          <p style="margin:0 0 4px">Mobile: ${bill.phone || '-'}</p>
+          <p style="margin:0 0 14px">Generated: ${bill.createdAt ? format(new Date(bill.createdAt), 'MMM dd, yyyy • h:mm a') : '-'}</p>
+          <table style="width:100%;border-collapse:collapse">
+            <thead>
+              <tr>
+                <th style="text-align:left;padding:8px;border-bottom:1px solid #333">Item</th>
+                <th style="text-align:center;padding:8px;border-bottom:1px solid #333">Qty</th>
+                <th style="text-align:right;padding:8px;border-bottom:1px solid #333">Price</th>
+                <th style="text-align:right;padding:8px;border-bottom:1px solid #333">Total</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <h3 style="text-align:right;margin-top:16px">Grand Total: $${Number(bill.total || 0).toFixed(2)}</h3>
+        </body>
+      </html>
+    `;
+    const win = window.open('', '_blank', 'width=900,height=700');
+    if (!win) return;
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    win.print();
+  };
 
   const loadOrders = async () => {
     try {
@@ -587,6 +643,10 @@ export default function AdminOrdersPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setBillPreview(null)} disabled={markingGroupPaid}>
               Close
+            </Button>
+            <Button variant="outline" onClick={() => billPreview && printBill(billPreview)} disabled={!billPreview}>
+              <Printer className="w-4 h-4 mr-1" />
+              Print Bill
             </Button>
             <Button
               onClick={() => billPreview?.id && startBillPayment(billPreview.id)}
