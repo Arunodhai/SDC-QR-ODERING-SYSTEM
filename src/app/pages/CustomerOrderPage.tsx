@@ -468,7 +468,7 @@ export default function CustomerOrderPage() {
                       <div>
                         <span className="font-medium text-black">Status: </span>
                         {o.status === 'COMPLETED' ? (
-                          <span className="inline-flex rounded px-2 py-0.5 bg-fuchsia-300 text-black font-medium">SERVED</span>
+                          <span className="inline-flex rounded px-2 py-0.5 bg-[#0FFFFF] text-black font-medium">SERVED</span>
                         ) : (
                           <span className={`font-medium ${STATUS_TEXT_COLORS[o.status] || 'text-muted-foreground'}`}>{statusLabel(o.status)}</span>
                         )}
