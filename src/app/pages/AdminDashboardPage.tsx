@@ -56,7 +56,7 @@ function InsightCard({
   valueClassName?: string;
 }) {
   return (
-    <Card className="glass-grid-card p-4 bg-gradient-to-br from-white to-slate-50 border-slate-200/70">
+    <Card className="glass-grid-card animated-gradient-surface p-4 border-slate-200/70">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{title}</p>
         <div className="text-slate-500">{icon}</div>
@@ -274,9 +274,8 @@ export default function AdminDashboardPage() {
     <div className="page-shell bg-gradient-to-b from-slate-50 via-white to-slate-100/70">
       <AdminNav />
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        <Card className="glass-grid-card overflow-hidden border-slate-200/80 bg-white">
+        <Card className="glass-grid-card animated-gradient-surface overflow-hidden border-slate-200/80">
           <div className="relative p-6 md:p-8">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,0.18),transparent_40%),radial-gradient(circle_at_25%_120%,rgba(14,165,233,0.14),transparent_32%)]" />
             <div className="relative flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-teal-700 font-semibold">Live Operations</p>

@@ -334,9 +334,14 @@ export default function AdminMenuPage() {
               if (categoryItems.length === 0) return null;
 
               return (
-                <div key={category.id} className="mb-8">
-                  <h3 className="text-lg font-semibold mb-4">{category.name}</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                <Card key={category.id} className="glass-grid-card mb-6 overflow-hidden">
+                  <div className="flex items-center justify-between border-b bg-gradient-to-r from-teal-50 to-cyan-50 px-4 py-3">
+                    <h3 className="text-base font-semibold">{category.name}</h3>
+                    <span className="rounded-md border border-teal-200 bg-white px-2 py-0.5 text-xs text-teal-800">
+                      {categoryItems.length} item{categoryItems.length > 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 p-3">
                     {categoryItems.map(item => (
                       <Card key={item.id} className="glass-grid-card p-3">
                         <div className="flex gap-3 items-start">
@@ -388,7 +393,7 @@ export default function AdminMenuPage() {
                       </Card>
                     ))}
                   </div>
-                </div>
+                </Card>
               );
             })}
           </TabsContent>
