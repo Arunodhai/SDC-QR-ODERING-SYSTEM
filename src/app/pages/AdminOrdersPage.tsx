@@ -438,10 +438,6 @@ export default function AdminOrdersPage() {
                   ? `Mixed (${groupPaidMethods.join(', ')})`
                   : groupPaidMethods[0] || '-'
                 : '-';
-            const paymentBadgeText =
-              groupPaymentStatus === 'PAID'
-                ? `PAID via ${groupPaymentMethodLabel}`
-                : 'UNPAID';
             return (
               <Card key={groupKey} className="glass-grid-card p-4 h-fit">
                 <div className="mb-3 flex items-start justify-between gap-3">
@@ -461,9 +457,14 @@ export default function AdminOrdersPage() {
                     <div className="text-lg font-bold">${groupTotal.toFixed(2)}</div>
                     <div className="text-xs text-muted-foreground">Payable (excludes cancelled)</div>
                     <div className="mt-1 flex justify-end">
-                      <Badge className={PAYMENT_COLORS[groupPaymentStatus as keyof typeof PAYMENT_COLORS]}>
-                        {paymentBadgeText}
-                      </Badge>
+                      {groupPaymentStatus === 'PAID' ? (
+                        <div className="flex items-center gap-2">
+                          <Badge className={PAYMENT_COLORS.PAID}>PAID</Badge>
+                          <span className="text-sm text-muted-foreground">via {groupPaymentMethodLabel}</span>
+                        </div>
+                      ) : (
+                        <Badge className={PAYMENT_COLORS.UNPAID}>UNPAID</Badge>
+                      )}
                     </div>
                     {group.customerPhone && unpaidOrders.length > 0 && (
                       <div className="mt-2 flex flex-col items-end gap-2">
@@ -673,9 +674,6 @@ export default function AdminOrdersPage() {
                       <span className="text-xs text-muted-foreground">Order #{order.id}</span>
                       <Badge className={STATUS_COLORS[order.status as keyof typeof STATUS_COLORS]}>
                         {statusLabel(order.status)}
-                      </Badge>
-                      <Badge variant="outline" className="text-[10px]">
-                        {getPaymentMethodLabel(order.paymentMethod)}
                       </Badge>
                     </div>
                     <p className="text-xs font-semibold text-primary mt-1">Billing Ref: {billingRef(order)}</p>

@@ -248,18 +248,27 @@ export default function AdminDashboardPage() {
   }, [todayOrders]);
 
   const paymentMix = useMemo(() => {
+    const today = new Date().toDateString();
+    const orderById = new Map(orders.map((o) => [String(o.id), o]));
+
+    // Count payment methods by paid bill/session, not by each individual order round.
+    const paidBillsToday = (finalBills || []).filter(
+      (b: any) => b.isPaid && new Date(b.paidAt || b.createdAt).toDateString() === today,
+    );
+
     const counts = new Map<string, number>();
-    todayOrders
-      .filter((o) => o.paymentStatus === 'PAID')
-      .forEach((o) => {
-        const key = o.paymentMethod || 'UNKNOWN';
-        counts.set(key, (counts.get(key) || 0) + 1);
-      });
+    paidBillsToday.forEach((bill: any) => {
+      const billOrders = (bill.orderIds || [])
+        .map((id: string) => orderById.get(String(id)))
+        .filter(Boolean);
+      const method = billOrders.find((o: any) => o.paymentMethod)?.paymentMethod || 'UNKNOWN';
+      counts.set(method, (counts.get(method) || 0) + 1);
+    });
 
     return Array.from(counts.entries())
       .map(([method, count]) => ({ method, count }))
       .sort((a, b) => b.count - a.count);
-  }, [todayOrders]);
+  }, [finalBills, orders]);
 
   const peakHour = useMemo(() => {
     if (!hourlyTrend.length) return '--';
