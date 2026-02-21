@@ -438,6 +438,10 @@ export default function AdminOrdersPage() {
                   ? `Mixed (${groupPaidMethods.join(', ')})`
                   : groupPaidMethods[0] || '-'
                 : '-';
+            const paymentBadgeText =
+              groupPaymentStatus === 'PAID'
+                ? `PAID via ${groupPaymentMethodLabel}`
+                : 'UNPAID';
             return (
               <Card key={groupKey} className="glass-grid-card p-4 h-fit">
                 <div className="mb-3 flex items-start justify-between gap-3">
@@ -458,11 +462,8 @@ export default function AdminOrdersPage() {
                     <div className="text-xs text-muted-foreground">Payable (excludes cancelled)</div>
                     <div className="mt-1 flex justify-end">
                       <Badge className={PAYMENT_COLORS[groupPaymentStatus as keyof typeof PAYMENT_COLORS]}>
-                        {groupPaymentStatus}
+                        {paymentBadgeText}
                       </Badge>
-                    </div>
-                    <div className="mt-1 text-xs text-muted-foreground">
-                      Method: <span className="font-semibold text-foreground">{groupPaymentMethodLabel}</span>
                     </div>
                     {group.customerPhone && unpaidOrders.length > 0 && (
                       <div className="mt-2 flex flex-col items-end gap-2">
