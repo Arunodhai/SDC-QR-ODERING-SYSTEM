@@ -493,24 +493,6 @@ export default function CustomerOrderPage() {
             <h3 className="font-semibold mb-2">Your Bill</h3>
             {currentBill && currentBill.lineItems && currentBill.lineItems.length > 0 ? (
               <div className="space-y-2 text-sm">
-                <div className="rounded-md border bg-gray-50 px-3 py-2 text-xs text-muted-foreground">
-                  <div className="flex items-center justify-between">
-                    <span>Bill Type</span>
-                    <span className="font-semibold text-foreground">Current Session Bill</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Status</span>
-                    <span className="font-semibold text-amber-600">UNPAID</span>
-                  </div>
-                  <div className="mt-1 flex items-center justify-between">
-                    <span>Table</span>
-                    <span className="font-semibold text-foreground">{tableNumber}</span>
-                  </div>
-                  <div className="mt-1 flex items-center justify-between">
-                    <span>Mobile</span>
-                    <span className="font-semibold text-foreground">{customerPhone || '-'}</span>
-                  </div>
-                </div>
                 {currentBill.lineItems.map((item: any, idx: number) => (
                   <div key={`${item.name}_${idx}`} className="rounded-md border px-3 py-2">
                     <div className="flex items-center justify-between">
@@ -519,7 +501,6 @@ export default function CustomerOrderPage() {
                     </div>
                     <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
                       <span>{Number(item.quantity || 0)} x ${Number(item.unitPrice || 0).toFixed(2)}</span>
-                      <span>Line total</span>
                     </div>
                   </div>
                 ))}
@@ -577,7 +558,6 @@ export default function CustomerOrderPage() {
                     </div>
                     <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
                       <span>{Number(item.quantity || 0)} x ${Number(item.unitPrice || 0).toFixed(2)}</span>
-                      <span>Line total</span>
                     </div>
                   </div>
                 ))}
@@ -629,6 +609,7 @@ export default function CustomerOrderPage() {
                             Round {round.roundNumber || idx + 1} • Order #{round.id}
                           </p>
                           <p className="text-xs text-muted-foreground">Billing Ref: {orderBillingRef(round)}</p>
+                          <p> </p>
                           <div className="mt-1 space-y-1">
                             {(round.items || []).map((item: any, ii: number) => (
                               <div key={ii} className="flex items-center justify-between text-xs text-muted-foreground">
