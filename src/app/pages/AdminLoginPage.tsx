@@ -46,7 +46,7 @@ export default function AdminLoginPage() {
       <Card className="max-w-md w-full p-8 bg-card/90">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <img src={logo12} alt="Stories de Café" className="h-8 w-8 object-contain" />
+            <img src={logo12} alt="Stories de Café" className="h-10 w-10 object-contain" />
             <h1 className="brand-display text-3xl font-bold">Stories de Café</h1>
           </div>
           <p className="text-muted-foreground">Admin Login</p>

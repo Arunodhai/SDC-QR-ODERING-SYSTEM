@@ -38,6 +38,13 @@ const STATUS_TEXT_COLORS: Record<string, string> = {
   CANCELLED: 'text-red-600',
 };
 
+const STATUS_STEP_STYLES: Record<string, { dot: string; ring: string; text: string }> = {
+  PENDING: { dot: 'from-amber-300 to-amber-500', ring: 'ring-amber-200/80', text: 'text-amber-700' },
+  PREPARING: { dot: 'from-sky-300 to-blue-500', ring: 'ring-blue-200/80', text: 'text-blue-700' },
+  READY: { dot: 'from-emerald-300 to-teal-500', ring: 'ring-emerald-200/80', text: 'text-emerald-700' },
+  COMPLETED: { dot: 'from-violet-300 to-indigo-500', ring: 'ring-indigo-200/80', text: 'text-indigo-700' },
+};
+
 export default function OrderSuccessPage() {
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('orderId') || '';
@@ -118,8 +125,8 @@ export default function OrderSuccessPage() {
   };
 
   return (
-    <div className="page-shell flex items-center justify-center p-4">
-      <div className="max-w-xl w-full rounded-2xl border bg-card p-6 shadow-lg">
+    <div className="page-shell flex items-center justify-center bg-[radial-gradient(circle_at_20%_10%,rgba(56,189,248,0.14),transparent_35%),radial-gradient(circle_at_85%_90%,rgba(20,184,166,0.16),transparent_30%),linear-gradient(180deg,#f8fafc,#eef2ff)] p-4">
+      <div className="max-w-xl w-full rounded-3xl border border-white/70 bg-white/70 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.12)] backdrop-blur-xl">
         <div className="text-center">
           {statusIcon}
           <h1 className="brand-display text-4xl font-bold mb-2">Order Placed!</h1>
@@ -128,7 +135,7 @@ export default function OrderSuccessPage() {
           </p>
         </div>
 
-        <div className="mt-5 rounded-lg border bg-gray-50 p-3 text-sm">
+        <div className="mt-5 rounded-2xl border border-white/80 bg-white/60 p-4 text-sm backdrop-blur">
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Order ID</span>
             <span className="font-semibold">#{orderId || '-'}</span>
@@ -149,32 +156,46 @@ export default function OrderSuccessPage() {
           </div>
         </div>
 
-        <div className="mt-5">
-          <div className="mb-2 text-sm font-semibold">Progress</div>
+        <div className="mt-5 rounded-2xl border border-white/80 bg-white/60 p-4 backdrop-blur">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="text-sm font-semibold">Progress</div>
+            {status !== 'CANCELLED' && (
+              <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                Step {activeStep + 1} / {STATUS_STEPS.length}
+              </span>
+            )}
+          </div>
           {status === 'CANCELLED' ? (
-            <div className="rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-center font-semibold">
+            <div className="rounded-xl border border-red-200 bg-red-50/80 px-3 py-2 text-sm text-center font-semibold text-red-700">
               Order Cancelled
             </div>
           ) : (
-          <div className="relative px-1">
-            <div className="absolute left-4 right-4 top-3 h-0.5 bg-gray-200" />
+          <div className="relative px-2">
+            <div className="absolute left-6 right-6 top-5 h-2 rounded-full bg-white/70 shadow-inner" />
             <div
-              className="absolute left-4 top-3 h-0.5 bg-primary transition-all duration-300"
-              style={{ width: `calc((100% - 2rem) * ${activeStep / (STATUS_STEPS.length - 1)})` }}
+              className="absolute left-6 top-5 h-2 rounded-full bg-gradient-to-r from-cyan-400 via-teal-400 to-indigo-500 transition-all duration-500"
+              style={{ width: `calc((100% - 3rem) * ${activeStep / (STATUS_STEPS.length - 1)})` }}
             />
-            <div className="grid grid-cols-4 gap-1">
-            {STATUS_STEPS.map((step, idx) => (
+            <div className="relative grid grid-cols-4 gap-2">
+            {STATUS_STEPS.map((step, idx) => {
+              const isActive = idx <= activeStep;
+              const stepStyle = STATUS_STEP_STYLES[step];
+              return (
               <div key={step} className="text-center">
                 <div
-                  className={`mx-auto mb-2 h-6 w-6 rounded-full border-2 ${
-                    idx <= activeStep ? 'border-primary bg-primary' : 'border-gray-300 bg-white'
+                  className={`mx-auto mb-2 mt-1 flex h-10 w-10 items-center justify-center rounded-full ring-4 transition-all ${
+                    isActive
+                      ? `bg-gradient-to-br ${stepStyle.dot} ${stepStyle.ring} shadow-[0_8px_24px_rgba(14,116,144,0.25)]`
+                      : 'bg-white/80 ring-slate-200/80'
                   }`}
-                />
-                <div className={`text-[11px] ${idx <= activeStep ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>
+                >
+                  <span className={`h-2.5 w-2.5 rounded-full ${isActive ? 'bg-white/95' : 'bg-slate-300'}`} />
+                </div>
+                <div className={`text-[11px] font-medium ${isActive ? stepStyle.text : 'text-slate-500'}`}>
                   {STATUS_PROGRESS_LABELS[step]}
                 </div>
               </div>
-            ))}
+            )})}
             </div>
           </div>
           )}
@@ -199,8 +220,8 @@ export default function OrderSuccessPage() {
           {!loading && error && <p className="text-sm text-red-600">{error}</p>}
           {!loading && !error && order?.items?.length > 0 && (
             <div className="space-y-2">
-              <div className="rounded-md border">
-                <div className="grid grid-cols-12 gap-2 border-b bg-gray-50 px-3 py-2 text-xs font-semibold text-muted-foreground">
+              <div className="rounded-xl border border-white/80 bg-white/70 backdrop-blur">
+                <div className="grid grid-cols-12 gap-2 border-b bg-white/70 px-3 py-2 text-xs font-semibold text-muted-foreground">
                   <span className="col-span-6">Item</span>
                   <span className="col-span-2 text-center">Qty</span>
                   <span className="col-span-4 text-right">Price</span>
@@ -222,7 +243,7 @@ export default function OrderSuccessPage() {
         </div>
 
         <div className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-          <img src={logo12} alt="Stories de Café" className="h-4 w-4 object-contain" />
+          <img src={logo12} alt="Stories de Café" className="h-6 w-6 object-contain" />
           <span>Stories de Café</span>
         </div>
 

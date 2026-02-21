@@ -13,7 +13,7 @@ export default function HomePage() {
         {/* Header */}
         <div className="text-center mb-10 md:mb-12">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <img src={logo12} alt="Stories de Café" className="h-12 w-12 object-contain" />
+            <img src={logo12} alt="Stories de Café" className="h-16 w-16 object-contain" />
             <h1 className="brand-display text-4xl font-bold md:text-5xl">Stories de Café</h1>
           </div>
           <p className="text-lg text-muted-foreground md:text-xl">Restaurant Ordering System</p>

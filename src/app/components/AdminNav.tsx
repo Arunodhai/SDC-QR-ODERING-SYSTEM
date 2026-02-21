@@ -31,7 +31,7 @@ export default function AdminNav({ sticky = true }: { sticky?: boolean }) {
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex flex-wrap items-center justify-between gap-3 py-4">
           <div className="flex items-center gap-2">
-            <img src={logo12} alt="Stories de Café" className="h-9 w-9 object-contain" />
+            <img src={logo12} alt="Stories de Café" className="h-11 w-11 object-contain" />
             <h1 className="brand-display text-xl font-bold">Stories de Café Admin</h1>
           </div>
 

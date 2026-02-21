@@ -351,7 +351,7 @@ export default function CustomerOrderPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="brand-display text-2xl font-bold flex items-center gap-2">
-                <img src={logo12} alt="Stories de Café" className="h-7 w-7 object-contain" />
+                <img src={logo12} alt="Stories de Café" className="h-9 w-9 object-contain" />
                 Stories de Café
               </h1>
               <p className="text-sm text-muted-foreground">Table {tableNumber}</p>
@@ -569,7 +569,7 @@ export default function CustomerOrderPage() {
                     }
                   >
                     <span className="font-medium flex items-center gap-2">
-                      <ChevronDown className={`h-4 w-4 transition-transform ${expandedPaidBills[bill.id] ? 'rotate-180' : ''}`} />
+                      <ChevronDown className={`h-6 w-6 transition-transform ${expandedPaidBills[bill.id] ? 'rotate-180' : ''}`} />
                       Bill #{bill.id}
                     </span>
                     <span className="font-semibold text-green-600">PAID</span>
@@ -733,7 +733,7 @@ export default function CustomerOrderPage() {
                 onClick={() => setShowSelectedItems((v) => !v)}
               >
                 <span>Selected Items ({getCartItemCount()})</span>
-                {showSelectedItems ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                {showSelectedItems ? <ChevronDown className="h-6 w-6" /> : <ChevronUp className="h-6 w-6" />}
               </button>
               {showSelectedItems && (
                 <div className="mt-2 max-h-32 overflow-y-auto rounded-md border bg-gray-50 p-2">
@@ -784,10 +784,10 @@ export default function CustomerOrderPage() {
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-8 w-8"
+                              className="h-10 w-10"
                               onClick={() => removeItemFromCart(ci.id)}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-6 w-6" />
                             </Button>
                           </div>
                           <div className="mt-3 flex items-center justify-between">
@@ -795,19 +795,19 @@ export default function CustomerOrderPage() {
                               <Button
                                 variant="outline"
                                 size="icon"
-                                className="h-8 w-8"
+                                className="h-10 w-10"
                                 onClick={() => removeFromCart(ci.id)}
                               >
-                                <Minus className="h-4 w-4" />
+                                <Minus className="h-6 w-6" />
                               </Button>
                               <span className="w-8 text-center font-semibold">{ci.qty}</span>
                               <Button
                                 variant="outline"
                                 size="icon"
-                                className="h-8 w-8"
+                                className="h-10 w-10"
                                 onClick={() => addToCart(ci.id)}
                               >
-                                <Plus className="h-4 w-4" />
+                                <Plus className="h-6 w-6" />
                               </Button>
                             </div>
                             <div className="font-semibold">${ci.subtotal.toFixed(2)}</div>
