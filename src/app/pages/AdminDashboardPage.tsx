@@ -30,6 +30,12 @@ import { Card } from '../components/ui/card';
 import * as api from '../lib/api';
 
 type HourBucket = { label: string; count: number };
+const localDateKey = (d: Date) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: '#f59e0b',
@@ -80,6 +86,7 @@ export default function AdminDashboardPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [finalBills, setFinalBills] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filterDate, setFilterDate] = useState(localDateKey(new Date()));
 
   useEffect(() => {
     let mounted = true;
@@ -119,10 +126,10 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const todayOrders = useMemo(() => {
-    const today = new Date().toDateString();
-    return orders.filter((o) => new Date(o.createdAt).toDateString() === today);
-  }, [orders]);
+  const todayOrders = useMemo(
+    () => orders.filter((o) => localDateKey(new Date(o.createdAt)) === filterDate),
+    [orders, filterDate],
+  );
 
   const stats = useMemo(() => {
     const unpaid = todayOrders.filter((o) => o.paymentStatus === 'UNPAID' && o.status !== 'CANCELLED');
@@ -352,7 +359,7 @@ export default function AdminDashboardPage() {
                 <p className="text-xs uppercase tracking-[0.2em] text-teal-700 font-semibold">Live Operations</p>
                 <h2 className="brand-display text-4xl font-bold mt-2 text-slate-900">Dashboard</h2>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Real-time performance snapshot for today&apos;s service.
+                  Real-time performance snapshot for the selected date.
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-2 min-w-[260px]">
@@ -374,6 +381,12 @@ export default function AdminDashboardPage() {
                     Print Daily Close Report
                   </span>
                 </button>
+                <input
+                  type="date"
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                  className="col-span-2 h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm"
+                />
               </div>
             </div>
           </div>

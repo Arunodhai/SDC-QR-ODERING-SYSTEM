@@ -1,12 +1,10 @@
 import { useParams, useNavigate } from 'react-router';
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Minus, ShoppingCart, Coffee, Trash2, ChevronDown, ChevronUp, ReceiptText, BellRing } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, Coffee, Trash2, ChevronDown, ReceiptText, BellRing } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
-import { Separator } from '../components/ui/separator';
-import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { toast } from 'sonner';
 import * as api from '../lib/api';
@@ -52,6 +50,13 @@ const orderBillingRef = (order: any) => {
   const last4 = phone ? phone.slice(-4) : '0000';
   return `T${order?.tableNumber || '-'}-P${last4}-O${order?.id || '-'}`;
 };
+const NOTE_PLACEHOLDERS = [
+  'e.g. less spicy',
+  'e.g. no onion',
+  'e.g. less sugar',
+  'e.g. extra hot',
+  'e.g. no ice',
+];
 
 export default function CustomerOrderPage() {
   const { tableNumber } = useParams();
@@ -60,9 +65,6 @@ export default function CustomerOrderPage() {
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
-  const [itemModifiers, setItemModifiers] = useState<
-    Record<string, { spice?: string; sugar?: string; addons?: string }>
-  >({});
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [phoneConfirmed, setPhoneConfirmed] = useState(false);
@@ -73,15 +75,12 @@ export default function CustomerOrderPage() {
     lineItems?: Array<{ name: string; quantity: number; unitPrice: number; lineTotal: number }>;
   } | null>(null);
   const [latestFinalBill, setLatestFinalBill] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'menu' | 'bill'>('menu');
+  const [activeTab, setActiveTab] = useState<'menu' | 'cart' | 'bill'>('menu');
   const [paidBillHistory, setPaidBillHistory] = useState<any[]>([]);
   const [expandedPaidBills, setExpandedPaidBills] = useState<Record<string, boolean>>({});
   const [loadingActiveOrders, setLoadingActiveOrders] = useState(false);
-  const [isCartSheetOpen, setIsCartSheetOpen] = useState(false);
-  const [showSelectedItems, setShowSelectedItems] = useState(false);
   const [placingOrder, setPlacingOrder] = useState(false);
-  const [swipeStart, setSwipeStart] = useState<{ id: string; x: number } | null>(null);
-  const [swipeOffsetById, setSwipeOffsetById] = useState<Record<string, number>>({});
+  const [noteHintIndex, setNoteHintIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [categoryJump, setCategoryJump] = useState<string>('');
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
@@ -178,11 +177,6 @@ export default function CustomerOrderPage() {
       delete next[itemId];
       return next;
     });
-    setItemModifiers((prev) => {
-      const next = { ...prev };
-      delete next[itemId];
-      return next;
-    });
   };
 
   const getCartTotal = () => {
@@ -190,16 +184,6 @@ export default function CustomerOrderPage() {
       const item = menuItems.find(i => i.id === itemId);
       return sum + (item?.price || 0) * qty;
     }, 0);
-  };
-
-  const formatModifierLabel = (itemId: string) => {
-    const mods = itemModifiers[itemId];
-    if (!mods) return '';
-    const parts: string[] = [];
-    if (mods.spice) parts.push(`Spice: ${mods.spice}`);
-    if (mods.sugar) parts.push(`Sugar: ${mods.sugar}`);
-    if ((mods.addons || '').trim()) parts.push(`Add-ons: ${mods.addons?.trim()}`);
-    return parts.join(', ');
   };
 
   const getCartDetails = () => {
@@ -214,10 +198,9 @@ export default function CustomerOrderPage() {
           price: Number(item.price || 0),
           subtotal: Number(item.price || 0) * qty,
           note: itemNotes[itemId] || '',
-          modifiers: formatModifierLabel(itemId),
         };
       })
-      .filter(Boolean) as Array<{ id: string; name: string; qty: number; price: number; subtotal: number; note: string; modifiers: string }>;
+      .filter(Boolean) as Array<{ id: string; name: string; qty: number; price: number; subtotal: number; note: string }>;
   };
 
   const getCartItemCount = () => {
@@ -311,6 +294,13 @@ export default function CustomerOrderPage() {
     return () => unsubscribe();
   }, [phoneConfirmed, tableNumber, customerPhone]);
 
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNoteHintIndex((prev) => (prev + 1) % NOTE_PLACEHOLDERS.length);
+    }, 2200);
+    return () => clearInterval(timer);
+  }, []);
+
   const placeOrder = async () => {
     if (placingOrder) return;
     if (Object.keys(cart).length === 0) {
@@ -339,15 +329,13 @@ export default function CustomerOrderPage() {
       sessionStorage.setItem(throttleKey, String(now));
       const orderItems = Object.entries(cart).map(([itemId, qty]) => {
         const item = menuItems.find(i => i.id === itemId);
-        const modifierText = formatModifierLabel(itemId);
         const freeNote = (itemNotes[itemId] || '').trim();
-        const finalNote = [modifierText, freeNote].filter(Boolean).join(' | ');
         return {
           id: itemId,
           name: item.name,
           price: item.price,
           quantity: qty,
-          note: finalNote,
+          note: freeNote,
         };
       });
 
@@ -387,26 +375,6 @@ export default function CustomerOrderPage() {
     }
   };
 
-  const handleRowTouchStart = (id: string, x: number) => {
-    setSwipeStart({ id, x });
-  };
-
-  const handleRowTouchMove = (id: string, x: number) => {
-    if (!swipeStart || swipeStart.id !== id) return;
-    const delta = x - swipeStart.x;
-    const clamped = Math.max(-120, Math.min(0, delta));
-    setSwipeOffsetById((prev) => ({ ...prev, [id]: clamped }));
-  };
-
-  const handleRowTouchEnd = (id: string) => {
-    const offset = swipeOffsetById[id] || 0;
-    if (offset <= -80) {
-      removeItemFromCart(id);
-    }
-    setSwipeOffsetById((prev) => ({ ...prev, [id]: 0 }));
-    setSwipeStart(null);
-  };
-
   if (loading) {
     return (
       <div className="page-shell flex items-center justify-center">
@@ -420,22 +388,32 @@ export default function CustomerOrderPage() {
 
   return (
     <>
-    <div className="page-shell pb-36">
+    <div className="page-shell pb-24">
       {/* Header */}
       <div className="border-b bg-white/95">
         <div className="max-w-5xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-start justify-between gap-3">
             <div>
-              <h1 className="brand-display text-2xl font-bold flex items-center gap-2">
-                <img src={logo12} alt="Stories de Café" className="h-9 w-9 object-contain" />
+              <h1 className="brand-display text-2xl font-bold flex items-center gap-2 leading-none">
+                <img src={logo12} alt="Stories de Café" className="h-7 w-7 object-contain" />
                 Stories de Café
               </h1>
-              <p className="text-sm text-muted-foreground">Table {tableNumber}</p>
+              <p className="mt-2 text-sm text-muted-foreground">Table {tableNumber}</p>
               {phoneConfirmed && (
                 <p className="text-xs text-muted-foreground">Tracking mobile: {customerPhone}</p>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
+              {getCartItemCount() > 0 && (
+                <Badge variant="secondary" className="text-base px-2.5 py-1 bg-primary/10 text-primary">
+                  <ShoppingCart className="w-4 h-4 mr-1" />
+                  {getCartItemCount()}
+                </Badge>
+              )}
+            </div>
+          </div>
+          {phoneConfirmed && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               {phoneConfirmed && (
                 <Button
                   variant="outline"
@@ -453,7 +431,6 @@ export default function CustomerOrderPage() {
                     setExpandedPaidBills({});
                     setCart({});
                     setItemNotes({});
-                    setItemModifiers({});
                     setCustomerName('');
                   }}
                 >
@@ -466,27 +443,28 @@ export default function CustomerOrderPage() {
                   Need Assistance
                 </Button>
               )}
-              {getCartItemCount() > 0 && (
-                <Badge variant="secondary" className="text-lg px-3 py-1 bg-primary/10 text-primary">
-                  <ShoppingCart className="w-4 h-4 mr-1" />
-                  {getCartItemCount()}
-                </Badge>
-              )}
             </div>
-          </div>
+          )}
         </div>
       </div>
 
       {phoneConfirmed && (
         <div className="border-b bg-white/95">
           <div className="max-w-5xl mx-auto px-4 py-3">
-            <div className="grid grid-cols-2 gap-2 rounded-xl border bg-white p-1">
+            <div className="grid grid-cols-3 gap-2 rounded-xl border bg-white p-1">
               <Button
                 variant={activeTab === 'menu' ? 'default' : 'ghost'}
                 className="w-full rounded-lg"
                 onClick={() => setActiveTab('menu')}
               >
                 Menu
+              </Button>
+              <Button
+                variant={activeTab === 'cart' ? 'default' : 'ghost'}
+                className="w-full rounded-lg"
+                onClick={() => setActiveTab('cart')}
+              >
+                Cart {getCartItemCount() > 0 ? `(${getCartItemCount()})` : ''}
               </Button>
               <Button
                 variant={activeTab === 'bill' ? 'default' : 'ghost'}
@@ -815,182 +793,67 @@ export default function CustomerOrderPage() {
             </Card>
           );
         })}
+
+        {phoneConfirmed && activeTab === 'cart' && (
+          <Card className="glass-grid-card p-4 mb-6">
+            <h3 className="font-semibold mb-3">Your Cart</h3>
+            {getCartDetails().length === 0 ? (
+              <p className="text-sm text-muted-foreground">Your cart is empty.</p>
+            ) : (
+              <div className="space-y-3">
+                {getCartDetails().map((ci) => (
+                  <div key={ci.id} className="rounded-lg border p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <div className="font-semibold text-sm">{ci.name}</div>
+                        <div className="text-xs text-muted-foreground">${ci.price.toFixed(2)} each</div>
+                      </div>
+                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => removeItemFromCart(ci.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => removeFromCart(ci.id)}>
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-8 text-center font-semibold">{ci.qty}</span>
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => addToCart(ci.id)}>
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="font-semibold">${ci.subtotal.toFixed(2)}</div>
+                    </div>
+                    <div className="mt-2">
+                      <Input
+                        placeholder={`Add note (${NOTE_PLACEHOLDERS[noteHintIndex]})`}
+                        value={itemNotes[ci.id] || ''}
+                        onChange={(e) => setItemNotes((prev) => ({ ...prev, [ci.id]: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between border-t pt-2">
+                  <span className="font-semibold">Total</span>
+                  <span className="text-lg font-bold">${getCartTotal().toFixed(2)}</span>
+                </div>
+                <Button onClick={placeOrder} className="w-full" size="lg" disabled={placingOrder}>
+                  {placingOrder ? 'Placing Order...' : 'Place Order'}
+                </Button>
+              </div>
+            )}
+          </Card>
+        )}
       </div>
 
-      {/* Cart Summary */}
-      {getCartItemCount() > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-30 border-t bg-white shadow-2xl">
-          <div className="max-w-5xl mx-auto px-4 py-4">
-            <div className="mb-3">
-              <button
-                type="button"
-                className="flex w-full items-center justify-between rounded-md border bg-gray-50 px-3 py-2 text-sm font-semibold"
-                onClick={() => setShowSelectedItems((v) => !v)}
-              >
-                <span>Selected Items ({getCartItemCount()})</span>
-                {showSelectedItems ? <ChevronDown className="h-6 w-6" /> : <ChevronUp className="h-6 w-6" />}
-              </button>
-              {showSelectedItems && (
-                <div className="mt-2 max-h-32 overflow-y-auto rounded-md border bg-gray-50 p-2">
-                  {getCartDetails().map((ci) => (
-                    <div key={ci.id} className="flex items-center justify-between py-1 text-sm">
-                      <div>
-                        <div>{ci.qty}x {ci.name}</div>
-                        {ci.note ? <div className="text-xs text-muted-foreground">Note: {ci.note}</div> : null}
-                        {ci.modifiers ? <div className="text-xs text-muted-foreground">Options: {ci.modifiers}</div> : null}
-                      </div>
-                      <span className="font-semibold">${ci.subtotal.toFixed(2)}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+      {phoneConfirmed && activeTab === 'menu' && getCartItemCount() > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-30 border-t bg-white/95 backdrop-blur">
+          <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs text-muted-foreground">Selected Items ({getCartItemCount()})</p>
+              <p className="text-base font-bold">${getCartTotal().toFixed(2)}</p>
             </div>
-            <div className="mb-3">
-              <Sheet open={isCartSheetOpen} onOpenChange={setIsCartSheetOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="outline" className="w-full">Edit Cart</Button>
-                </SheetTrigger>
-                <SheetContent side="bottom" className="max-h-[85vh] rounded-t-2xl p-0">
-                  <SheetHeader className="border-b">
-                    <SheetTitle>Edit Cart</SheetTitle>
-                    <SheetDescription>Review items before placing order. Swipe left on mobile to remove.</SheetDescription>
-                  </SheetHeader>
-
-                  <div className="max-h-[55vh] overflow-y-auto p-4 space-y-3">
-                    {getCartDetails().length === 0 && (
-                      <p className="text-sm text-muted-foreground">Your cart is empty.</p>
-                    )}
-                    {getCartDetails().map((ci) => (
-                      <div key={ci.id} className="relative overflow-hidden rounded-lg border">
-                        <div className="absolute inset-y-0 right-0 flex w-24 items-center justify-center bg-red-500 text-white text-xs font-semibold">
-                          Remove
-                        </div>
-                        <div
-                          className="relative bg-white p-3 transition-transform duration-150"
-                          style={{ transform: `translateX(${swipeOffsetById[ci.id] || 0}px)` }}
-                          onTouchStart={(e) => handleRowTouchStart(ci.id, e.touches[0].clientX)}
-                          onTouchMove={(e) => handleRowTouchMove(ci.id, e.touches[0].clientX)}
-                          onTouchEnd={() => handleRowTouchEnd(ci.id)}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div>
-                              <div className="font-semibold text-sm">{ci.name}</div>
-                              <div className="text-xs text-muted-foreground">${ci.price.toFixed(2)} each</div>
-                            </div>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-10 w-10"
-                              onClick={() => removeItemFromCart(ci.id)}
-                            >
-                              <Trash2 className="h-6 w-6" />
-                            </Button>
-                          </div>
-                          <div className="mt-3 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-10 w-10"
-                                onClick={() => removeFromCart(ci.id)}
-                              >
-                                <Minus className="h-6 w-6" />
-                              </Button>
-                              <span className="w-8 text-center font-semibold">{ci.qty}</span>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-10 w-10"
-                                onClick={() => addToCart(ci.id)}
-                              >
-                                <Plus className="h-6 w-6" />
-                              </Button>
-                            </div>
-                            <div className="font-semibold">${ci.subtotal.toFixed(2)}</div>
-                          </div>
-                          <div className="mt-2">
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
-                              <select
-                                className="h-9 rounded-md border px-2 text-xs"
-                                value={itemModifiers[ci.id]?.spice || ''}
-                                onChange={(e) =>
-                                  setItemModifiers((prev) => ({
-                                    ...prev,
-                                    [ci.id]: { ...(prev[ci.id] || {}), spice: e.target.value || undefined },
-                                  }))
-                                }
-                              >
-                                <option value="">Spice level</option>
-                                <option value="Mild">Mild</option>
-                                <option value="Medium">Medium</option>
-                                <option value="Hot">Hot</option>
-                              </select>
-                              <select
-                                className="h-9 rounded-md border px-2 text-xs"
-                                value={itemModifiers[ci.id]?.sugar || ''}
-                                onChange={(e) =>
-                                  setItemModifiers((prev) => ({
-                                    ...prev,
-                                    [ci.id]: { ...(prev[ci.id] || {}), sugar: e.target.value || undefined },
-                                  }))
-                                }
-                              >
-                                <option value="">Sugar</option>
-                                <option value="No sugar">No sugar</option>
-                                <option value="Less sugar">Less sugar</option>
-                                <option value="Normal">Normal</option>
-                              </select>
-                              <Input
-                                placeholder="Add-ons"
-                                value={itemModifiers[ci.id]?.addons || ''}
-                                onChange={(e) =>
-                                  setItemModifiers((prev) => ({
-                                    ...prev,
-                                    [ci.id]: { ...(prev[ci.id] || {}), addons: e.target.value },
-                                  }))
-                                }
-                              />
-                            </div>
-                            <Input
-                              placeholder="Add note (e.g., less spicy, no onion)"
-                              value={itemNotes[ci.id] || ''}
-                              onChange={(e) =>
-                                setItemNotes((prev) => ({ ...prev, [ci.id]: e.target.value }))
-                              }
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <SheetFooter className="border-t bg-white">
-                    <div className="flex items-center justify-between text-sm mb-1">
-                      <span className="font-semibold">Items</span>
-                      <span>{getCartItemCount()}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-base">
-                      <span className="font-bold">Total</span>
-                      <span className="font-bold">${getCartTotal().toFixed(2)}</span>
-                    </div>
-                    <Button
-                      className="w-full mt-2"
-                      onClick={() => setIsCartSheetOpen(false)}
-                    >
-                      Done
-                    </Button>
-                  </SheetFooter>
-                </SheetContent>
-              </Sheet>
-            </div>
-            <Separator className="mb-3" />
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-base font-semibold md:text-lg">Total</span>
-              <span className="text-xl font-bold md:text-2xl">${getCartTotal().toFixed(2)}</span>
-            </div>
-            <Button onClick={placeOrder} className="w-full" size="lg" disabled={placingOrder}>
-              {placingOrder ? 'Placing Order...' : 'Place Order'}
-            </Button>
+            <Button onClick={() => setActiveTab('cart')}>View Cart</Button>
           </div>
         </div>
       )}
