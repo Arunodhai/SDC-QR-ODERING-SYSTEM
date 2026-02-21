@@ -626,7 +626,7 @@ export default function CustomerOrderPage() {
                       {(bill.rounds || []).map((round: any, idx: number) => (
                         <div key={round.id} className="mb-2 last:mb-0">
                           <p className="text-xs font-semibold">
-                            Round {round.roundNumber || idx + 1} • Order #{round.id} • {getPaymentMethodLabel(round.paymentMethod)}
+                            Round {round.roundNumber || idx + 1} • Order #{round.id}
                           </p>
                           <p className="text-xs text-muted-foreground">Billing Ref: {orderBillingRef(round)}</p>
                           <div className="mt-1 space-y-1">
