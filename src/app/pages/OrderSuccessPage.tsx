@@ -254,7 +254,7 @@ export default function OrderSuccessPage() {
                   }`
                 : '/'
             }
-            className="rounded-md border border-primary/25 bg-primary/10 px-3 py-1.5 font-medium text-primary hover:bg-primary/15"
+            className="rounded-md border border-black bg-white px-3 py-1.5 font-medium text-black hover:bg-gray-50"
           >
             Back to menu
           </Link>
