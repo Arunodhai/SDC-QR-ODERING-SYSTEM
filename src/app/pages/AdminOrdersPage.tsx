@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import { ChevronDown, Filter, ReceiptText } from 'lucide-react';
+import { Banknote, ChevronDown, CreditCard, Filter, ReceiptText, Smartphone } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -24,12 +24,27 @@ const PAYMENT_COLORS = {
 };
 type PaymentMethod = 'CASH' | 'UPI' | 'CARD';
 const statusLabel = (status: string) => (status === 'COMPLETED' ? 'SERVED' : status);
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  COUNTER: 'Cash',
+  CASH: 'Cash',
+  UPI: 'UPI',
+  CARD: 'Card',
+  UNKNOWN: '-',
+};
+const PAYMENT_METHOD_OPTIONS: Array<{ value: PaymentMethod; label: string; icon: any }> = [
+  { value: 'CASH', label: 'Cash', icon: Banknote },
+  { value: 'UPI', label: 'UPI', icon: Smartphone },
+  { value: 'CARD', label: 'Card', icon: CreditCard },
+];
 
-const billingRef = (order: any) => {
+  const billingRef = (order: any) => {
   const phone = order.customerPhone || '';
   const last4 = phone ? phone.slice(-4) : '0000';
   return `T${order.tableNumber}-P${last4}-O${order.id}`;
 };
+
+const getPaymentMethodLabel = (paymentMethod?: string) =>
+  PAYMENT_METHOD_LABELS[String(paymentMethod || '').toUpperCase()] || String(paymentMethod || '-');
 
 export default function AdminOrdersPage() {
   const navigate = useNavigate();
@@ -110,6 +125,7 @@ export default function AdminOrdersPage() {
     paymentMethod: PaymentMethod,
   ) => {
     try {
+      let result: any = null;
       // Reuse currently generated preview bill when possible to avoid duplicate bill snapshots.
       if (
         billPreview?.id &&
@@ -117,18 +133,19 @@ export default function AdminOrdersPage() {
         billPreview.tableNumber === group.tableNumber &&
         billPreview.phone === group.customerPhone
       ) {
-        await api.markFinalBillPaid(billPreview.id, paymentMethod);
+        result = await api.markFinalBillPaid(billPreview.id, paymentMethod);
       } else {
         // Ensure payment is tracked in final_bills (for customer paid history), then mark paid.
         const generated = await api.generateFinalBillByTableAndPhone(group.tableNumber, group.customerPhone);
         if (generated.bill?.id) {
-          await api.markFinalBillPaid(generated.bill.id, paymentMethod);
+          result = await api.markFinalBillPaid(generated.bill.id, paymentMethod);
         } else {
           const ids = (ordersToPay || []).map((o: any) => String(o.id));
-          await api.markOrdersPaidBulk(ids, paymentMethod);
+          result = await api.markOrdersPaidBulk(ids, paymentMethod);
         }
       }
-      toast.success(`Group marked as paid via ${paymentMethod}`);
+      const storedMethod = (result as any)?.storedMethod || paymentMethod;
+      toast.success(`Group marked as paid via ${getPaymentMethodLabel(storedMethod)}`);
       setBillPreview(null);
       loadOrders();
     } catch (error) {
@@ -306,8 +323,9 @@ export default function AdminOrdersPage() {
     if (!billPreview || !billPreview.id) return;
     setMarkingGroupPaid(true);
     try {
-      await api.markFinalBillPaid(billPreview.id, paymentMethod);
-      toast.success(`Final bill marked as paid via ${paymentMethod}.`);
+      const result = await api.markFinalBillPaid(billPreview.id, paymentMethod);
+      const storedMethod = (result as any)?.storedMethod || paymentMethod;
+      toast.success(`Final bill marked as paid via ${getPaymentMethodLabel(storedMethod)}.`);
       setBillPreview(null);
       loadOrders();
     } catch (error) {
@@ -407,6 +425,19 @@ export default function AdminOrdersPage() {
               payableOrders.length > 0 && payableOrders.every((o) => o.paymentStatus === 'PAID')
                 ? 'PAID'
                 : 'UNPAID';
+            const groupPaidMethods = Array.from(
+              new Set(
+                payableOrders
+                  .filter((o) => o.paymentStatus === 'PAID')
+                  .map((o) => getPaymentMethodLabel(o.paymentMethod)),
+              ),
+            );
+            const groupPaymentMethodLabel =
+              groupPaymentStatus === 'PAID'
+                ? groupPaidMethods.length > 1
+                  ? `Mixed (${groupPaidMethods.join(', ')})`
+                  : groupPaidMethods[0] || '-'
+                : '-';
             return (
               <Card key={groupKey} className="glass-grid-card p-4 h-fit">
                 <div className="mb-3 flex items-start justify-between gap-3">
@@ -429,6 +460,9 @@ export default function AdminOrdersPage() {
                       <Badge className={PAYMENT_COLORS[groupPaymentStatus as keyof typeof PAYMENT_COLORS]}>
                         {groupPaymentStatus}
                       </Badge>
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      Method: <span className="font-semibold text-foreground">{groupPaymentMethodLabel}</span>
                     </div>
                     {group.customerPhone && unpaidOrders.length > 0 && (
                       <div className="mt-2 flex flex-col items-end gap-2">
@@ -482,6 +516,7 @@ export default function AdminOrdersPage() {
                         total: groupTotal,
                         orders: group.orders,
                         paymentStatus: groupPaymentStatus,
+                        paymentMethodSummary: groupPaymentMethodLabel,
                         paidAt:
                           groupPaymentStatus === 'PAID'
                             ? (() => {
@@ -574,20 +609,28 @@ export default function AdminOrdersPage() {
               Choose how this bill was paid before marking it as paid.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
-            <Select
-              value={selectedPaymentMethod}
-              onValueChange={(value) => setSelectedPaymentMethod(value as PaymentMethod)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="CASH">Cash</SelectItem>
-                <SelectItem value="UPI">UPI</SelectItem>
-                <SelectItem value="CARD">Card</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {PAYMENT_METHOD_OPTIONS.map((option) => {
+              const Icon = option.icon;
+              const isSelected = selectedPaymentMethod === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setSelectedPaymentMethod(option.value)}
+                  className={`rounded-lg border px-3 py-3 text-left transition ${
+                    isSelected
+                      ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                      : 'border-slate-200 bg-white hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Icon className="h-4 w-4" />
+                    <span className="font-medium">{option.label}</span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPaymentDialogOpen(false)}>
@@ -613,7 +656,8 @@ export default function AdminOrdersPage() {
             </DialogDescription>
             {selectedGroupDetails?.paymentStatus === 'PAID' && selectedGroupDetails?.paidAt ? (
               <p className="text-xs text-green-700 mt-1">
-                Payment: PAID on {format(new Date(selectedGroupDetails.paidAt), 'MMM dd, yyyy • h:mm a')}
+                Payment: PAID via {selectedGroupDetails?.paymentMethodSummary || '-'} on{' '}
+                {format(new Date(selectedGroupDetails.paidAt), 'MMM dd, yyyy • h:mm a')}
               </p>
             ) : null}
           </DialogHeader>
@@ -628,6 +672,9 @@ export default function AdminOrdersPage() {
                       <span className="text-xs text-muted-foreground">Order #{order.id}</span>
                       <Badge className={STATUS_COLORS[order.status as keyof typeof STATUS_COLORS]}>
                         {statusLabel(order.status)}
+                      </Badge>
+                      <Badge variant="outline" className="text-[10px]">
+                        {getPaymentMethodLabel(order.paymentMethod)}
                       </Badge>
                     </div>
                     <p className="text-xs font-semibold text-primary mt-1">Billing Ref: {billingRef(order)}</p>

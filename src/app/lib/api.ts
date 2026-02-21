@@ -467,7 +467,7 @@ export const updateOrderStatus = async (id: string, status: string) => {
 
 export const updateOrderPayment = async (id: string, paymentStatus: string, paymentMethod?: string) => {
   const patch: Record<string, any> = { payment_status: paymentStatus };
-  if (paymentMethod) patch.payment_method = paymentMethod;
+  if (paymentMethod) patch.payment_method = paymentMethod === 'CASH' ? 'COUNTER' : paymentMethod;
   const { data, error } = await supabase
     .from('orders')
     .update(patch)
@@ -516,16 +516,39 @@ export const getUnpaidBillByTableAndPhone = async (tableNumber: number, phone: s
   return { orders, total, lineItems };
 };
 
+const paymentEnumHint =
+  "DB enum payment_method_type is missing one or more values. Add values like UPI/CARD if needed.";
+
+const isPaymentMethodEnumError = (error: any) =>
+  String(error?.message || '').includes('payment_method_type') &&
+  String(error?.message || '').includes('invalid input value');
+
 export const markOrdersPaidBulk = async (orderIds: string[], paymentMethod: string) => {
   if (!orderIds.length) return { success: true };
   const ids = orderIds.map((id) => Number(id));
+  const primaryMethod = paymentMethod === 'CASH' ? 'COUNTER' : paymentMethod;
+
   const { error } = await supabase
     .from('orders')
-    .update({ payment_status: 'PAID', payment_method: paymentMethod })
+    .update({ payment_status: 'PAID', payment_method: primaryMethod })
     .in('id', ids);
 
-  if (error) throw new Error(errMsg(error, 'Failed to mark orders as paid'));
-  return { success: true };
+  if (!error) return { success: true, storedMethod: primaryMethod };
+
+  // Fallback for schemas that don't yet include UPI/CARD enum variants.
+  if (isPaymentMethodEnumError(error)) {
+    const fallbackMethod = 'COUNTER';
+    const { error: fallbackError } = await supabase
+      .from('orders')
+      .update({ payment_status: 'PAID', payment_method: fallbackMethod })
+      .in('id', ids);
+    if (!fallbackError) {
+      return { success: true, storedMethod: fallbackMethod, downgraded: true };
+    }
+    throw new Error(`${errMsg(fallbackError, 'Failed to mark orders as paid')} ${paymentEnumHint}`);
+  }
+
+  throw new Error(errMsg(error, 'Failed to mark orders as paid'));
 };
 
 export const cancelPendingOrder = async (id: string, phone?: string) => {
@@ -729,11 +752,15 @@ export const markFinalBillPaid = async (billId: string, paymentMethod: string) =
   if (error) throw new Error(errMsg(error, 'Failed to mark final bill as paid'));
 
   const orderIds = (data.order_ids || []).map((id: any) => String(id));
+  let storedMethod = paymentMethod === 'CASH' ? 'COUNTER' : paymentMethod;
+  let downgraded = false;
   if (orderIds.length) {
-    await markOrdersPaidBulk(orderIds, paymentMethod);
+    const res = await markOrdersPaidBulk(orderIds, paymentMethod);
+    storedMethod = (res as any).storedMethod || storedMethod;
+    downgraded = Boolean((res as any).downgraded);
   }
 
-  return { success: true };
+  return { success: true, storedMethod, downgraded };
 };
 
 export const getPaidBillHistoryByPhone = async (phone: string) => {
