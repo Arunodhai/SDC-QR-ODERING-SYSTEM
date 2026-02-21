@@ -596,7 +596,7 @@ export default function CustomerOrderPage() {
                   </button>
                   <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
                     <span>Table {bill.tableNumber}</span>
-                    <span>${Number(bill.total || 0).toFixed(2)}</span>
+                    <span><Strong>${Number(bill.total || 0).toFixed(2)}</Strong></span>
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
                     Paid on: {formatDateTime(bill.paidAt || bill.createdAt)}
