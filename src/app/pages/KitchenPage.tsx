@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { ChefHat, Clock, History } from 'lucide-react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -35,10 +35,13 @@ const localDateKey = (d: Date) => {
 
 export default function KitchenPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [allOrders, setAllOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'active' | 'history'>('active');
   const [historyDate, setHistoryDate] = useState(localDateKey(new Date()));
+  const [kitchenUserName, setKitchenUserName] = useState('Kitchen Manager');
+  const isAdminKitchen = location.pathname.startsWith('/admin/');
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
@@ -46,17 +49,28 @@ export default function KitchenPage() {
 
     (async () => {
       try {
-        const session = await api.getAdminSession();
-        if (!session) {
-          navigate('/admin/login');
-          return;
+        if (isAdminKitchen) {
+          const adminSession = await api.getAdminSession();
+          if (!adminSession) {
+            navigate('/admin/login');
+            return;
+          }
+        } else {
+          const kitchenSession = await api.getKitchenSession();
+          if (!kitchenSession) {
+            navigate('/kitchen/login');
+            return;
+          }
+          if (mounted) {
+            setKitchenUserName(kitchenSession.name || 'Kitchen Manager');
+          }
         }
         if (!mounted) return;
         await loadOrders();
         interval = setInterval(loadOrders, 5000);
       } catch (error) {
         console.error('Session check failed:', error);
-        navigate('/admin/login');
+        navigate(isAdminKitchen ? '/admin/login' : '/kitchen/login');
       }
     })();
 
@@ -64,7 +78,12 @@ export default function KitchenPage() {
       mounted = false;
       if (interval) clearInterval(interval);
     };
-  }, [navigate]);
+  }, [navigate, isAdminKitchen]);
+
+  const handleKitchenLogout = async () => {
+    await api.kitchenSignOut();
+    navigate('/kitchen/login');
+  };
 
   const loadOrders = async () => {
     try {
@@ -162,6 +181,17 @@ export default function KitchenPage() {
   return (
     <div className="page-shell">
       <div className="max-w-7xl mx-auto px-4 py-6">
+        {!isAdminKitchen && (
+          <div className="mb-4 flex items-center justify-between rounded-xl border bg-white p-3">
+            <div>
+              <p className="text-sm font-semibold">{kitchenUserName}</p>
+              <p className="text-xs text-muted-foreground">Kitchen manager access</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleKitchenLogout}>
+              Logout
+            </Button>
+          </div>
+        )}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-4">
           <div>
             <h1 className="brand-display text-2xl font-bold flex items-center gap-2">

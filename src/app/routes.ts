@@ -3,6 +3,7 @@ import HomePage from "./pages/HomePage";
 import CustomerOrderPage from "./pages/CustomerOrderPage";
 import OrderSuccessPage from "./pages/OrderSuccessPage";
 import KitchenPage from "./pages/KitchenPage";
+import KitchenLoginPage from "./pages/KitchenLoginPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
 import AdminMenuPage from "./pages/AdminMenuPage";
 import AdminTablesPage from "./pages/AdminTablesPage";
@@ -23,6 +24,10 @@ export const router = createBrowserRouter([
   {
     path: "/order/success",
     Component: OrderSuccessPage,
+  },
+  {
+    path: "/kitchen/login",
+    Component: KitchenLoginPage,
   },
   {
     path: "/admin/login",
@@ -60,7 +65,7 @@ export const router = createBrowserRouter([
   },
   {
     path: "/kitchen",
-    loader: () => redirect("/admin/kitchen"),
+    Component: KitchenPage,
   },
   {
     path: "*",

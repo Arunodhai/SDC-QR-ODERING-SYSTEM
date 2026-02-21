@@ -125,7 +125,7 @@ export default function AdminTablesPage() {
   };
 
   const getQrImageSettings = (size: number) => {
-    const logoSize = Math.round(size * 0.2);
+    const logoSize = Math.round(size * 0.28);
     return {
       src: restaurantLogo,
       height: logoSize,

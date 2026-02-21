@@ -4,6 +4,7 @@ import { projectId, publicAnonKey } from '/utils/supabase/info';
 const supabaseUrl = `https://${projectId}.supabase.co`;
 const supabase = createClient(supabaseUrl, publicAnonKey);
 const imageBucket = 'menu-images';
+const kitchenSessionKey = 'sdc:kitchen-session-v1';
 
 const errMsg = (error: any, fallback: string) => {
   if (!error) return fallback;
@@ -78,6 +79,36 @@ export const getAdminSession = async () => {
   const { data, error } = await supabase.auth.getSession();
   if (error) throw new Error(errMsg(error, 'Failed to get session'));
   return data.session;
+};
+
+export const kitchenSignIn = async (password: string, name = 'Kitchen Manager') => {
+  const configuredPassword = import.meta.env.VITE_KITCHEN_PASSWORD || 'kitchen123';
+  if (String(password || '').trim() !== configuredPassword) {
+    throw new Error('Invalid kitchen password');
+  }
+  const session = {
+    role: 'kitchen',
+    name: String(name || 'Kitchen Manager').trim() || 'Kitchen Manager',
+    signedInAt: new Date().toISOString(),
+  };
+  localStorage.setItem(kitchenSessionKey, JSON.stringify(session));
+  return { session };
+};
+
+export const getKitchenSession = async () => {
+  const raw = localStorage.getItem(kitchenSessionKey);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    localStorage.removeItem(kitchenSessionKey);
+    return null;
+  }
+};
+
+export const kitchenSignOut = async () => {
+  localStorage.removeItem(kitchenSessionKey);
+  return { success: true };
 };
 
 export const healthCheck = async () => {

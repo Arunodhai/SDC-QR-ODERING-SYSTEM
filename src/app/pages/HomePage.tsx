@@ -36,7 +36,7 @@ export default function HomePage() {
             </div>
           </Card>
 
-          <Card className="glass-grid-card cursor-pointer p-8" onClick={() => navigate('/kitchen')}>
+          <Card className="glass-grid-card cursor-pointer p-8" onClick={() => navigate('/kitchen/login')}>
             <div className="flex items-start gap-4">
               <div className="rounded-xl bg-amber-100/80 p-3">
                 <ChefHat className="w-8 h-8 text-amber-700" />

@@ -1,0 +1,86 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
+import { ChefHat, Lock } from 'lucide-react';
+import { Card } from '../components/ui/card';
+import { Input } from '../components/ui/input';
+import { Button } from '../components/ui/button';
+import { toast } from 'sonner';
+import * as api from '../lib/api';
+
+export default function KitchenLoginPage() {
+  const navigate = useNavigate();
+  const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const session = await api.getKitchenSession();
+      if (session) navigate('/kitchen');
+    })();
+  }, [navigate]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await api.kitchenSignIn(password, name);
+      toast.success('Kitchen login successful');
+      navigate('/kitchen');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="page-shell flex items-center justify-center p-4">
+      <Card className="max-w-md w-full p-8 bg-card/90">
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <ChefHat className="w-8 h-8 text-amber-700" />
+            <h1 className="brand-display text-3xl font-bold">Kitchen Login</h1>
+          </div>
+          <p className="text-muted-foreground">Access kitchen manager view only</p>
+        </div>
+
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Name</label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Kitchen manager name"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2">Kitchen Password</label>
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter kitchen password"
+              required
+            />
+          </div>
+
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? (
+              'Signing in...'
+            ) : (
+              <>
+                <Lock className="w-4 h-4 mr-2" />
+                Login to Kitchen
+              </>
+            )}
+          </Button>
+        </form>
+
+        <p className="text-xs text-muted-foreground text-center mt-6">
+          Default kitchen password: <code className="rounded bg-gray-100 px-2 py-1">kitchen123</code>
+        </p>
+      </Card>
+    </div>
+  );
+}
