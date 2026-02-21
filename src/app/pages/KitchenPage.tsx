@@ -256,7 +256,7 @@ export default function KitchenPage() {
                                         {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true })}
                                       </span>
                                     </div>
-                                    <div className="space-y-1 mb-2">
+                                    <div className="mt-3 space-y-1 mb-2">
                                       {order.items.map((item: any, idx: number) => (
                                         <div key={idx} className="flex justify-between text-xs">
                                           <span>{item.quantity}x {item.name}</span>
