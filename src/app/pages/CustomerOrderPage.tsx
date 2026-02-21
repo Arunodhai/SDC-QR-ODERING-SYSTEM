@@ -468,7 +468,7 @@ export default function CustomerOrderPage() {
                       <div>
                         <span className="font-medium text-black">Status: </span>
                         {o.status === 'COMPLETED' ? (
-                          <span className="inline-flex rounded px-2 py-0.5 bg-green-100 text-black font-medium">SERVED</span>
+                          <span className="inline-flex rounded px-2 py-0.5 bg-fuchsia-300 text-black font-medium">SERVED</span>
                         ) : (
                           <span className={`font-medium ${STATUS_TEXT_COLORS[o.status] || 'text-muted-foreground'}`}>{statusLabel(o.status)}</span>
                         )}
@@ -608,7 +608,7 @@ export default function CustomerOrderPage() {
                           <p className="text-xs font-semibold">
                             Round {round.roundNumber || idx + 1} • Order #{round.id}
                           </p>
-                          <p className="text-xs text-muted-foreground">Billing Ref: {orderBillingRef(round)}</p>
+                          <p className="mb-2 text-xs text-muted-foreground">Billing Ref: {orderBillingRef(round)}</p>
                           <p> </p>
                           <div className="mt-1 space-y-1">
                             {(round.items || []).map((item: any, ii: number) => (
