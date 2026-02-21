@@ -1,11 +1,71 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { BarChart3, Clock3, DollarSign, ListOrdered, TrendingUp } from 'lucide-react';
+import {
+  Activity,
+  BadgeDollarSign,
+  BarChart3,
+  Clock3,
+  DollarSign,
+  ListChecks,
+  ListOrdered,
+  TrendingUp,
+  Users,
+} from 'lucide-react';
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { Card } from '../components/ui/card';
 import AdminNav from '../components/AdminNav';
 import * as api from '../lib/api';
 
 type HourBucket = { label: string; count: number };
+
+const STATUS_COLORS: Record<string, string> = {
+  PENDING: '#f59e0b',
+  PREPARING: '#fb7185',
+  READY: '#06b6d4',
+  COMPLETED: '#10b981',
+  CANCELLED: '#94a3b8',
+};
+
+const formatCurrency = (value: number) => `$${value.toFixed(2)}`;
+const formatPercent = (value: number) => `${(value * 100).toFixed(1)}%`;
+
+function InsightCard({
+  title,
+  value,
+  hint,
+  icon,
+  valueClassName,
+}: {
+  title: string;
+  value: string;
+  hint: string;
+  icon: React.ReactNode;
+  valueClassName?: string;
+}) {
+  return (
+    <Card className="glass-grid-card p-4 bg-gradient-to-br from-white to-slate-50 border-slate-200/70">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">{title}</p>
+        <div className="text-slate-500">{icon}</div>
+      </div>
+      <p className={`mt-2 text-3xl font-bold tracking-tight ${valueClassName || ''}`}>{value}</p>
+      <p className="mt-2 text-xs text-muted-foreground">{hint}</p>
+    </Card>
+  );
+}
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
@@ -60,8 +120,31 @@ export default function AdminDashboardPage() {
     const unpaid = todayOrders.filter((o) => o.paymentStatus === 'UNPAID' && o.status !== 'CANCELLED');
     const paid = todayOrders.filter((o) => o.paymentStatus === 'PAID');
     const served = todayOrders.filter((o) => o.status === 'COMPLETED');
+    const preparing = todayOrders.filter((o) => o.status === 'PREPARING');
+    const ready = todayOrders.filter((o) => o.status === 'READY');
+    const cancelled = todayOrders.filter((o) => o.status === 'CANCELLED');
     const revenue = paid.reduce((sum, o) => sum + Number(o.total || 0), 0);
-    return { unpaid: unpaid.length, served: served.length, revenue };
+    const activeTables = new Set(
+      todayOrders
+        .filter((o) => o.status !== 'CANCELLED')
+        .map((o) => Number(o.tableNumber || 0))
+        .filter(Boolean),
+    ).size;
+
+    return {
+      total: todayOrders.length,
+      unpaid: unpaid.length,
+      paid: paid.length,
+      served: served.length,
+      preparing: preparing.length,
+      ready: ready.length,
+      cancelled: cancelled.length,
+      activeTables,
+      revenue,
+      avgTicket: paid.length ? revenue / paid.length : 0,
+      paidRate: todayOrders.length ? paid.length / todayOrders.length : 0,
+      completionRate: todayOrders.length ? served.length / todayOrders.length : 0,
+    };
   }, [todayOrders]);
 
   const todaySessionCount = useMemo(() => {
@@ -110,40 +193,74 @@ export default function AdminDashboardPage() {
     todayOrders.forEach((o) => {
       if (counts[o.status] !== undefined) counts[o.status] += 1;
     });
-    return keys.map((k) => ({ key: k, label: k === 'COMPLETED' ? 'SERVED' : k, count: counts[k] }));
+    return keys.map((k) => ({
+      key: k,
+      label: k === 'COMPLETED' ? 'SERVED' : k,
+      count: counts[k],
+      fill: STATUS_COLORS[k],
+    }));
   }, [todayOrders]);
 
   const hourlyTrend = useMemo<HourBucket[]>(() => {
-    const buckets: HourBucket[] = Array.from({ length: 8 }).map((_, idx) => {
-      const d = new Date();
-      d.setHours(d.getHours() - (7 - idx), 0, 0, 0);
+    const now = new Date();
+    const buckets: HourBucket[] = Array.from({ length: 12 }).map((_, idx) => {
+      const d = new Date(now);
+      d.setMinutes(0, 0, 0);
+      d.setHours(now.getHours() - (11 - idx));
       return { label: `${String(d.getHours()).padStart(2, '0')}:00`, count: 0 };
     });
+
+    const bucketByLabel = new Map(buckets.map((b) => [b.label, b]));
     todayOrders.forEach((o) => {
-      const hour = new Date(o.createdAt).getHours();
-      const found = buckets.find((b) => Number(b.label.slice(0, 2)) === hour);
-      if (found) found.count += 1;
+      const d = new Date(o.createdAt);
+      const label = `${String(d.getHours()).padStart(2, '0')}:00`;
+      const bucket = bucketByLabel.get(label);
+      if (bucket) bucket.count += 1;
     });
+
     return buckets;
   }, [todayOrders]);
 
   const topItems = useMemo(() => {
-    const map = new Map<string, number>();
+    const map = new Map<string, { name: string; qty: number; sales: number }>();
     todayOrders
       .filter((o) => o.status !== 'CANCELLED')
       .forEach((o) => {
         (o.items || []).forEach((i: any) => {
-          map.set(i.name, (map.get(i.name) || 0) + Number(i.quantity || 0));
+          const item = map.get(i.name) || { name: i.name, qty: 0, sales: 0 };
+          const quantity = Number(i.quantity || 0);
+          const unitPrice = Number(i.price || 0);
+          item.qty += quantity;
+          item.sales += quantity * unitPrice;
+          map.set(i.name, item);
         });
       });
-    return Array.from(map.entries())
-      .map(([name, qty]) => ({ name, qty }))
+    return Array.from(map.values())
       .sort((a, b) => b.qty - a.qty)
-      .slice(0, 5);
+      .slice(0, 6);
   }, [todayOrders]);
 
-  const maxStatus = Math.max(1, ...statusDistribution.map((s) => s.count));
-  const maxHourly = Math.max(1, ...hourlyTrend.map((h) => h.count));
+  const paymentMix = useMemo(() => {
+    const counts = new Map<string, number>();
+    todayOrders
+      .filter((o) => o.paymentStatus === 'PAID')
+      .forEach((o) => {
+        const key = o.paymentMethod || 'UNKNOWN';
+        counts.set(key, (counts.get(key) || 0) + 1);
+      });
+
+    return Array.from(counts.entries())
+      .map(([method, count]) => ({ method, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [todayOrders]);
+
+  const peakHour = useMemo(() => {
+    if (!hourlyTrend.length) return '--';
+    const peak = [...hourlyTrend].sort((a, b) => b.count - a.count)[0];
+    return peak?.count ? `${peak.label} (${peak.count})` : '--';
+  }, [hourlyTrend]);
+
+  const currentQueue = stats.preparing + stats.ready + stats.unpaid;
 
   if (loading) {
     return (
@@ -154,95 +271,217 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="page-shell">
+    <div className="page-shell bg-gradient-to-b from-slate-50 via-white to-slate-100/70">
       <AdminNav />
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <h2 className="brand-display text-3xl font-bold mb-4">Dashboard</h2>
+      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+        <Card className="glass-grid-card overflow-hidden border-slate-200/80 bg-white">
+          <div className="relative p-6 md:p-8">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,0.18),transparent_40%),radial-gradient(circle_at_25%_120%,rgba(14,165,233,0.14),transparent_32%)]" />
+            <div className="relative flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-teal-700 font-semibold">Live Operations</p>
+                <h2 className="brand-display text-4xl font-bold mt-2 text-slate-900">Dashboard</h2>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Real-time performance snapshot for today&apos;s service.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2 min-w-[260px]">
+                <div className="rounded-xl border border-slate-200 bg-white/90 p-3">
+                  <p className="text-xs text-muted-foreground">Paid conversion</p>
+                  <p className="text-lg font-semibold text-slate-900">{formatPercent(stats.paidRate)}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-white/90 p-3">
+                  <p className="text-xs text-muted-foreground">Peak hour</p>
+                  <p className="text-lg font-semibold text-slate-900">{peakHour}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-          <Card className="glass-grid-card p-4">
-            <div className="text-sm text-muted-foreground flex items-center gap-2">
-              <ListOrdered className="w-4 h-4" /> Orders Today
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+          <InsightCard
+            title="Dining Sessions"
+            value={String(todaySessionCount)}
+            hint={`${stats.activeTables} active tables today`}
+            icon={<Users className="w-4 h-4" />}
+          />
+          <InsightCard
+            title="Revenue"
+            value={formatCurrency(stats.revenue)}
+            hint={`Avg ticket ${formatCurrency(stats.avgTicket)}`}
+            icon={<DollarSign className="w-4 h-4" />}
+            valueClassName="text-emerald-700"
+          />
+          <InsightCard
+            title="Open Queue"
+            value={String(currentQueue)}
+            hint={`${stats.preparing} preparing, ${stats.ready} ready, ${stats.unpaid} unpaid`}
+            icon={<ListChecks className="w-4 h-4" />}
+          />
+          <InsightCard
+            title="Served"
+            value={String(stats.served)}
+            hint={`Completion ${formatPercent(stats.completionRate)}`}
+            icon={<TrendingUp className="w-4 h-4" />}
+          />
+          <InsightCard
+            title="Cancelled"
+            value={String(stats.cancelled)}
+            hint={`${stats.total} total orders today`}
+            icon={<Clock3 className="w-4 h-4" />}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <Card className="glass-grid-card p-5 xl:col-span-2 bg-white border-slate-200/80">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold flex items-center gap-2 text-slate-900">
+                <Activity className="w-4 h-4 text-teal-600" />
+                Order Flow (Last 12h)
+              </h3>
+              <p className="text-xs text-muted-foreground">Updated every 10s</p>
             </div>
-            <div className="text-3xl font-bold mt-2">{todaySessionCount}</div>
+            <div className="h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={hourlyTrend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="ordersGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#14b8a6" stopOpacity={0.03} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                  <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                  <Tooltip
+                    cursor={{ stroke: '#14b8a6', strokeOpacity: 0.25 }}
+                    contentStyle={{ borderRadius: 12, borderColor: '#e2e8f0', boxShadow: '0 8px 24px rgba(2, 6, 23, 0.08)' }}
+                  />
+                  <Area type="monotone" dataKey="count" stroke="#0f766e" strokeWidth={3} fill="url(#ordersGradient)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </Card>
-          <Card className="glass-grid-card p-4">
-            <div className="text-sm text-muted-foreground flex items-center gap-2">
-              <Clock3 className="w-4 h-4" /> Unpaid
+
+          <Card className="glass-grid-card p-5 bg-white border-slate-200/80">
+            <h3 className="font-semibold flex items-center gap-2 mb-4 text-slate-900">
+              <BarChart3 className="w-4 h-4 text-cyan-600" />
+              Status Mix
+            </h3>
+            <div className="h-[220px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={statusDistribution}
+                    dataKey="count"
+                    nameKey="label"
+                    innerRadius={50}
+                    outerRadius={85}
+                    paddingAngle={3}
+                    stroke="#fff"
+                    strokeWidth={2}
+                  >
+                    {statusDistribution.map((entry) => (
+                      <Cell key={entry.key} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: number, name: string) => [value, name]}
+                    contentStyle={{ borderRadius: 12, borderColor: '#e2e8f0' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
-            <div className="text-3xl font-bold mt-2">{stats.unpaid}</div>
-          </Card>
-          <Card className="glass-grid-card p-4">
-            <div className="text-sm text-muted-foreground flex items-center gap-2">
-              <TrendingUp className="w-4 h-4" /> Served
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              {statusDistribution.map((s) => (
+                <div key={s.key} className="flex items-center justify-between rounded-lg border border-slate-200 px-2 py-1.5 text-xs">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.fill }} />
+                    {s.label}
+                  </span>
+                  <span className="font-semibold">{s.count}</span>
+                </div>
+              ))}
             </div>
-            <div className="text-3xl font-bold mt-2">{stats.served}</div>
-          </Card>
-          <Card className="glass-grid-card p-4 border-green-200/60 bg-green-100/35">
-            <div className="text-sm text-muted-foreground flex items-center gap-2">
-              <DollarSign className="w-4 h-4" /> Revenue (Paid)
-            </div>
-            <div className="text-3xl font-bold text-green-700 mt-2">${stats.revenue.toFixed(2)}</div>
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          <Card className="glass-grid-card p-4">
-            <h3 className="font-semibold mb-3 flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
-              Status Distribution (Today)
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <Card className="glass-grid-card p-5 xl:col-span-2 bg-white border-slate-200/80">
+            <h3 className="font-semibold flex items-center gap-2 mb-4 text-slate-900">
+              <ListOrdered className="w-4 h-4 text-amber-600" />
+              Best Sellers (Today)
             </h3>
-            <div className="space-y-2">
-              {statusDistribution.map((s) => (
-                <div key={s.key}>
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <span>{s.label}</span>
-                    <span className="font-semibold">{s.count}</span>
-                  </div>
-                  <div className="h-2 rounded bg-gray-100 overflow-hidden">
-                    <div
-                      className="h-full bg-primary/80"
-                      style={{ width: `${(s.count / maxStatus) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card className="glass-grid-card p-4">
-            <h3 className="font-semibold mb-3">Orders by Hour (Last 8h)</h3>
-            <div className="space-y-2">
-              {hourlyTrend.map((h) => (
-                <div key={h.label} className="flex items-center gap-2">
-                  <span className="w-14 text-xs text-muted-foreground">{h.label}</span>
-                  <div className="h-2 flex-1 rounded bg-gray-100 overflow-hidden">
-                    <div
-                      className="h-full bg-teal-600"
-                      style={{ width: `${(h.count / maxHourly) * 100}%` }}
-                    />
-                  </div>
-                  <span className="w-6 text-xs text-right font-semibold">{h.count}</span>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card className="glass-grid-card p-4 xl:col-span-2">
-            <h3 className="font-semibold mb-3">Top Items (Today)</h3>
             {topItems.length === 0 ? (
               <p className="text-sm text-muted-foreground">No item activity yet.</p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2">
-                {topItems.map((i) => (
-                  <div key={i.name} className="rounded-lg border bg-white p-3">
-                    <p className="font-medium text-sm line-clamp-2">{i.name}</p>
-                    <p className="text-xs text-muted-foreground mt-1">Qty sold</p>
-                    <p className="text-xl font-bold">{i.qty}</p>
-                  </div>
-                ))}
+              <div className="h-[280px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={topItems} layout="vertical" margin={{ top: 8, right: 10, left: 20, bottom: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      width={120}
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 12, fill: '#334155' }}
+                    />
+                    <Tooltip
+                      formatter={(value: number, name: string, payload: any) => {
+                        if (name === 'qty') return [`${value} units`, 'Sold'];
+                        return [value, name];
+                      }}
+                      labelFormatter={(label) => `${label}`}
+                      contentStyle={{ borderRadius: 12, borderColor: '#e2e8f0' }}
+                    />
+                    <Bar dataKey="qty" fill="#f59e0b" radius={[0, 8, 8, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             )}
+          </Card>
+
+          <Card className="glass-grid-card p-5 bg-white border-slate-200/80">
+            <h3 className="font-semibold flex items-center gap-2 mb-4 text-slate-900">
+              <BadgeDollarSign className="w-4 h-4 text-emerald-600" />
+              Business Health
+            </h3>
+            <div className="space-y-3">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs text-muted-foreground">Collection Efficiency</p>
+                <p className="text-2xl font-bold text-slate-900">{formatPercent(stats.paidRate)}</p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs text-muted-foreground">Average Ticket</p>
+                <p className="text-2xl font-bold text-slate-900">{formatCurrency(stats.avgTicket)}</p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs text-muted-foreground">Payment Methods</p>
+                {paymentMix.length === 0 ? (
+                  <p className="text-sm text-muted-foreground mt-1">No paid orders yet.</p>
+                ) : (
+                  <div className="mt-2 space-y-2">
+                    {paymentMix.slice(0, 4).map((method) => {
+                      const pct = stats.paid ? (method.count / stats.paid) * 100 : 0;
+                      return (
+                        <div key={method.method}>
+                          <div className="flex items-center justify-between text-xs mb-1">
+                            <span className="text-slate-700">{method.method}</span>
+                            <span className="font-semibold">{method.count}</span>
+                          </div>
+                          <div className="h-2 rounded bg-slate-200 overflow-hidden">
+                            <div className="h-full rounded bg-emerald-500" style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
           </Card>
         </div>
       </div>

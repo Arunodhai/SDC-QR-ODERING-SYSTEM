@@ -37,6 +37,7 @@ export default function AdminMenuPage() {
     available: true,
   });
   const [uploading, setUploading] = useState(false);
+  const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -335,40 +336,52 @@ export default function AdminMenuPage() {
               return (
                 <div key={category.id} className="mb-8">
                   <h3 className="text-lg font-semibold mb-4">{category.name}</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(320px,1fr))]">
                     {categoryItems.map(item => (
                       <Card key={item.id} className="glass-grid-card p-3">
                         <div className="flex gap-3 items-start">
                           {getMenuItemImage(item.name, item.image) && (
-                            <div className="h-24 w-24 shrink-0 rounded-lg border bg-white p-1">
+                            <button
+                              type="button"
+                              className="h-24 w-24 shrink-0 rounded-lg border bg-white p-1 transition hover:shadow cursor-zoom-in"
+                              onClick={() =>
+                                setPreviewImage({
+                                  src: getMenuItemImage(item.name, item.image),
+                                  name: item.name,
+                                })
+                              }
+                            >
                               <img src={getMenuItemImage(item.name, item.image)} alt={item.name} className="h-full w-full rounded object-contain" />
-                            </div>
+                            </button>
+                          )}
+                          {!getMenuItemImage(item.name, item.image) && (
+                            <div className="h-24 w-24 shrink-0 rounded-lg border bg-white/60" />
                           )}
 
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-base leading-tight">{item.name}</h4>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-base leading-tight truncate">{item.name}</h4>
                             {item.description && (
                               <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{item.description}</p>
                             )}
                             <p className="text-base font-bold mt-1">${item.price.toFixed(2)}</p>
 
                             <div className="mt-2 flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2 text-sm">
-                              <Label className="text-sm">Available</Label>
-                              <Switch
-                                checked={item.available}
-                                onCheckedChange={() => toggleItemAvailability(item)}
-                              />
-                            </div>
+                              <div className="flex items-center gap-2 text-sm">
+                                <Label className="text-sm">Available</Label>
+                                <Switch
+                                  checked={item.available}
+                                  onCheckedChange={() => toggleItemAvailability(item)}
+                                />
+                              </div>
 
-                            <div className="flex gap-1">
-                              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openEditItem(item)}>
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleDeleteItem(item.id)}>
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
+                              <div className="flex gap-1">
+                                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openEditItem(item)}>
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleDeleteItem(item.id)}>
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -494,6 +507,19 @@ export default function AdminMenuPage() {
               {editingItem ? 'Update' : 'Create'}
             </Button>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(previewImage)} onOpenChange={(open) => !open && setPreviewImage(null)}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{previewImage?.name || 'Item image'}</DialogTitle>
+          </DialogHeader>
+          {previewImage?.src && (
+            <div className="rounded-lg border bg-white p-3 flex items-center justify-center">
+              <img src={previewImage.src} alt={previewImage.name} className="max-h-[65vh] w-auto object-contain rounded" />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

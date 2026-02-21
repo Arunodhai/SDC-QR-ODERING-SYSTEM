@@ -158,20 +158,19 @@ export default function KitchenPage() {
     <div className="page-shell">
       <AdminNav />
 
-      <div className="border-b bg-white/95">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h1 className="brand-display text-2xl font-bold flex items-center gap-2">
-                <ChefHat className="w-6 h-6" />
-                Kitchen Orders
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {viewMode === 'active' ? `${activeOrders.length} active orders` : `${historyOrders.length} historical orders`}
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-              <nav className="flex gap-1 rounded-xl border bg-white p-1">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-4">
+          <div>
+            <h1 className="brand-display text-2xl font-bold flex items-center gap-2">
+              <ChefHat className="w-6 h-6" />
+              Kitchen Orders
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {viewMode === 'active' ? `${activeOrders.length} active orders` : `${historyOrders.length} historical orders`}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <nav className="flex gap-1 rounded-xl border bg-white p-1">
               <Button
                 size="sm"
                 variant={viewMode === 'active' ? 'default' : 'ghost'}
@@ -189,21 +188,17 @@ export default function KitchenPage() {
                 <History className="h-4 w-4 mr-1" />
                 History
               </Button>
-              </nav>
-              {viewMode === 'history' && (
-                <input
-                  type="date"
-                  value={historyDate}
-                  onChange={(e) => setHistoryDate(e.target.value)}
-                  className="h-9 rounded-md border px-3 text-sm"
-                />
-              )}
-            </div>
+            </nav>
+            {viewMode === 'history' && (
+              <input
+                type="date"
+                value={historyDate}
+                onChange={(e) => setHistoryDate(e.target.value)}
+                className="h-9 rounded-md border px-3 text-sm"
+              />
+            )}
           </div>
         </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 py-6">
         {viewMode === 'active' ? (
           activeGroupedByPhone.length === 0 ? (
             <div className="text-center py-12">

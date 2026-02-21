@@ -7,6 +7,7 @@ import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { toast } from 'sonner';
 import * as api from '../lib/api';
 import { getMenuItemImage } from '../lib/menuImageFallback';
@@ -66,6 +67,7 @@ export default function CustomerOrderPage() {
   const [swipeOffsetById, setSwipeOffsetById] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [categoryJump, setCategoryJump] = useState<string>('');
+  const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
   const latestFinalBillIdRef = useRef<string>('');
   const roundByOrderId = userOrders
     .slice()
@@ -655,13 +657,22 @@ export default function CustomerOrderPage() {
                   <Card key={item.id} className="glass-grid-card p-4">
                     <div className="flex gap-4 items-start">
                       {getMenuItemImage(item.name, item.image) && (
-                        <div className="h-24 w-24 shrink-0 rounded-xl border bg-white p-1">
+                        <button
+                          type="button"
+                          className="h-24 w-24 shrink-0 rounded-xl border bg-white p-1 transition hover:shadow cursor-zoom-in"
+                          onClick={() =>
+                            setPreviewImage({
+                              src: getMenuItemImage(item.name, item.image),
+                              name: item.name,
+                            })
+                          }
+                        >
                           <img
                             src={getMenuItemImage(item.name, item.image)}
                             alt={item.name}
                             className="h-full w-full rounded-lg object-contain"
                           />
-                        </div>
+                        </button>
                       )}
                       <div className="flex-1">
                         <h3 className="font-semibold">{item.name}</h3>
@@ -840,7 +851,18 @@ export default function CustomerOrderPage() {
         </div>
       )}
     </div>
-
+    <Dialog open={Boolean(previewImage)} onOpenChange={(open) => !open && setPreviewImage(null)}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{previewImage?.name || 'Item image'}</DialogTitle>
+        </DialogHeader>
+        {previewImage?.src && (
+          <div className="rounded-lg border bg-white p-3 flex items-center justify-center">
+            <img src={previewImage.src} alt={previewImage.name} className="max-h-[70vh] w-auto object-contain rounded" />
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
     </>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { Plus, Trash2, QrCode } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card } from '../components/ui/card';
@@ -42,7 +42,23 @@ export default function AdminTablesPage() {
   const loadTables = async () => {
     try {
       const res = await api.getTables();
-      setTables(res.tables);
+      let nextTables = res.tables || [];
+
+      if (nextTables.length < 12) {
+        const existing = new Set(nextTables.map((t: any) => Number(t.tableNumber)));
+        const missing = Array.from({ length: 12 }, (_, i) => i + 1).filter((n) => !existing.has(n));
+        if (missing.length) {
+          await Promise.all(
+            missing.map((num) =>
+              api.createTable(num).catch(() => null),
+            ),
+          );
+          const refreshed = await api.getTables();
+          nextTables = refreshed.tables || [];
+        }
+      }
+
+      setTables(nextTables);
     } catch (error) {
       console.error('Error loading tables:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to load tables');
@@ -121,21 +137,28 @@ export default function AdminTablesPage() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {tables.map(table => (
             <Card key={table.id} className="glass-grid-card p-6">
-              <div className="text-center mb-4">
-                <h3 className="text-3xl font-bold">Table {table.tableNumber}</h3>
+              <div className="mb-4">
+                <h3 className="text-3xl font-bold text-center">Table {table.tableNumber}</h3>
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
+              <div className="flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  className="rounded-lg border bg-white p-2 transition hover:shadow cursor-zoom-in"
                   onClick={() => showQR(table)}
+                  title="Click to view QR"
                 >
-                  <QrCode className="w-4 h-4 mr-2" />
-                  QR Code
-                </Button>
+                  <QRCodeSVG
+                    value={getTableURL(table.tableNumber)}
+                    size={88}
+                    level="H"
+                  />
+                </button>
+                <div className="min-w-0 flex-1 text-sm text-muted-foreground">
+                  <p className="truncate">{getTableURL(table.tableNumber)}</p>
+                </div>
                 <Button
                   variant="outline"
                   size="icon"
