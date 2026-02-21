@@ -335,7 +335,7 @@ export default function AdminMenuPage() {
 
               return (
                 <Card key={category.id} className="glass-grid-card mb-6 overflow-hidden">
-                  <div className="flex items-center justify-between border-b bg-gradient-to-r from-teal-50 to-cyan-50 px-4 py-3">
+                  <div className="flex items-center justify-between border-b bg-white px-4 py-3">
                     <h3 className="text-base font-semibold">{category.name}</h3>
                     <span className="rounded-md border border-teal-200 bg-white px-2 py-0.5 text-xs text-teal-800">
                       {categoryItems.length} item{categoryItems.length > 1 ? 's' : ''}

@@ -220,7 +220,7 @@ export default function KitchenPage() {
                   <Card key={group.phone} className="glass-grid-card p-4">
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                       <div>
-                        <p className="text-sm text-muted-foreground">Table(s): {tables}</p>
+                        <p className="text-base font-semibold text-foreground">Table(s): {tables}</p>
                         <p className="text-sm text-muted-foreground">
                           Name: {group.customerName || 'Guest'} • Mobile: {phoneLabel}
                         </p>

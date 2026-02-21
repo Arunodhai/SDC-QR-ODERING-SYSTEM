@@ -651,7 +651,7 @@ export default function CustomerOrderPage() {
 
           return (
             <Card key={category.id} id={`category-${category.id}`} className="glass-grid-card mb-6 overflow-hidden">
-              <div className="flex items-center justify-between border-b bg-gradient-to-r from-teal-50 to-cyan-50 px-4 py-3">
+              <div className="flex items-center justify-between border-b bg-white px-4 py-3">
                 <h2 className="text-lg font-bold">{category.name}</h2>
                 <span className="rounded-md border border-teal-200 bg-white px-2 py-0.5 text-xs text-teal-800">
                   {categoryItems.length} item{categoryItems.length > 1 ? 's' : ''}
