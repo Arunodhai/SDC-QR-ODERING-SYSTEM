@@ -9,6 +9,7 @@ import { Separator } from '../components/ui/separator';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet';
 import { toast } from 'sonner';
 import * as api from '../lib/api';
+import { getMenuItemImage } from '../lib/menuImageFallback';
 
 const STATUS_TEXT_COLORS: Record<string, string> = {
   PENDING: 'text-amber-600',
@@ -653,9 +654,9 @@ export default function CustomerOrderPage() {
                 {categoryItems.map(item => (
                   <Card key={item.id} className="glass-grid-card p-4">
                     <div className="flex flex-col gap-4 sm:flex-row">
-                      {item.image && (
+                      {getMenuItemImage(item.name, item.image) && (
                         <img
-                          src={item.image}
+                          src={getMenuItemImage(item.name, item.image)}
                           alt={item.name}
                           className="h-36 w-full rounded-xl object-cover sm:h-24 sm:w-24"
                         />

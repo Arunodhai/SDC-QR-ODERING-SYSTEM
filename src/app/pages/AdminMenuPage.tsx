@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import * as api from '../lib/api';
 import AdminNav from '../components/AdminNav';
 import SeedDataButton from '../components/SeedDataButton';
+import { getMenuItemImage } from '../lib/menuImageFallback';
 
 export default function AdminMenuPage() {
   const navigate = useNavigate();
@@ -338,8 +339,8 @@ export default function AdminMenuPage() {
                     {categoryItems.map(item => (
                       <Card key={item.id} className="glass-grid-card p-3">
                         <div className="flex flex-col gap-2">
-                          {item.image && (
-                            <img src={item.image} alt={item.name} className="h-28 w-full object-cover rounded-lg" />
+                          {getMenuItemImage(item.name, item.image) && (
+                            <img src={getMenuItemImage(item.name, item.image)} alt={item.name} className="h-28 w-full object-cover rounded-lg" />
                           )}
 
                           <div>
