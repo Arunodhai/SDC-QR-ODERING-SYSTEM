@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Lock, Coffee, ArrowLeft } from 'lucide-react';
+import { Lock, ArrowLeft } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card } from '../components/ui/card';
 import { toast } from 'sonner';
 import * as api from '../lib/api';
+import logo12 from '../../assets/logo12.png';
 
 export default function AdminLoginPage() {
   const navigate = useNavigate();
@@ -45,7 +46,7 @@ export default function AdminLoginPage() {
       <Card className="max-w-md w-full p-8 bg-card/90">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Coffee className="w-8 h-8 text-primary" />
+            <img src={logo12} alt="Stories de Café" className="h-8 w-8 object-contain" />
             <h1 className="brand-display text-3xl font-bold">Stories de Café</h1>
           </div>
           <p className="text-muted-foreground">Admin Login</p>
@@ -86,9 +87,6 @@ export default function AdminLoginPage() {
           </Button>
         </form>
 
-        <p className="text-xs text-muted-foreground text-center mt-6">
-          Use your Supabase Auth admin account credentials.
-        </p>
         <Button
           variant="ghost"
           className="mt-4 -ml-2"

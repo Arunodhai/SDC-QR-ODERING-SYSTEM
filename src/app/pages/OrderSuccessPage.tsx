@@ -1,4 +1,4 @@
-import { CheckCircle, Coffee, Clock3, ChefHat, PartyPopper } from 'lucide-react';
+import { CheckCircle, Clock3, ChefHat, PartyPopper } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import * as api from '../lib/api';
@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../components/ui/dialog';
+import logo12 from '../../assets/logo12.png';
 
 const STATUS_STEPS = ['PENDING', 'PREPARING', 'READY', 'COMPLETED'] as const;
 
@@ -221,7 +222,7 @@ export default function OrderSuccessPage() {
         </div>
 
         <div className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-          <Coffee className="w-4 h-4" />
+          <img src={logo12} alt="Stories de Café" className="h-4 w-4 object-contain" />
           <span>Stories de Café</span>
         </div>
 

@@ -78,9 +78,6 @@ export default function KitchenLoginPage() {
           </Button>
         </form>
 
-        <p className="text-xs text-muted-foreground text-center mt-6">
-          Default kitchen credentials: username <code className="rounded bg-gray-100 px-2 py-1">kitchen</code> and password <code className="rounded bg-gray-100 px-2 py-1">kitchen123</code>
-        </p>
         <Button
           variant="ghost"
           className="mt-4 -ml-2"

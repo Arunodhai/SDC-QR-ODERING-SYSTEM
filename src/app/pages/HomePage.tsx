@@ -1,7 +1,8 @@
-import { Coffee, ChefHat, QrCode, LayoutGrid, ArrowRight } from 'lucide-react';
+import { ChefHat, QrCode, LayoutGrid, ArrowRight } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { useNavigate } from 'react-router';
+import logo12 from '../../assets/logo12.png';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -12,7 +13,7 @@ export default function HomePage() {
         {/* Header */}
         <div className="text-center mb-10 md:mb-12">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <Coffee className="w-12 h-12 text-primary" />
+            <img src={logo12} alt="Stories de Café" className="h-12 w-12 object-contain" />
             <h1 className="brand-display text-4xl font-bold md:text-5xl">Stories de Café</h1>
           </div>
           <p className="text-lg text-muted-foreground md:text-xl">Restaurant Ordering System</p>
