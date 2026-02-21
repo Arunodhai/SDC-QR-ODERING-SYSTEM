@@ -40,6 +40,18 @@ const formatDateTime = (value?: string | null) => {
     minute: '2-digit',
   });
 };
+const getPaymentMethodLabel = (value?: string) => {
+  const key = String(value || '').toUpperCase();
+  if (key === 'COUNTER' || key === 'CASH') return 'Cash';
+  if (key === 'UPI') return 'UPI';
+  if (key === 'CARD') return 'Card';
+  return key || '-';
+};
+const orderBillingRef = (order: any) => {
+  const phone = order?.customerPhone || '';
+  const last4 = phone ? phone.slice(-4) : '0000';
+  return `T${order?.tableNumber || '-'}-P${last4}-O${order?.id || '-'}`;
+};
 
 export default function CustomerOrderPage() {
   const { tableNumber } = useParams();
@@ -483,8 +495,20 @@ export default function CustomerOrderPage() {
               <div className="space-y-2 text-sm">
                 <div className="rounded-md border bg-gray-50 px-3 py-2 text-xs text-muted-foreground">
                   <div className="flex items-center justify-between">
+                    <span>Bill Type</span>
+                    <span className="font-semibold text-foreground">Current Session Bill</span>
+                  </div>
+                  <div className="flex items-center justify-between">
                     <span>Status</span>
                     <span className="font-semibold text-amber-600">UNPAID</span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between">
+                    <span>Table</span>
+                    <span className="font-semibold text-foreground">{tableNumber}</span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between">
+                    <span>Mobile</span>
+                    <span className="font-semibold text-foreground">{customerPhone || '-'}</span>
                   </div>
                 </div>
                 {currentBill.lineItems.map((item: any, idx: number) => (
@@ -530,6 +554,20 @@ export default function CustomerOrderPage() {
                       {latestFinalBill.isPaid ? 'PAID' : 'UNPAID'}
                     </span>
                   </div>
+                  <div className="mt-1 flex items-center justify-between">
+                    <span>Payment Method</span>
+                    <span className="font-semibold text-foreground">
+                      {(() => {
+                        const fromHistory = paidBillHistory.find((b: any) => String(b.id) === String(latestFinalBill.id));
+                        const method = fromHistory?.rounds?.find((r: any) => r.paymentMethod)?.paymentMethod;
+                        return getPaymentMethodLabel(method);
+                      })()}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between">
+                    <span>Paid On</span>
+                    <span className="font-semibold text-foreground">{formatDateTime(latestFinalBill.paidAt || latestFinalBill.createdAt)}</span>
+                  </div>
                 </div>
                 {(latestFinalBill.lineItems || []).map((item: any, idx: number) => (
                   <div key={`${item.name}_${idx}`} className="rounded-md border px-3 py-2">
@@ -572,7 +610,9 @@ export default function CustomerOrderPage() {
                       <ChevronDown className={`h-6 w-6 transition-transform ${expandedPaidBills[bill.id] ? 'rotate-180' : ''}`} />
                       Bill #{bill.id}
                     </span>
-                    <span className="font-semibold text-green-600">PAID</span>
+                    <span className="font-semibold text-green-600">
+                      PAID via {getPaymentMethodLabel((bill.rounds || []).find((r: any) => r.paymentMethod)?.paymentMethod)}
+                    </span>
                   </button>
                   <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
                     <span>Table {bill.tableNumber}</span>
@@ -585,7 +625,10 @@ export default function CustomerOrderPage() {
                     <div className="mt-2 rounded-md border bg-gray-50 p-2">
                       {(bill.rounds || []).map((round: any, idx: number) => (
                         <div key={round.id} className="mb-2 last:mb-0">
-                          <p className="text-xs font-semibold">Round {round.roundNumber || idx + 1} • Order #{round.id}</p>
+                          <p className="text-xs font-semibold">
+                            Round {round.roundNumber || idx + 1} • Order #{round.id} • {getPaymentMethodLabel(round.paymentMethod)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Billing Ref: {orderBillingRef(round)}</p>
                           <div className="mt-1 space-y-1">
                             {(round.items || []).map((item: any, ii: number) => (
                               <div key={ii} className="flex items-center justify-between text-xs text-muted-foreground">
