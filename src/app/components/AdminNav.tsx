@@ -36,15 +36,15 @@ export default function AdminNav({ sticky = true }: { sticky?: boolean }) {
           </div>
 
           <div className="flex items-center gap-3">
-            <nav className="flex gap-1 rounded-xl border bg-white p-1">
+            <nav className="fluid-nav-shell flex gap-1 rounded-xl p-1">
               {navItems.map(item => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
                 return (
                   <Link key={item.path} to={item.path}>
                     <Button
-                      variant={isActive ? 'default' : 'ghost'}
-                      className="gap-2 rounded-lg"
+                      variant="ghost"
+                      className={`gap-2 rounded-lg fluid-nav-item ${isActive ? 'fluid-nav-item-active' : ''}`}
                     >
                       <Icon className="w-4 h-4" />
                       {item.label}
