@@ -336,7 +336,7 @@ export default function AdminMenuPage() {
               return (
                 <div key={category.id} className="mb-8">
                   <h3 className="text-lg font-semibold mb-4">{category.name}</h3>
-                  <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(320px,1fr))]">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                     {categoryItems.map(item => (
                       <Card key={item.id} className="glass-grid-card p-3">
                         <div className="flex gap-3 items-start">

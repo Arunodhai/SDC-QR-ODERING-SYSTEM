@@ -139,29 +139,28 @@ export default function AdminTablesPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {tables.map(table => (
-            <Card key={table.id} className="glass-grid-card p-6">
-              <div className="mb-4">
-                <h3 className="text-3xl font-bold text-center">Table {table.tableNumber}</h3>
-              </div>
-              <div className="flex items-center justify-between gap-3">
+            <Card key={table.id} className="glass-grid-card p-4">
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  className="rounded-lg border bg-white p-2 transition hover:shadow cursor-zoom-in"
+                  className="shrink-0 rounded-lg border bg-white p-2 transition hover:shadow cursor-zoom-in"
                   onClick={() => showQR(table)}
                   title="Click to view QR"
                 >
                   <QRCodeSVG
                     value={getTableURL(table.tableNumber)}
-                    size={88}
+                    size={80}
                     level="H"
                   />
                 </button>
-                <div className="min-w-0 flex-1 text-sm text-muted-foreground">
-                  <p className="truncate">{getTableURL(table.tableNumber)}</p>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-xl font-bold leading-tight">Table {table.tableNumber}</h3>
+                  <p className="mt-1 truncate text-xs text-muted-foreground">{getTableURL(table.tableNumber)}</p>
                 </div>
                 <Button
                   variant="outline"
                   size="icon"
+                  className="shrink-0"
                   onClick={() => handleDeleteTable(table.id)}
                 >
                   <Trash2 className="w-4 h-4" />
