@@ -14,7 +14,7 @@ const STATUS_COLORS = {
   PENDING: 'bg-red-100 text-red-800',
   PREPARING: 'bg-yellow-100 text-yellow-800',
   READY: 'bg-green-100 text-green-800',
-  COMPLETED: 'bg-[#0FFFFF] text-black',
+  COMPLETED: 'bg-[#E6FFFF] text-black',
   CANCELLED: 'bg-red-100 text-red-800',
 };
 
