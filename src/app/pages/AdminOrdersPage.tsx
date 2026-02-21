@@ -457,14 +457,9 @@ export default function AdminOrdersPage() {
                     <div className="text-lg font-bold">${groupTotal.toFixed(2)}</div>
                     <div className="text-xs text-muted-foreground">Payable (excludes cancelled)</div>
                     <div className="mt-1 flex justify-end">
-                      {groupPaymentStatus === 'PAID' ? (
-                        <div className="flex items-center gap-2">
-                          <Badge className={PAYMENT_COLORS.PAID}>PAID</Badge>
-                          <span className="text-sm text-muted-foreground">via {groupPaymentMethodLabel}</span>
-                        </div>
-                      ) : (
-                        <Badge className={PAYMENT_COLORS.UNPAID}>UNPAID</Badge>
-                      )}
+                      <Badge className={PAYMENT_COLORS[groupPaymentStatus as keyof typeof PAYMENT_COLORS]}>
+                        {groupPaymentStatus === 'PAID' ? `PAID via ${groupPaymentMethodLabel}` : 'UNPAID'}
+                      </Badge>
                     </div>
                     {group.customerPhone && unpaidOrders.length > 0 && (
                       <div className="mt-2 flex flex-col items-end gap-2">
