@@ -38,6 +38,14 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELLED: '#94a3b8',
 };
 
+const STATUS_GRADIENTS: Record<string, { start: string; end: string }> = {
+  PENDING: { start: '#fbbf24', end: '#f59e0b' },
+  PREPARING: { start: '#fb7185', end: '#e11d48' },
+  READY: { start: '#22d3ee', end: '#0891b2' },
+  COMPLETED: { start: '#34d399', end: '#059669' },
+  CANCELLED: { start: '#cbd5e1', end: '#64748b' },
+};
+
 const formatCurrency = (value: number) => `$${value.toFixed(2)}`;
 const formatPercent = (value: number) => `${(value * 100).toFixed(1)}%`;
 
@@ -55,7 +63,7 @@ function InsightCard({
   valueClassName?: string;
 }) {
   return (
-    <Card className="glass-grid-card animated-gradient-surface p-4 border-slate-200/70">
+    <Card className="glass-grid-card p-4 border-slate-200/70 bg-white">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{title}</p>
         <div className="text-slate-500">{icon}</div>
@@ -272,7 +280,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="page-shell bg-gradient-to-b from-slate-50 via-white to-slate-100/70">
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        <Card className="glass-grid-card animated-gradient-surface overflow-hidden border-slate-200/80">
+        <Card className="glass-grid-card overflow-hidden border-slate-200/80 bg-white">
           <div className="relative p-6 md:p-8">
             <div className="relative flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
               <div>
@@ -369,6 +377,21 @@ export default function AdminDashboardPage() {
             <div className="h-[220px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
+                  <defs>
+                    {statusDistribution.map((entry) => (
+                      <linearGradient
+                        key={`status-gradient-${entry.key}`}
+                        id={`statusGradient-${entry.key}`}
+                        x1="0"
+                        y1="0"
+                        x2="1"
+                        y2="1"
+                      >
+                        <stop offset="0%" stopColor={STATUS_GRADIENTS[entry.key].start} />
+                        <stop offset="100%" stopColor={STATUS_GRADIENTS[entry.key].end} />
+                      </linearGradient>
+                    ))}
+                  </defs>
                   <Pie
                     data={statusDistribution}
                     dataKey="count"
@@ -380,7 +403,7 @@ export default function AdminDashboardPage() {
                     strokeWidth={2}
                   >
                     {statusDistribution.map((entry) => (
-                      <Cell key={entry.key} fill={entry.fill} />
+                      <Cell key={entry.key} fill={`url(#statusGradient-${entry.key})`} />
                     ))}
                   </Pie>
                   <Tooltip
@@ -416,6 +439,12 @@ export default function AdminDashboardPage() {
               <div className="h-[280px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={topItems} layout="vertical" margin={{ top: 8, right: 10, left: 20, bottom: 8 }}>
+                    <defs>
+                      <linearGradient id="topItemsBarGradient" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="#fbbf24" />
+                        <stop offset="100%" stopColor="#f97316" />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
                     <YAxis
@@ -434,7 +463,7 @@ export default function AdminDashboardPage() {
                       labelFormatter={(label) => `${label}`}
                       contentStyle={{ borderRadius: 12, borderColor: '#e2e8f0' }}
                     />
-                    <Bar dataKey="qty" fill="#f59e0b" radius={[0, 8, 8, 0]} />
+                    <Bar dataKey="qty" fill="url(#topItemsBarGradient)" radius={[0, 8, 8, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

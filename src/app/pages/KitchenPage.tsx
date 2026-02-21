@@ -181,56 +181,57 @@ export default function KitchenPage() {
   return (
     <div className="page-shell">
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {!isAdminKitchen && (
-          <div className="mb-4 flex items-center justify-between rounded-xl border bg-white p-3">
+        <div className="mb-6 grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-4">
             <div>
-              <p className="text-sm font-semibold">{kitchenUserName}</p>
-              <p className="text-xs text-muted-foreground">Kitchen manager access</p>
+              <h1 className="brand-display text-2xl font-bold flex items-center gap-2">
+                <ChefHat className="w-6 h-6" />
+                Kitchen Orders
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {viewMode === 'active' ? `${activeOrders.length} active orders` : `${historyOrders.length} historical orders`}
+              </p>
             </div>
-            <Button variant="outline" size="sm" onClick={handleKitchenLogout}>
-              Logout
-            </Button>
+            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+              <nav className="flex gap-1 rounded-xl border bg-white p-1">
+                <Button
+                  size="sm"
+                  variant={viewMode === 'active' ? 'default' : 'ghost'}
+                  className="rounded-lg"
+                  onClick={() => setViewMode('active')}
+                >
+                  Active
+                </Button>
+                <Button
+                  size="sm"
+                  variant={viewMode === 'history' ? 'default' : 'ghost'}
+                  className="rounded-lg"
+                  onClick={() => setViewMode('history')}
+                >
+                  <History className="h-4 w-4 mr-1" />
+                  History
+                </Button>
+              </nav>
+              {viewMode === 'history' && (
+                <input
+                  type="date"
+                  value={historyDate}
+                  onChange={(e) => setHistoryDate(e.target.value)}
+                  className="h-9 rounded-md border px-3 text-sm"
+                />
+              )}
+            </div>
           </div>
-        )}
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-4">
-          <div>
-            <h1 className="brand-display text-2xl font-bold flex items-center gap-2">
-              <ChefHat className="w-6 h-6" />
-              Kitchen Orders
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {viewMode === 'active' ? `${activeOrders.length} active orders` : `${historyOrders.length} historical orders`}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-            <nav className="flex gap-1 rounded-xl border bg-white p-1">
-              <Button
-                size="sm"
-                variant={viewMode === 'active' ? 'default' : 'ghost'}
-                className="rounded-lg"
-                onClick={() => setViewMode('active')}
-              >
-                Active
+          {!isAdminKitchen && (
+            <div className="flex items-center gap-2 rounded-xl border bg-white p-4">
+              <span className="rounded-md border bg-gray-50 px-3 py-2 text-sm text-muted-foreground">
+                {kitchenUserName}
+              </span>
+              <Button variant="outline" size="sm" onClick={handleKitchenLogout}>
+                Logout
               </Button>
-              <Button
-                size="sm"
-                variant={viewMode === 'history' ? 'default' : 'ghost'}
-                className="rounded-lg"
-                onClick={() => setViewMode('history')}
-              >
-                <History className="h-4 w-4 mr-1" />
-                History
-              </Button>
-            </nav>
-            {viewMode === 'history' && (
-              <input
-                type="date"
-                value={historyDate}
-                onChange={(e) => setHistoryDate(e.target.value)}
-                className="h-9 rounded-md border px-3 text-sm"
-              />
-            )}
-          </div>
+            </div>
+          )}
         </div>
         {viewMode === 'active' ? (
           activeGroupedByPhone.length === 0 ? (
