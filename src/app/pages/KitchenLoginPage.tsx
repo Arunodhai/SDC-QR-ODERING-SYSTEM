@@ -37,15 +37,6 @@ export default function KitchenLoginPage() {
   return (
     <div className="page-shell flex items-center justify-center p-4">
       <Card className="max-w-md w-full p-8 bg-card/90">
-        <Button
-          variant="ghost"
-          className="mb-4 -ml-2"
-          onClick={() => navigate('/')}
-          type="button"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Access Selection
-        </Button>
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
             <ChefHat className="w-8 h-8 text-amber-700" />
@@ -56,11 +47,12 @@ export default function KitchenLoginPage() {
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-2">Name</label>
+            <label className="block text-sm font-medium mb-2">Username</label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Kitchen manager name"
+              placeholder="Enter kitchen username"
+              required
             />
           </div>
           <div>
@@ -87,8 +79,17 @@ export default function KitchenLoginPage() {
         </form>
 
         <p className="text-xs text-muted-foreground text-center mt-6">
-          Default kitchen password: <code className="rounded bg-gray-100 px-2 py-1">kitchen123</code>
+          Default kitchen credentials: username <code className="rounded bg-gray-100 px-2 py-1">kitchen</code> and password <code className="rounded bg-gray-100 px-2 py-1">kitchen123</code>
         </p>
+        <Button
+          variant="ghost"
+          className="mt-4 -ml-2"
+          onClick={() => navigate('/')}
+          type="button"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Access Selection
+        </Button>
       </Card>
     </div>
   );

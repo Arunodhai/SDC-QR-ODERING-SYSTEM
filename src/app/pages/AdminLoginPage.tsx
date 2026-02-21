@@ -43,15 +43,6 @@ export default function AdminLoginPage() {
   return (
     <div className="page-shell flex items-center justify-center p-4">
       <Card className="max-w-md w-full p-8 bg-card/90">
-        <Button
-          variant="ghost"
-          className="mb-4 -ml-2"
-          onClick={() => navigate('/')}
-          type="button"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Access Selection
-        </Button>
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Coffee className="w-8 h-8 text-primary" />
@@ -98,6 +89,15 @@ export default function AdminLoginPage() {
         <p className="text-xs text-muted-foreground text-center mt-6">
           Use your Supabase Auth admin account credentials.
         </p>
+        <Button
+          variant="ghost"
+          className="mt-4 -ml-2"
+          onClick={() => navigate('/')}
+          type="button"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Access Selection
+        </Button>
       </Card>
     </div>
   );

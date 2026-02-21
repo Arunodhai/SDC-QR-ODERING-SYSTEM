@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { ChefHat, ChevronDown, Clock, History, KeyRound, LogOut } from 'lucide-react';
+import { ChefHat, ChevronDown, Clock, History, KeyRound, LogOut, UserRoundPen } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
@@ -51,10 +51,14 @@ export default function KitchenPage() {
   const [historyDate, setHistoryDate] = useState(localDateKey(new Date()));
   const [kitchenUserName, setKitchenUserName] = useState('Kitchen Manager');
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [showUsernameDialog, setShowUsernameDialog] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [updatingPassword, setUpdatingPassword] = useState(false);
+  const [usernamePassword, setUsernamePassword] = useState('');
+  const [newUsername, setNewUsername] = useState('');
+  const [updatingUsername, setUpdatingUsername] = useState(false);
   const isAdminKitchen = location.pathname.startsWith('/admin/');
 
   useEffect(() => {
@@ -108,7 +112,7 @@ export default function KitchenPage() {
 
     setUpdatingPassword(true);
     try {
-      await api.changeKitchenPassword(currentPassword, newPassword);
+      await api.changeKitchenPassword(kitchenUserName, currentPassword, newPassword);
       toast.success('Kitchen password updated');
       setShowPasswordDialog(false);
       setCurrentPassword('');
@@ -118,6 +122,24 @@ export default function KitchenPage() {
       toast.error(error instanceof Error ? error.message : 'Failed to update password');
     } finally {
       setUpdatingPassword(false);
+    }
+  };
+
+  const handleChangeUsername = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUpdatingUsername(true);
+    try {
+      const result = await api.changeKitchenUsername(kitchenUserName, usernamePassword, newUsername);
+      await api.setKitchenSessionName(result.username);
+      setKitchenUserName(result.username);
+      toast.success('Kitchen username updated');
+      setShowUsernameDialog(false);
+      setUsernamePassword('');
+      setNewUsername('');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update username');
+    } finally {
+      setUpdatingUsername(false);
     }
   };
 
@@ -271,6 +293,10 @@ export default function KitchenPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem onClick={() => setShowUsernameDialog(true)}>
+                    <UserRoundPen className="h-4 w-4" />
+                    Change Username
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setShowPasswordDialog(true)}>
                     <KeyRound className="h-4 w-4" />
                     Change Password
@@ -453,6 +479,45 @@ export default function KitchenPage() {
               </div>
               <Button type="submit" className="w-full" disabled={updatingPassword}>
                 {updatingPassword ? 'Updating Password...' : 'Update Password'}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {!isAdminKitchen && (
+        <Dialog open={showUsernameDialog} onOpenChange={setShowUsernameDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Change Kitchen Username</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleChangeUsername} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="current-kitchen-username">Current Username</Label>
+                <Input id="current-kitchen-username" value={kitchenUserName} readOnly disabled />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-kitchen-username">New Username</Label>
+                <Input
+                  id="new-kitchen-username"
+                  value={newUsername}
+                  onChange={(e) => setNewUsername(e.target.value)}
+                  required
+                  minLength={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="username-change-password">Current Password</Label>
+                <Input
+                  id="username-change-password"
+                  type="password"
+                  value={usernamePassword}
+                  onChange={(e) => setUsernamePassword(e.target.value)}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={updatingUsername}>
+                {updatingUsername ? 'Updating Username...' : 'Update Username'}
               </Button>
             </form>
           </DialogContent>

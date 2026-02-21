@@ -11,7 +11,11 @@ const kitchenAuthSetupHint =
 
 const isMissingKitchenAuthRpc = (error: any) => {
   const message = String(error?.message || '');
-  return message.includes('verify_kitchen_password') || message.includes('change_kitchen_password');
+  return (
+    message.includes('verify_kitchen_credentials') ||
+    message.includes('change_kitchen_password') ||
+    message.includes('change_kitchen_username')
+  );
 };
 
 const errMsg = (error: any, fallback: string) => {
@@ -90,12 +94,19 @@ export const getAdminSession = async () => {
 };
 
 export const kitchenSignIn = async (password: string, name = 'Kitchen Manager') => {
+  const enteredName = String(name || '').trim();
   const enteredPassword = String(password || '').trim();
+  if (!enteredName) {
+    throw new Error('Username is required');
+  }
   if (!enteredPassword) {
     throw new Error('Kitchen password is required');
   }
 
-  const { data, error } = await supabase.rpc('verify_kitchen_password', { p_password: enteredPassword });
+  const { data, error } = await supabase.rpc('verify_kitchen_credentials', {
+    p_username: enteredName,
+    p_password: enteredPassword,
+  });
   if (error) {
     if (isMissingKitchenAuthRpc(error)) {
       throw new Error(kitchenAuthSetupHint);
@@ -104,12 +115,12 @@ export const kitchenSignIn = async (password: string, name = 'Kitchen Manager') 
   }
 
   if (!data) {
-    throw new Error('Invalid kitchen password');
+    throw new Error('Invalid username or password');
   }
 
   const session = {
     role: 'kitchen',
-    name: String(name || 'Kitchen Manager').trim() || 'Kitchen Manager',
+    name: enteredName,
     signedInAt: new Date().toISOString(),
   };
   localStorage.setItem(kitchenSessionKey, JSON.stringify(session));
@@ -127,18 +138,32 @@ export const getKitchenSession = async () => {
   }
 };
 
+export const setKitchenSessionName = async (name: string) => {
+  const session = await getKitchenSession();
+  if (!session) return null;
+  const next = { ...session, name: String(name || '').trim() };
+  localStorage.setItem(kitchenSessionKey, JSON.stringify(next));
+  return next;
+};
+
 export const kitchenSignOut = async () => {
   localStorage.removeItem(kitchenSessionKey);
   return { success: true };
 };
 
-export const changeKitchenPassword = async (currentPassword: string, nextPassword: string) => {
+export const changeKitchenPassword = async (username: string, currentPassword: string, nextPassword: string) => {
+  const trimmedUser = String(username || '').trim();
+  if (!trimmedUser) {
+    throw new Error('Username is required');
+  }
+
   const trimmedNext = String(nextPassword || '').trim();
   if (trimmedNext.length < 6) {
     throw new Error('New password must be at least 6 characters');
   }
 
   const { data, error } = await supabase.rpc('change_kitchen_password', {
+    p_username: trimmedUser,
     p_current: String(currentPassword || '').trim(),
     p_next: trimmedNext,
   });
@@ -149,10 +174,42 @@ export const changeKitchenPassword = async (currentPassword: string, nextPasswor
     throw new Error(errMsg(error, 'Failed to update kitchen password'));
   }
   if (!data) {
-    throw new Error('Current password is incorrect');
+    throw new Error('Invalid username or current password');
   }
 
   return { success: true };
+};
+
+export const changeKitchenUsername = async (
+  currentUsername: string,
+  currentPassword: string,
+  nextUsername: string,
+) => {
+  const trimmedCurrent = String(currentUsername || '').trim();
+  const trimmedNext = String(nextUsername || '').trim();
+  if (!trimmedCurrent) {
+    throw new Error('Current username is required');
+  }
+  if (trimmedNext.length < 3) {
+    throw new Error('New username must be at least 3 characters');
+  }
+
+  const { data, error } = await supabase.rpc('change_kitchen_username', {
+    p_current_username: trimmedCurrent,
+    p_current_password: String(currentPassword || '').trim(),
+    p_next_username: trimmedNext,
+  });
+  if (error) {
+    if (isMissingKitchenAuthRpc(error)) {
+      throw new Error(kitchenAuthSetupHint);
+    }
+    throw new Error(errMsg(error, 'Failed to update kitchen username'));
+  }
+  if (!data) {
+    throw new Error('Invalid current username or password');
+  }
+
+  return { success: true, username: trimmedNext };
 };
 
 export const healthCheck = async () => {
