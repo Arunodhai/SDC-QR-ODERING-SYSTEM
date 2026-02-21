@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router';
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Minus, ShoppingCart, Coffee, Trash2, ChevronDown, ReceiptText, BellRing } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, Coffee, Trash2, ChevronDown, BellRing } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -85,6 +85,7 @@ export default function CustomerOrderPage() {
   const [categoryJump, setCategoryJump] = useState<string>('');
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
   const latestFinalBillIdRef = useRef<string>('');
+  const cartStorageKey = `sdc:cart:${tableNumber || 'unknown'}:${customerPhone || 'guest'}`;
   const roundByOrderId = userOrders
     .slice()
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
@@ -116,6 +117,30 @@ export default function CustomerOrderPage() {
       }
     }
   }, [tableNumber]);
+
+  useEffect(() => {
+    if (!phoneConfirmed || !customerPhone) return;
+    try {
+      const raw = sessionStorage.getItem(cartStorageKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      setCart(parsed.cart || {});
+      setItemNotes(parsed.itemNotes || {});
+    } catch {
+      // ignore corrupted session cart
+    }
+  }, [phoneConfirmed, customerPhone, cartStorageKey]);
+
+  useEffect(() => {
+    if (!phoneConfirmed || !customerPhone) return;
+    sessionStorage.setItem(
+      cartStorageKey,
+      JSON.stringify({
+        cart,
+        itemNotes,
+      }),
+    );
+  }, [cart, itemNotes, phoneConfirmed, customerPhone, cartStorageKey]);
 
   const loadMenu = async () => {
     try {
@@ -350,6 +375,9 @@ export default function CustomerOrderPage() {
 
       toast.success('Order placed successfully!');
       const createdOrderId = res?.order?.id;
+      sessionStorage.removeItem(cartStorageKey);
+      setCart({});
+      setItemNotes({});
       navigate(`/order/success?orderId=${createdOrderId}&table=${tableNumber}&phone=${encodeURIComponent(customerPhone.trim())}`);
     } catch (error) {
       console.error('Error placing order:', error);
@@ -435,6 +463,7 @@ export default function CustomerOrderPage() {
                     setExpandedPaidBills({});
                     setCart({});
                     setItemNotes({});
+                    sessionStorage.removeItem(cartStorageKey);
                     setCustomerName('');
                   }}
                 >
