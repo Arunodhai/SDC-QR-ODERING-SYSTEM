@@ -13,7 +13,7 @@ alter table public.kitchen_auth
   add column if not exists username text not null default 'kitchen';
 
 insert into public.kitchen_auth (id, username, password_hash)
-values (1, 'kitchen', crypt('kitchen123', gen_salt('bf')))
+values (1, 'kitchen', extensions.crypt('kitchen123', extensions.gen_salt('bf')))
 on conflict (id) do nothing;
 
 update public.kitchen_auth
@@ -45,7 +45,7 @@ begin
     return false;
   end if;
 
-  return crypt(coalesce(p_password, ''), stored_hash) = stored_hash;
+  return extensions.crypt(coalesce(p_password, ''), stored_hash) = stored_hash;
 end;
 $$;
 
@@ -71,7 +71,7 @@ begin
     return false;
   end if;
 
-  if crypt(coalesce(p_current, ''), stored_hash) <> stored_hash then
+  if extensions.crypt(coalesce(p_current, ''), stored_hash) <> stored_hash then
     return false;
   end if;
 
@@ -81,7 +81,7 @@ begin
 
   update public.kitchen_auth
   set
-    password_hash = crypt(trim(p_next), gen_salt('bf')),
+    password_hash = extensions.crypt(trim(p_next), extensions.gen_salt('bf')),
     updated_at = now()
   where id = 1;
 
@@ -116,7 +116,7 @@ begin
     return false;
   end if;
 
-  if crypt(coalesce(p_current_password, ''), stored_hash) <> stored_hash then
+  if extensions.crypt(coalesce(p_current_password, ''), stored_hash) <> stored_hash then
     return false;
   end if;
 

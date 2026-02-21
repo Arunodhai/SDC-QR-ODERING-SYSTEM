@@ -287,10 +287,8 @@ export default function KitchenPage() {
                 <p className="mt-0.5 text-xs uppercase tracking-wide text-muted-foreground">Kitchen manager access</p>
               </div>
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="shrink-0">
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
+                <DropdownMenuTrigger className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border bg-background text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+                  <ChevronDown className="h-4 w-4" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
                   <DropdownMenuItem onClick={() => setShowUsernameDialog(true)}>
