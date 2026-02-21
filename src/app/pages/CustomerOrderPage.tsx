@@ -653,20 +653,22 @@ export default function CustomerOrderPage() {
               <div className="grid gap-4">
                 {categoryItems.map(item => (
                   <Card key={item.id} className="glass-grid-card p-4">
-                    <div className="flex flex-col gap-4 sm:flex-row">
+                    <div className="flex gap-4 items-start">
                       {getMenuItemImage(item.name, item.image) && (
-                        <img
-                          src={getMenuItemImage(item.name, item.image)}
-                          alt={item.name}
-                          className="h-36 w-full rounded-xl object-cover sm:h-24 sm:w-24"
-                        />
+                        <div className="h-24 w-24 shrink-0 rounded-xl border bg-white p-1">
+                          <img
+                            src={getMenuItemImage(item.name, item.image)}
+                            alt={item.name}
+                            className="h-full w-full rounded-lg object-contain"
+                          />
+                        </div>
                       )}
                       <div className="flex-1">
                         <h3 className="font-semibold">{item.name}</h3>
                         <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
                         <p className="text-lg font-bold mt-2">${item.price.toFixed(2)}</p>
                       </div>
-                      <div className="flex items-center gap-2 self-end sm:self-center">
+                      <div className="flex items-center gap-2 self-end">
                         {cart[item.id] ? (
                           <>
                             <Button

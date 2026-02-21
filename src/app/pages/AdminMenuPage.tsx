@@ -338,20 +338,21 @@ export default function AdminMenuPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                     {categoryItems.map(item => (
                       <Card key={item.id} className="glass-grid-card p-3">
-                        <div className="flex flex-col gap-2">
+                        <div className="flex gap-3 items-start">
                           {getMenuItemImage(item.name, item.image) && (
-                            <img src={getMenuItemImage(item.name, item.image)} alt={item.name} className="h-28 w-full object-cover rounded-lg" />
+                            <div className="h-24 w-24 shrink-0 rounded-lg border bg-white p-1">
+                              <img src={getMenuItemImage(item.name, item.image)} alt={item.name} className="h-full w-full rounded object-contain" />
+                            </div>
                           )}
 
-                          <div>
+                          <div className="flex-1">
                             <h4 className="font-semibold text-base leading-tight">{item.name}</h4>
                             {item.description && (
                               <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{item.description}</p>
                             )}
                             <p className="text-base font-bold mt-1">${item.price.toFixed(2)}</p>
-                          </div>
 
-                          <div className="flex items-center justify-between gap-2">
+                            <div className="mt-2 flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2 text-sm">
                               <Label className="text-sm">Available</Label>
                               <Switch
@@ -367,6 +368,7 @@ export default function AdminMenuPage() {
                               <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleDeleteItem(item.id)}>
                                 <Trash2 className="w-4 h-4" />
                               </Button>
+                            </div>
                             </div>
                           </div>
                         </div>
