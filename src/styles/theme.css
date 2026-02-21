@@ -267,6 +267,7 @@
     background-size: 260% 260%;
     animation: sdcGradientShift 22s ease-in-out infinite, sdcFloatPulse 9s ease-in-out infinite;
   }
+<<<<<<< ours
 
   .fluid-nav-shell {
     border: 1px solid rgba(148, 163, 184, 0.35);
@@ -314,4 +315,6 @@
     pointer-events: none;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0));
   }
+=======
+>>>>>>> theirs
 }
