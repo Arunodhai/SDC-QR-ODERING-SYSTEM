@@ -22,6 +22,7 @@ const PAYMENT_COLORS = {
   PAID: 'bg-green-100 text-green-800 !rounded-sm',
   UNPAID: 'bg-orange-100 text-orange-800 !rounded-sm',
 };
+type PaymentMethod = 'CASH' | 'UPI' | 'CARD';
 const statusLabel = (status: string) => (status === 'COMPLETED' ? 'SERVED' : status);
 
 const billingRef = (order: any) => {
@@ -50,6 +51,13 @@ export default function AdminOrdersPage() {
   const [billLoadingKey, setBillLoadingKey] = useState<string>('');
   const [markingGroupPaid, setMarkingGroupPaid] = useState(false);
   const [selectedGroupDetails, setSelectedGroupDetails] = useState<any | null>(null);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('CASH');
+  const [pendingPaymentTarget, setPendingPaymentTarget] = useState<
+    | { type: 'GROUP'; group: { tableNumber: number; customerPhone: string }; ordersToPay: any[] }
+    | { type: 'BILL'; billId: string }
+    | null
+  >(null);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
@@ -96,7 +104,11 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const markGroupPaid = async (group: { tableNumber: number; customerPhone: string }, ordersToPay: any[]) => {
+  const markGroupPaid = async (
+    group: { tableNumber: number; customerPhone: string },
+    ordersToPay: any[],
+    paymentMethod: PaymentMethod,
+  ) => {
     try {
       // Reuse currently generated preview bill when possible to avoid duplicate bill snapshots.
       if (
@@ -105,18 +117,18 @@ export default function AdminOrdersPage() {
         billPreview.tableNumber === group.tableNumber &&
         billPreview.phone === group.customerPhone
       ) {
-        await api.markFinalBillPaid(billPreview.id);
+        await api.markFinalBillPaid(billPreview.id, paymentMethod);
       } else {
         // Ensure payment is tracked in final_bills (for customer paid history), then mark paid.
         const generated = await api.generateFinalBillByTableAndPhone(group.tableNumber, group.customerPhone);
         if (generated.bill?.id) {
-          await api.markFinalBillPaid(generated.bill.id);
+          await api.markFinalBillPaid(generated.bill.id, paymentMethod);
         } else {
           const ids = (ordersToPay || []).map((o: any) => String(o.id));
-          await api.markOrdersPaidBulk(ids);
+          await api.markOrdersPaidBulk(ids, paymentMethod);
         }
       }
-      toast.success('Group marked as paid');
+      toast.success(`Group marked as paid via ${paymentMethod}`);
       setBillPreview(null);
       loadOrders();
     } catch (error) {
@@ -290,12 +302,12 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const markBillPaid = async () => {
+  const markBillPaid = async (paymentMethod: PaymentMethod) => {
     if (!billPreview || !billPreview.id) return;
     setMarkingGroupPaid(true);
     try {
-      await api.markFinalBillPaid(billPreview.id);
-      toast.success('Final bill marked as paid.');
+      await api.markFinalBillPaid(billPreview.id, paymentMethod);
+      toast.success(`Final bill marked as paid via ${paymentMethod}.`);
       setBillPreview(null);
       loadOrders();
     } catch (error) {
@@ -304,6 +316,32 @@ export default function AdminOrdersPage() {
     } finally {
       setMarkingGroupPaid(false);
     }
+  };
+
+  const startGroupPayment = (group: { tableNumber: number; customerPhone: string }, ordersToPay: any[]) => {
+    setPendingPaymentTarget({ type: 'GROUP', group, ordersToPay });
+    setSelectedPaymentMethod('CASH');
+    setPaymentDialogOpen(true);
+  };
+
+  const startBillPayment = (billId: string) => {
+    setPendingPaymentTarget({ type: 'BILL', billId });
+    setSelectedPaymentMethod('CASH');
+    setPaymentDialogOpen(true);
+  };
+
+  const confirmPayment = async () => {
+    if (!pendingPaymentTarget) return;
+    setPaymentDialogOpen(false);
+    if (pendingPaymentTarget.type === 'GROUP') {
+      await markGroupPaid(
+        pendingPaymentTarget.group,
+        pendingPaymentTarget.ordersToPay,
+        selectedPaymentMethod,
+      );
+      return;
+    }
+    await markBillPaid(selectedPaymentMethod);
   };
 
   if (loading) {
@@ -397,7 +435,7 @@ export default function AdminOrdersPage() {
                         <Button
                           size="sm"
                           onClick={() =>
-                            markGroupPaid(
+                            startGroupPayment(
                               { tableNumber: group.tableNumber, customerPhone: group.customerPhone },
                               unpaidOrders,
                             )
@@ -518,8 +556,45 @@ export default function AdminOrdersPage() {
             <Button variant="outline" onClick={() => setBillPreview(null)} disabled={markingGroupPaid}>
               Close
             </Button>
-            <Button onClick={markBillPaid} disabled={markingGroupPaid || !billPreview || billPreview.isPaid}>
+            <Button
+              onClick={() => billPreview?.id && startBillPayment(billPreview.id)}
+              disabled={markingGroupPaid || !billPreview || billPreview.isPaid}
+            >
               {markingGroupPaid ? 'Marking...' : billPreview?.isPaid ? 'Already Paid' : 'Mark All as Paid'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Select Payment Method</DialogTitle>
+            <DialogDescription>
+              Choose how this bill was paid before marking it as paid.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Select
+              value={selectedPaymentMethod}
+              onValueChange={(value) => setSelectedPaymentMethod(value as PaymentMethod)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CASH">Cash</SelectItem>
+                <SelectItem value="UPI">UPI</SelectItem>
+                <SelectItem value="CARD">Card</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPaymentDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={confirmPayment}>
+              Confirm & Mark Paid
             </Button>
           </DialogFooter>
         </DialogContent>

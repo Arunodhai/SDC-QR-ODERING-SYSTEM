@@ -465,10 +465,12 @@ export const updateOrderStatus = async (id: string, status: string) => {
   return { order: toOrder(data) };
 };
 
-export const updateOrderPayment = async (id: string, paymentStatus: string) => {
+export const updateOrderPayment = async (id: string, paymentStatus: string, paymentMethod?: string) => {
+  const patch: Record<string, any> = { payment_status: paymentStatus };
+  if (paymentMethod) patch.payment_method = paymentMethod;
   const { data, error } = await supabase
     .from('orders')
-    .update({ payment_status: paymentStatus })
+    .update(patch)
     .eq('id', Number(id))
     .select('*,order_items(*)')
     .single();
@@ -514,12 +516,12 @@ export const getUnpaidBillByTableAndPhone = async (tableNumber: number, phone: s
   return { orders, total, lineItems };
 };
 
-export const markOrdersPaidBulk = async (orderIds: string[]) => {
+export const markOrdersPaidBulk = async (orderIds: string[], paymentMethod: string) => {
   if (!orderIds.length) return { success: true };
   const ids = orderIds.map((id) => Number(id));
   const { error } = await supabase
     .from('orders')
-    .update({ payment_status: 'PAID' })
+    .update({ payment_status: 'PAID', payment_method: paymentMethod })
     .in('id', ids);
 
   if (error) throw new Error(errMsg(error, 'Failed to mark orders as paid'));
@@ -716,7 +718,7 @@ export const generateFinalBillByTableAndPhone = async (tableNumber: number, phon
   };
 };
 
-export const markFinalBillPaid = async (billId: string) => {
+export const markFinalBillPaid = async (billId: string, paymentMethod: string) => {
   const { data, error } = await supabase
     .from('final_bills')
     .update({ is_paid: true, paid_at: new Date().toISOString() })
@@ -728,7 +730,7 @@ export const markFinalBillPaid = async (billId: string) => {
 
   const orderIds = (data.order_ids || []).map((id: any) => String(id));
   if (orderIds.length) {
-    await markOrdersPaidBulk(orderIds);
+    await markOrdersPaidBulk(orderIds, paymentMethod);
   }
 
   return { success: true };
