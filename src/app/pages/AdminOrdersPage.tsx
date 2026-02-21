@@ -651,12 +651,6 @@ export default function AdminOrdersPage() {
                 ? `${selectedGroupDetails.customerName || 'Guest'} • ${selectedGroupDetails.customerPhone || '-'} • ${format(new Date(selectedGroupDetails.startedAt), 'MMM dd, yyyy • h:mm a')}`
                 : ''}
             </DialogDescription>
-            {selectedGroupDetails?.paymentStatus === 'PAID' && selectedGroupDetails?.paidAt ? (
-              <p className="text-xs text-green-700 mt-1">
-                Payment: PAID via {selectedGroupDetails?.paymentMethodSummary || '-'} on{' '}
-                {format(new Date(selectedGroupDetails.paidAt), 'MMM dd, yyyy • h:mm a')}
-              </p>
-            ) : null}
           </DialogHeader>
 
           <div className="max-h-[65vh] overflow-y-auto space-y-3 pr-1">
@@ -701,6 +695,13 @@ export default function AdminOrdersPage() {
               </div>
             ))}
           </div>
+
+          {selectedGroupDetails?.paymentStatus === 'PAID' && selectedGroupDetails?.paidAt ? (
+            <p className="text-sm text-green-700">
+              Payment: PAID via {selectedGroupDetails?.paymentMethodSummary || '-'} on{' '}
+              {format(new Date(selectedGroupDetails.paidAt), 'MMM dd, yyyy • h:mm a')}
+            </p>
+          ) : null}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setSelectedGroupDetails(null)}>
