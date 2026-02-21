@@ -223,10 +223,11 @@ export default function KitchenPage() {
             </div>
           </div>
           {!isAdminKitchen && (
-            <div className="flex items-center gap-2 rounded-xl border bg-white p-4">
-              <span className="rounded-md border bg-gray-50 px-3 py-2 text-sm text-muted-foreground">
-                {kitchenUserName}
-              </span>
+            <div className="flex items-center gap-4 rounded-xl border bg-white px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Kitchen manager access</p>
+                <p className="truncate text-base font-semibold text-black">{kitchenUserName}</p>
+              </div>
               <Button variant="outline" size="sm" onClick={handleKitchenLogout}>
                 Logout
               </Button>

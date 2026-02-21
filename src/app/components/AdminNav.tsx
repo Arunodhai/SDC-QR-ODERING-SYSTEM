@@ -43,8 +43,8 @@ export default function AdminNav({ sticky = true }: { sticky?: boolean }) {
                 return (
                   <Link key={item.path} to={item.path}>
                     <Button
-                      variant="ghost"
-                      className={`gap-2 rounded-lg border ${isActive ? 'fluid-nav-active border-transparent' : 'border-transparent text-slate-600 hover:text-slate-900'}`}
+                      variant={isActive ? 'default' : 'ghost'}
+                      className="gap-2 rounded-lg"
                     >
                       <Icon className="w-4 h-4" />
                       {item.label}
