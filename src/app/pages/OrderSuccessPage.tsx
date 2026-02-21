@@ -233,9 +233,9 @@ export default function OrderSuccessPage() {
                   </div>
                 ))}
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-semibold">Items Total</span>
-                <span className="font-bold">${Number(order.total || 0).toFixed(2)}</span>
+              <div className="grid grid-cols-12 gap-2 rounded-lg bg-slate-50/80 px-3 py-2 text-sm">
+                <span className="col-span-8 font-semibold">Items Total</span>
+                <span className="col-span-4 text-right font-bold">${Number(order.total || 0).toFixed(2)}</span>
               </div>
             </div>
           )}
