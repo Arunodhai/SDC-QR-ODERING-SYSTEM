@@ -21,6 +21,7 @@ const STATUS_COLORS = {
 const PAYMENT_COLORS = {
   PAID: 'bg-green-100 text-green-800 !rounded-sm',
   UNPAID: 'bg-orange-100 text-orange-800 !rounded-sm',
+  CANCELLED: 'bg-red-100 text-red-800 !rounded-sm',
 };
 type PaymentMethod = 'CASH' | 'UPI' | 'CARD';
 const statusLabel = (status: string) => (status === 'COMPLETED' ? 'SERVED' : status);
@@ -478,9 +479,11 @@ export default function AdminOrdersPage() {
             const unpaidOrders = payableOrders.filter((o) => o.paymentStatus === 'UNPAID');
             const groupTotal = payableOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
             const groupPaymentStatus =
-              payableOrders.length > 0 && payableOrders.every((o) => o.paymentStatus === 'PAID')
-                ? 'PAID'
-                : 'UNPAID';
+              payableOrders.length === 0 && group.orders.some((o) => o.status === 'CANCELLED')
+                ? 'CANCELLED'
+                : payableOrders.length > 0 && payableOrders.every((o) => o.paymentStatus === 'PAID')
+                  ? 'PAID'
+                  : 'UNPAID';
             const groupPaidMethods = Array.from(
               new Set(
                 payableOrders
@@ -514,7 +517,11 @@ export default function AdminOrdersPage() {
                     <div className="text-xs text-muted-foreground">Payable (excludes cancelled)</div>
                     <div className="mt-1 flex justify-end">
                       <Badge className={PAYMENT_COLORS[groupPaymentStatus as keyof typeof PAYMENT_COLORS]}>
-                        {groupPaymentStatus === 'PAID' ? `PAID via ${groupPaymentMethodLabel}` : 'UNPAID'}
+                        {groupPaymentStatus === 'PAID'
+                          ? `PAID via ${groupPaymentMethodLabel}`
+                          : groupPaymentStatus === 'CANCELLED'
+                            ? 'CANCELLED'
+                            : 'UNPAID'}
                       </Badge>
                     </div>
                     {group.customerPhone && unpaidOrders.length > 0 && (
