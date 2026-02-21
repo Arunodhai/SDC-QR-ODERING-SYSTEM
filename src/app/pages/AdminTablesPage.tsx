@@ -9,7 +9,7 @@ import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
 import * as api from '../lib/api';
-import AdminNav from '../components/AdminNav';
+import restaurantLogo from '../../assets/logo12.png';
 
 export default function AdminTablesPage() {
   const navigate = useNavigate();
@@ -124,10 +124,18 @@ export default function AdminTablesPage() {
     return `${window.location.origin}/table/${tableNumber}`;
   };
 
+  const getQrImageSettings = (size: number) => {
+    const logoSize = Math.round(size * 0.2);
+    return {
+      src: restaurantLogo,
+      height: logoSize,
+      width: logoSize,
+      excavate: true,
+    };
+  };
+
   return (
     <div className="page-shell">
-      <AdminNav />
-
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="brand-display text-3xl font-bold">Tables</h2>
@@ -151,6 +159,7 @@ export default function AdminTablesPage() {
                     value={getTableURL(table.tableNumber)}
                     size={80}
                     level="H"
+                    imageSettings={getQrImageSettings(80)}
                   />
                 </button>
                 <div className="min-w-0 flex-1">
@@ -211,6 +220,7 @@ export default function AdminTablesPage() {
                 value={selectedTable ? getTableURL(selectedTable.tableNumber) : ''}
                 size={256}
                 level="H"
+                imageSettings={getQrImageSettings(256)}
               />
             </div>
             <div className="text-center">

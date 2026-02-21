@@ -7,7 +7,6 @@ import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import * as api from '../lib/api';
 import { format, formatDistanceToNow } from 'date-fns';
-import AdminNav from '../components/AdminNav';
 
 const STATUS_COLORS = {
   PENDING: 'bg-red-100 text-red-800',
@@ -162,8 +161,6 @@ export default function KitchenPage() {
 
   return (
     <div className="page-shell">
-      <AdminNav />
-
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-4">
           <div>

@@ -9,7 +9,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import * as api from '../lib/api';
-import AdminNav from '../components/AdminNav';
 
 const STATUS_COLORS = {
   PENDING: 'bg-red-100 text-red-800',
@@ -317,8 +316,6 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="page-shell">
-      <AdminNav />
-
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="mb-6">
           <h2 className="brand-display text-3xl font-bold mb-4">Orders</h2>

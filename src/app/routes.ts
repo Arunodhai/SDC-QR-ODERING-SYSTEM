@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, redirect } from "react-router";
 import HomePage from "./pages/HomePage";
 import CustomerOrderPage from "./pages/CustomerOrderPage";
 import OrderSuccessPage from "./pages/OrderSuccessPage";
@@ -9,6 +9,7 @@ import AdminTablesPage from "./pages/AdminTablesPage";
 import AdminOrdersPage from "./pages/AdminOrdersPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import AdminLayout from "./components/AdminLayout";
 
 export const router = createBrowserRouter([
   {
@@ -24,28 +25,42 @@ export const router = createBrowserRouter([
     Component: OrderSuccessPage,
   },
   {
-    path: "/kitchen",
-    Component: KitchenPage,
-  },
-  {
     path: "/admin/login",
     Component: AdminLoginPage,
   },
   {
-    path: "/admin/menu",
-    Component: AdminMenuPage,
+    path: "/admin",
+    Component: AdminLayout,
+    children: [
+      {
+        index: true,
+        loader: () => redirect("/admin/dashboard"),
+      },
+      {
+        path: "dashboard",
+        Component: AdminDashboardPage,
+      },
+      {
+        path: "menu",
+        Component: AdminMenuPage,
+      },
+      {
+        path: "tables",
+        Component: AdminTablesPage,
+      },
+      {
+        path: "orders",
+        Component: AdminOrdersPage,
+      },
+      {
+        path: "kitchen",
+        Component: KitchenPage,
+      },
+    ],
   },
   {
-    path: "/admin/dashboard",
-    Component: AdminDashboardPage,
-  },
-  {
-    path: "/admin/tables",
-    Component: AdminTablesPage,
-  },
-  {
-    path: "/admin/orders",
-    Component: AdminOrdersPage,
+    path: "/kitchen",
+    loader: () => redirect("/admin/kitchen"),
   },
   {
     path: "*",

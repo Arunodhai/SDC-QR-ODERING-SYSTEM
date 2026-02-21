@@ -12,7 +12,6 @@ import { Label } from '../components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { toast } from 'sonner';
 import * as api from '../lib/api';
-import AdminNav from '../components/AdminNav';
 import SeedDataButton from '../components/SeedDataButton';
 import { getMenuItemImage } from '../lib/menuImageFallback';
 
@@ -219,8 +218,6 @@ export default function AdminMenuPage() {
 
   return (
     <div className="page-shell">
-      <AdminNav sticky={false} />
-
       <div className="max-w-7xl mx-auto px-4 py-4">
         <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>

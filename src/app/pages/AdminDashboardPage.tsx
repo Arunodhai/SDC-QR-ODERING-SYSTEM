@@ -26,7 +26,6 @@ import {
   YAxis,
 } from 'recharts';
 import { Card } from '../components/ui/card';
-import AdminNav from '../components/AdminNav';
 import * as api from '../lib/api';
 
 type HourBucket = { label: string; count: number };
@@ -272,7 +271,6 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="page-shell bg-gradient-to-b from-slate-50 via-white to-slate-100/70">
-      <AdminNav />
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <Card className="glass-grid-card animated-gradient-surface overflow-hidden border-slate-200/80">
           <div className="relative p-6 md:p-8">
