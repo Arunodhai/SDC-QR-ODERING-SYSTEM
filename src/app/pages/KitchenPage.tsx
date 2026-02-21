@@ -264,7 +264,7 @@ export default function KitchenPage() {
                                         </div>
                                       ))}
                                     </div>
-                                    <div className="mb-2 text-xs font-semibold text-right">Total: ${order.total.toFixed(2)}</div>
+                                    <div className="mt-3 mb-2 text-xs font-semibold text-right">Total: ${order.total.toFixed(2)}</div>
                                     <Button
                                       className="w-full"
                                       size="sm"

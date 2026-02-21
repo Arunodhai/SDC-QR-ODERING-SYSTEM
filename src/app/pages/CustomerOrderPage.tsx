@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/
 import { toast } from 'sonner';
 import * as api from '../lib/api';
 import { getMenuItemImage } from '../lib/menuImageFallback';
+import logo12 from '../../assets/logo12.png';
 
 const STATUS_TEXT_COLORS: Record<string, string> = {
   PENDING: 'text-amber-600',
@@ -350,7 +351,7 @@ export default function CustomerOrderPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="brand-display text-2xl font-bold flex items-center gap-2">
-                <Coffee className="w-6 h-6" />
+                <img src={logo12} alt="Stories de Café" className="h-7 w-7 object-contain" />
                 Stories de Café
               </h1>
               <p className="text-sm text-muted-foreground">Table {tableNumber}</p>

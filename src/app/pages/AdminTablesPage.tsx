@@ -155,7 +155,6 @@ export default function AdminTablesPage() {
                 </button>
                 <div className="min-w-0 flex-1">
                   <h3 className="text-xl font-bold leading-tight">Table {table.tableNumber}</h3>
-                  <p className="mt-1 truncate text-xs text-muted-foreground">{getTableURL(table.tableNumber)}</p>
                 </div>
                 <Button
                   variant="outline"

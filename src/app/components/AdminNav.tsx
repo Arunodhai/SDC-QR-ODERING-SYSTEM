@@ -1,7 +1,8 @@
-import { Coffee, LayoutGrid, Table2, Receipt, LogOut, ChefHat, BarChart3 } from 'lucide-react';
+import { LayoutGrid, Table2, Receipt, LogOut, ChefHat, BarChart3 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router';
 import { Button } from './ui/button';
 import * as api from '../lib/api';
+import logo12 from '../../assets/logo12.png';
 
 export default function AdminNav({ sticky = true }: { sticky?: boolean }) {
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ export default function AdminNav({ sticky = true }: { sticky?: boolean }) {
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex flex-wrap items-center justify-between gap-3 py-4">
           <div className="flex items-center gap-2">
-            <Coffee className="w-6 h-6 text-primary" />
+            <img src={logo12} alt="Stories de Café" className="h-7 w-7 object-contain" />
             <h1 className="brand-display text-xl font-bold">Stories de Café Admin</h1>
           </div>
 
