@@ -387,6 +387,33 @@ export const getOrderById = async (id: string) => {
 
 export const createOrder = async (order: any) => {
   const total = Number(order.total || 0);
+  const requestedItems = (order.items || []).filter((item: any) => item?.id);
+  const requestedIds = requestedItems.map((item: any) => Number(item.id)).filter(Boolean);
+
+  if (requestedIds.length > 0) {
+    const { data: menuRows, error: menuError } = await supabase
+      .from('menu_items')
+      .select('id,name,is_available')
+      .in('id', requestedIds);
+
+    if (menuError) throw new Error(errMsg(menuError, 'Failed to validate item availability'));
+
+    const rowMap = new Map((menuRows || []).map((row: any) => [Number(row.id), row]));
+    const unavailableNames: string[] = [];
+
+    requestedItems.forEach((item: any) => {
+      const row = rowMap.get(Number(item.id));
+      if (!row || !row.is_available) {
+        unavailableNames.push(String(item.name || row?.name || `Item ${item.id}`));
+      }
+    });
+
+    if (unavailableNames.length > 0) {
+      throw new Error(
+        `These items are no longer available: ${Array.from(new Set(unavailableNames)).join(', ')}`,
+      );
+    }
+  }
 
   let createdOrder: any = null;
 
@@ -861,6 +888,21 @@ export const subscribeToOrderChanges = (onChange: (payload: any) => void) => {
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'orders' },
+      (payload) => onChange(payload),
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+};
+
+export const subscribeToMenuItemChanges = (onChange: (payload: any) => void) => {
+  const channel = supabase
+    .channel(`menu-items-live-${Math.random().toString(36).slice(2)}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'menu_items' },
       (payload) => onChange(payload),
     )
     .subscribe();

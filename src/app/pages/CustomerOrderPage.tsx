@@ -98,6 +98,42 @@ export default function CustomerOrderPage() {
     menuItems.some((item) => String(item.categoryId) === String(category.id)),
   );
 
+  const sanitizeCartByAvailability = (availableItems: any[]) => {
+    const availableMap = new Map(
+      (availableItems || []).map((item: any) => [String(item.id), item]),
+    );
+    const removedIds: string[] = [];
+
+    setCart((prev) => {
+      let changed = false;
+      const next: Record<string, number> = {};
+      Object.entries(prev).forEach(([itemId, qty]) => {
+        if (availableMap.has(String(itemId))) {
+          next[itemId] = qty;
+        } else {
+          changed = true;
+          removedIds.push(String(itemId));
+        }
+      });
+      return changed ? next : prev;
+    });
+
+    if (removedIds.length > 0) {
+      setItemNotes((prev) => {
+        const next = { ...prev };
+        removedIds.forEach((itemId) => delete next[itemId]);
+        return next;
+      });
+      const removedNames = removedIds.map((id) => {
+        const item = menuItems.find((m) => String(m.id) === String(id)) || availableMap.get(String(id));
+        return item?.name || `Item ${id}`;
+      });
+      toast.warning(
+        `Removed unavailable item${removedNames.length > 1 ? 's' : ''}: ${removedNames.join(', ')}`,
+      );
+    }
+  };
+
   useEffect(() => {
     loadMenu();
     const params = new URLSearchParams(window.location.search);
@@ -148,8 +184,10 @@ export default function CustomerOrderPage() {
         api.getCategories(),
         api.getMenuItems(),
       ]);
+      const availableItems = itemsRes.items.filter((item: any) => item.available);
       setCategories(categoriesRes.categories);
-      setMenuItems(itemsRes.items.filter((item: any) => item.available));
+      setMenuItems(availableItems);
+      sanitizeCartByAvailability(availableItems);
     } catch (error) {
       console.error('Error loading menu:', error);
       toast.error('Failed to load menu');
@@ -320,6 +358,13 @@ export default function CustomerOrderPage() {
   }, [phoneConfirmed, tableNumber, customerPhone]);
 
   useEffect(() => {
+    const unsubscribe = api.subscribeToMenuItemChanges(() => {
+      loadMenu();
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
     const timer = setInterval(() => {
       setNoteHintIndex((prev) => (prev + 1) % NOTE_PLACEHOLDERS.length);
     }, 2200);
@@ -381,7 +426,7 @@ export default function CustomerOrderPage() {
       navigate(`/order/success?orderId=${createdOrderId}&table=${tableNumber}&phone=${encodeURIComponent(customerPhone.trim())}`);
     } catch (error) {
       console.error('Error placing order:', error);
-      toast.error('Failed to place order');
+      toast.error(error instanceof Error ? error.message : 'Failed to place order');
       sessionStorage.removeItem(throttleKey);
     } finally {
       setPlacingOrder(false);
