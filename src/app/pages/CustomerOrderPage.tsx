@@ -398,9 +398,13 @@ export default function CustomerOrderPage() {
                 <img src={logo12} alt="Stories de Café" className="h-7 w-7 object-contain" />
                 Stories de Café
               </h1>
-              <p className="mt-2 text-sm text-muted-foreground">Table {tableNumber}</p>
               {phoneConfirmed && (
-                <p className="text-xs text-muted-foreground">Tracking mobile: {customerPhone}</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Table {tableNumber} • {customerName || 'Guest'} • {customerPhone}
+                </p>
+              )}
+              {!phoneConfirmed && (
+                <p className="mt-2 text-sm text-muted-foreground">Table {tableNumber}</p>
               )}
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -464,6 +468,7 @@ export default function CustomerOrderPage() {
                 className="w-full rounded-lg"
                 onClick={() => setActiveTab('cart')}
               >
+                <ShoppingCart className="w-4 h-4 mr-1" />
                 Cart {getCartItemCount() > 0 ? `(${getCartItemCount()})` : ''}
               </Button>
               <Button
@@ -472,7 +477,7 @@ export default function CustomerOrderPage() {
                 onClick={() => setActiveTab('bill')}
               >
                 <ReceiptText className="w-4 h-4 mr-1" />
-                Your Orders & Bills
+                Orders & Bills
               </Button>
             </div>
           </div>
