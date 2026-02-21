@@ -1,4 +1,4 @@
-import chilliChickenImage from '../../assets/food/chilli-chicken.jpg';
+import chilliChickenImage from '../../assets/food/chilli-chicken.png';
 
 const normalizeName = (value: string) =>
   String(value || '')
@@ -14,4 +14,3 @@ export const getMenuItemImage = (name: string, imageUrl?: string | null) => {
   if (imageUrl) return imageUrl;
   return FALLBACKS[normalizeName(name)] || '';
 };
-
