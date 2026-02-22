@@ -530,7 +530,7 @@ export default function AdminOrdersPage() {
             <div>
               <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-teal-700">
                 <span className="relative inline-flex h-3 w-3 items-center justify-center rounded-full border border-black">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />
+                  <span className="live-dot-blink h-1.5 w-1.5 rounded-full bg-red-500" />
                 </span>
                 Live Orders
               </p>
@@ -566,7 +566,7 @@ export default function AdminOrdersPage() {
                     type="date"
                     value={filterDate}
                     onChange={(e) => setFilterDate(e.target.value)}
-                    className="h-10 rounded-xl border-0 bg-white/50 px-3 text-sm text-slate-800 shadow-none outline-none ring-0 focus:outline-none focus:ring-0"
+                    className="h-10 w-[178px] rounded-xl border-0 bg-white/50 px-3 text-sm text-slate-800 shadow-none outline-none ring-0 focus:outline-none focus:ring-0"
                     aria-label="Filter by date"
                   />
                   {filterDate && (

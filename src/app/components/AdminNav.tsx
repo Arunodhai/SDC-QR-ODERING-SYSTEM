@@ -14,17 +14,43 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
   const navigate = useNavigate();
   const location = useLocation();
   const [showCollapsedAccount, setShowCollapsedAccount] = useState(false);
+  const [showExpandedAccount, setShowExpandedAccount] = useState(false);
+  const [adminAvatar, setAdminAvatar] = useState<string>('');
   const accountRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    const storedAvatar = localStorage.getItem('sdc:admin-avatar');
+    if (storedAvatar) setAdminAvatar(storedAvatar);
+  }, []);
 
   useEffect(() => {
     const onDocClick = (event: MouseEvent) => {
       if (!accountRef.current) return;
       if (accountRef.current.contains(event.target as Node)) return;
       setShowCollapsedAccount(false);
+      setShowExpandedAccount(false);
     };
     document.addEventListener('mousedown', onDocClick);
     return () => document.removeEventListener('mousedown', onDocClick);
   }, []);
+
+  const handlePickAvatar = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || '');
+      setAdminAvatar(result);
+      localStorage.setItem('sdc:admin-avatar', result);
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  };
 
   const handleLogout = async () => {
     try {
@@ -48,7 +74,7 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
     <>
       <aside
         className={`group relative z-30 hidden h-full shrink-0 overflow-visible lg:sticky lg:top-0 lg:flex lg:flex-col lg:justify-between lg:transition-[width,padding] lg:duration-200 ${
-          collapsed ? 'lg:w-[68px] lg:p-2' : 'lg:w-[236px] lg:p-4'
+          collapsed ? 'lg:w-[68px] lg:p-2' : 'lg:w-[222px] lg:p-4'
         }`}
       >
         <div>
@@ -61,7 +87,7 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
               />
               {!collapsed && (
                 <div>
-                  <p className="brand-display text-[1.55rem] font-bold leading-none text-slate-900">Stories de Café</p>
+                  <p className="brand-display whitespace-nowrap text-[1.15rem] font-bold leading-none text-slate-900">Stories de Café</p>
                   <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">Admin Console</p>
                 </div>
               )}
@@ -88,7 +114,7 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
                           ? 'text-slate-900'
                           : 'text-slate-700 hover:bg-white/60'
                         : isActive
-                          ? 'bg-white text-slate-900 shadow-[0_10px_20px_rgba(15,23,42,0.12)]'
+                          ? 'border-l-4 border-teal-600 bg-white/70 pl-2 text-slate-900 shadow-none'
                           : 'text-slate-700 hover:bg-white/70'
                     }`}
                   >
@@ -109,37 +135,62 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
           </nav>
         </div>
 
-        <div className="mt-6 space-y-2">
+        <div ref={accountRef} className="mt-6 space-y-2">
           {!collapsed ? (
             <>
               <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Account</p>
-              <div className="rounded-[8px] border border-white/70 bg-white/55 p-3 backdrop-blur">
-              <div className="mb-2 flex items-center gap-2">
-                <img src={logo12} alt="Admin avatar" className="h-8 w-8 rounded-full border border-slate-200 bg-white object-contain p-0.5" />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-slate-800">Admin</p>
-                  <p className="truncate text-xs text-slate-500">storiesdecafe.com</p>
-                </div>
-              </div>
-            <Button
-              variant="outline"
-                  className="w-full justify-start rounded-[8px] border-slate-200 bg-white/90"
-              onClick={handleLogout}
-            >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Logout
-            </Button>
+              <div className="relative px-2">
+                <button
+                  type="button"
+                  onClick={() => setShowExpandedAccount((s) => !s)}
+                  className="flex w-full items-center gap-2 rounded-md px-1 py-1 text-left hover:bg-white/45"
+                >
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 bg-white">
+                    {adminAvatar ? (
+                      <img src={adminAvatar} alt="Admin avatar" className="h-8 w-8 rounded-full object-cover" />
+                    ) : (
+                      <User className="h-4 w-4 text-black" />
+                    )}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-800">Admin</p>
+                    <p className="truncate text-xs text-slate-500">admin@sdc.com</p>
+                  </div>
+                </button>
+
+                {showExpandedAccount && (
+                  <div className="absolute bottom-11 left-2 z-[90] w-52 rounded-[8px] border border-slate-200 bg-white p-2 shadow-[0_14px_24px_rgba(15,23,42,0.18)]">
+                    <Button variant="outline" className="mb-2 w-full justify-start rounded-[8px]" onClick={handlePickAvatar}>
+                      Upload image
+                    </Button>
+                    <Button variant="outline" className="w-full justify-start rounded-[8px]" onClick={handleLogout}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Logout
+                    </Button>
+                  </div>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarChange}
+                />
               </div>
             </>
           ) : (
-            <div ref={accountRef} className="relative flex justify-center">
+            <div className="relative flex justify-center">
               <button
                 type="button"
                 onClick={() => setShowCollapsedAccount((s) => !s)}
                 className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white/85 text-slate-600"
                 aria-label="Admin user"
               >
-                <User className="h-4 w-4" />
+                {adminAvatar ? (
+                  <img src={adminAvatar} alt="Admin avatar" className="h-9 w-9 rounded-full object-cover" />
+                ) : (
+                  <User className="h-4 w-4 text-black" />
+                )}
               </button>
               {showCollapsedAccount && (
                 <div className="absolute bottom-0 left-[calc(100%+12px)] z-[90] w-56 rounded-[8px] border border-slate-200 bg-white p-3 shadow-[0_14px_24px_rgba(15,23,42,0.18)]">
@@ -147,23 +198,34 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
                     <img src={logo12} alt="Admin avatar" className="h-8 w-8 rounded-full border border-slate-200 bg-white object-contain p-0.5" />
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-slate-800">Admin</p>
-                      <p className="truncate text-xs text-slate-500">storiesdecafe.com</p>
+                      <p className="truncate text-xs text-slate-500">admin@sdc.com</p>
                     </div>
                   </div>
+                  <Button variant="outline" className="mb-2 w-full justify-start rounded-[8px]" onClick={handlePickAvatar}>
+                    Upload image
+                  </Button>
                   <Button variant="outline" className="w-full justify-start rounded-[8px]" onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     Logout
                   </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                  />
                 </div>
               )}
             </div>
           )}
         </div>
 
+        <div className="peer absolute -right-3 top-0 hidden h-full w-6 lg:block" />
         <button
           type="button"
           onClick={onToggleCollapse}
-          className="absolute -right-5 top-1/2 z-[95] hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-600 shadow-[0_8px_16px_rgba(15,23,42,0.18)] opacity-0 transition group-hover:opacity-100 lg:inline-flex"
+          className="absolute -right-5 top-1/2 z-[95] hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-600 shadow-[0_8px_16px_rgba(15,23,42,0.18)] opacity-0 transition peer-hover:opacity-100 hover:opacity-100 lg:inline-flex"
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}

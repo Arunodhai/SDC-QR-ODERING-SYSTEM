@@ -334,6 +334,22 @@
     }
   }
 
+  @keyframes liveDotBlink {
+    0%, 45% {
+      opacity: 1;
+    }
+    50%, 95% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  .live-dot-blink {
+    animation: liveDotBlink 1.3s steps(1, end) infinite;
+  }
+
   .animated-gradient-surface {
     background-color: #ffffff;
     background-image:
