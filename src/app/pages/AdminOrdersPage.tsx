@@ -607,7 +607,7 @@ export default function AdminOrdersPage() {
                   : groupPaidMethods[0] || '-'
                 : '-';
             return (
-              <Card key={groupKey} className="sdc-panel-card h-fit p-3">
+              <Card key={groupKey} className="sdc-panel-card sdc-accent-top h-fit p-3">
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div>
                     <h3 className="text-[1.6rem] leading-none font-semibold tracking-tight text-slate-900">Table {group.tableNumber}</h3>

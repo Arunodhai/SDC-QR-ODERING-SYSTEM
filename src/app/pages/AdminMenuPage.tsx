@@ -373,7 +373,7 @@ export default function AdminMenuPage() {
               if (categoryItems.length === 0) return null;
 
               return (
-                <Card key={category.id} className="sdc-panel-card mb-6 overflow-hidden">
+                <Card key={category.id} className="sdc-panel-card sdc-accent-top mb-6 overflow-hidden">
                   <div className="flex items-center justify-between border-b border-slate-200/80 bg-white/60 px-4 py-3">
                     <h3 className="text-base font-semibold">{category.name}</h3>
                     <span className="sdc-pill border-teal-200 text-teal-700">

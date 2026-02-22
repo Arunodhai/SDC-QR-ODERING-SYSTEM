@@ -856,7 +856,7 @@ export default function CustomerOrderPage() {
           if (categoryItems.length === 0) return null;
 
           return (
-            <Card key={category.id} id={`category-${category.id}`} className="sdc-panel-card mb-6 overflow-hidden">
+            <Card key={category.id} id={`category-${category.id}`} className="sdc-panel-card sdc-accent-top mb-6 overflow-hidden">
               <div className="flex items-center justify-between border-b bg-white px-4 py-3">
                 <h2 className="text-lg font-bold">{category.name}</h2>
                 <span className="rounded-md border border-teal-200 bg-white px-2 py-0.5 text-xs text-teal-800">
