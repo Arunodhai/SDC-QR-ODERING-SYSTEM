@@ -16,6 +16,8 @@ const STATUS_COLORS = {
   READY: 'bg-green-100 text-green-800',
   COMPLETED: 'bg-[#00FA9A] text-black',
   CANCELLED: 'bg-red-100 text-red-800',
+  REJECTED: 'bg-red-100 text-red-800',
+  OUT_OF_STOCK: 'bg-red-100 text-red-800',
 };
 
 const PAYMENT_COLORS = {
@@ -24,7 +26,11 @@ const PAYMENT_COLORS = {
   CANCELLED: 'bg-red-100 text-red-800 !rounded-sm',
 };
 type PaymentMethod = 'CASH' | 'UPI' | 'CARD';
-const statusLabel = (status: string) => (status === 'COMPLETED' ? 'SERVED' : status);
+const statusLabel = (status: string) => {
+  if (status === 'COMPLETED') return 'SERVED';
+  if (status === 'OUT_OF_STOCK' || status === 'REJECTED') return 'CANCELLED';
+  return status;
+};
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
   COUNTER: 'Cash',
   CASH: 'Cash',
@@ -227,10 +233,24 @@ export default function AdminOrdersPage() {
           const today = new Date().toDateString();
           return new Date(order.createdAt).toDateString() === today;
         }
+        if (filter === 'UNPAID') {
+          return order.paymentStatus === 'UNPAID' && order.status !== 'CANCELLED';
+        }
         return order.paymentStatus === filter;
       }),
     [orders, filter, filterDate],
   );
+
+  const markOrderUnavailable = async (orderId: string) => {
+    try {
+      await api.rejectOrderOutOfStock(orderId);
+      toast.success('Order marked as out of stock');
+      setSelectedGroupDetails(null);
+      await loadOrders();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to mark order unavailable');
+    }
+  };
 
   const groupedOrders = useMemo(() => {
     const sorted = [...filteredOrders].sort(
@@ -722,21 +742,24 @@ export default function AdminOrdersPage() {
 
           <div className="max-h-[65vh] overflow-y-auto space-y-3 pr-1">
             {(selectedGroupDetails?.orders || []).map((order: any, idx: number) => (
-              <div key={order.id} className="rounded-lg border bg-white p-3">
+                <div key={order.id} className="rounded-lg border bg-white p-3">
                 <div className="mb-2 flex items-start justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">Round {idx + 1}</span>
-                      <span className="text-xs text-muted-foreground">Order #{order.id}</span>
-                      <Badge className={STATUS_COLORS[order.status as keyof typeof STATUS_COLORS]}>
-                        {statusLabel(order.status)}
-                      </Badge>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">Round {idx + 1}</span>
+                        <span className="text-xs text-muted-foreground">Order #{order.id}</span>
+                        <Badge className={STATUS_COLORS[order.status as keyof typeof STATUS_COLORS]}>
+                          {statusLabel(order.status)}
+                        </Badge>
+                      </div>
+                      <p className="text-xs font-semibold text-primary mt-1">Billing Ref: {billingRef(order)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(order.createdAt), 'MMM dd, yyyy • h:mm a')}
+                      </p>
+                      {order.statusReason && (
+                        <p className="text-xs text-red-600 mt-1">Reason: {order.statusReason}</p>
+                      )}
                     </div>
-                    <p className="text-xs font-semibold text-primary mt-1">Billing Ref: {billingRef(order)}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(order.createdAt), 'MMM dd, yyyy • h:mm a')}
-                    </p>
-                  </div>
                   <div className="text-right">
                     {order.status === 'CANCELLED' ? (
                       <div>
@@ -759,6 +782,18 @@ export default function AdminOrdersPage() {
                     </div>
                   ))}
                 </div>
+                {['PENDING', 'PREPARING', 'READY'].includes(order.status) && (
+                  <div className="mt-2 flex justify-end">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-red-300 text-red-700 hover:bg-red-50"
+                      onClick={() => markOrderUnavailable(order.id)}
+                    >
+                      Mark unavailable after order
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

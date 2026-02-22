@@ -21,6 +21,8 @@ const STATUS_LABELS: Record<string, string> = {
   READY: 'Ready for pickup/serve',
   COMPLETED: 'Served',
   CANCELLED: 'Cancelled',
+  REJECTED: 'Rejected',
+  OUT_OF_STOCK: 'Out of stock',
 };
 
 const STATUS_PROGRESS_LABELS: Record<string, string> = {
@@ -36,6 +38,8 @@ const STATUS_TEXT_COLORS: Record<string, string> = {
   READY: 'text-green-600',
   COMPLETED: 'text-indigo-600',
   CANCELLED: 'text-red-600',
+  REJECTED: 'text-red-600',
+  OUT_OF_STOCK: 'text-red-600',
 };
 
 const STATUS_STEP_STYLES: Record<string, { dot: string; ring: string; text: string }> = {
@@ -106,6 +110,7 @@ export default function OrderSuccessPage() {
   }, [orderId, table, phone, cancelled]);
 
   const status = cancelled ? 'CANCELLED' : (order?.status || 'PENDING');
+  const statusReason = order?.statusReason || '';
   const activeStep = Math.max(STATUS_STEPS.indexOf(status), 0);
   const statusIcon = useMemo(() => {
     if (status === 'CANCELLED') return <CheckCircle className="w-18 h-18 text-gray-500 mx-auto mb-4" />;
@@ -158,6 +163,11 @@ export default function OrderSuccessPage() {
               {cancelled ? 'Cancelled' : (STATUS_LABELS[status] || status)}
             </span>
           </div>
+          {statusReason ? (
+            <div className="mt-2 rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-700">
+              Reason: {statusReason}
+            </div>
+          ) : null}
           <div className="mt-1 flex items-center justify-between">
             <span className="text-muted-foreground">Billing Ref</span>
             <span className="font-semibold">{billingRef}</span>

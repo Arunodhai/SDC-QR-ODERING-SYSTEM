@@ -35,6 +35,7 @@ const toMenuItem = (row: any) => ({
 });
 
 const toOrderItem = (row: any) => ({
+  menuItemId: row.menu_item_id ? String(row.menu_item_id) : '',
   name: row.item_name,
   price: Number(row.unit_price || 0),
   quantity: Number(row.quantity || 0),
@@ -49,6 +50,7 @@ const toOrder = (row: any) => ({
   items: (row.order_items || []).map(toOrderItem),
   total: Number(row.total_amount || 0),
   status: row.status,
+  statusReason: row.status_reason || row.cancellation_reason || row.cancel_reason || '',
   paymentStatus: row.payment_status,
   paymentMethod: row.payment_method,
   createdAt: row.created_at,
@@ -480,15 +482,35 @@ export const createOrder = async (order: any) => {
   return { order: toOrder(fullOrder) };
 };
 
-export const updateOrderStatus = async (id: string, status: string) => {
+const isMissingStatusReasonColumn = (error: any) => {
+  const msg = String(error?.message || '');
+  return msg.includes('status_reason') || msg.includes('cancellation_reason') || msg.includes('cancel_reason');
+};
+
+export const updateOrderStatus = async (id: string, status: string, statusReason?: string) => {
+  const patch: any = { status };
+  if (statusReason !== undefined) patch.status_reason = statusReason;
+
   const { data, error } = await supabase
     .from('orders')
-    .update({ status })
+    .update(patch)
     .eq('id', Number(id))
     .select('*,order_items(*)')
     .single();
 
-  if (error) throw new Error(errMsg(error, 'Failed to update order status'));
+  if (error) {
+    if (statusReason !== undefined && isMissingStatusReasonColumn(error)) {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('orders')
+        .update({ status })
+        .eq('id', Number(id))
+        .select('*,order_items(*)')
+        .single();
+      if (fallbackError) throw new Error(errMsg(fallbackError, 'Failed to update order status'));
+      return { order: toOrder(fallbackData) };
+    }
+    throw new Error(errMsg(error, 'Failed to update order status'));
+  }
   return { order: toOrder(data) };
 };
 
@@ -578,20 +600,40 @@ export const markOrdersPaidBulk = async (orderIds: string[], paymentMethod: stri
   throw new Error(errMsg(error, 'Failed to mark orders as paid'));
 };
 
-export const cancelPendingOrder = async (id: string, phone?: string) => {
+export const cancelPendingOrder = async (id: string, phone?: string, reason = 'Cancelled by customer') => {
   let query = supabase
     .from('orders')
-    .update({ status: 'CANCELLED' })
+    .update({ status: 'CANCELLED', status_reason: reason })
     .eq('id', Number(id))
     .eq('status', 'PENDING');
   if (phone) query = query.eq('customer_phone', phone);
   const { error } = await query.select('id').single();
 
-  if (!error) return { success: true };
+  if (!error) return { success: true, reason };
 
   const msg = String(error.message || '');
   const enumCancelledMissing =
     msg.includes('invalid input value for enum order_status') && msg.includes('CANCELLED');
+  const missingReasonOnly = isMissingStatusReasonColumn(error);
+
+  if (missingReasonOnly) {
+    let fallbackQuery = supabase
+      .from('orders')
+      .update({ status: 'CANCELLED' })
+      .eq('id', Number(id))
+      .eq('status', 'PENDING');
+    if (phone) fallbackQuery = fallbackQuery.eq('customer_phone', phone);
+    const { error: fallbackError } = await fallbackQuery.select('id').single();
+    if (!fallbackError) return { success: true, reason };
+    if (
+      String(fallbackError.message || '').includes('invalid input value for enum order_status') &&
+      String(fallbackError.message || '').includes('CANCELLED')
+    ) {
+      // continue to delete fallback below
+    } else {
+      throw new Error(errMsg(fallbackError, 'Failed to cancel order'));
+    }
+  }
 
   if (!enumCancelledMissing) {
     throw new Error(errMsg(error, 'Failed to cancel order'));
@@ -606,7 +648,38 @@ export const cancelPendingOrder = async (id: string, phone?: string) => {
   if (phone) deleteQuery = deleteQuery.eq('customer_phone', phone);
   const { error: deleteError } = await deleteQuery;
   if (deleteError) throw new Error(errMsg(deleteError, 'Failed to cancel order'));
-  return { success: true };
+  return { success: true, reason };
+};
+
+export const rejectOrderOutOfStock = async (
+  id: string,
+  reason = 'One or more items became unavailable after order placement',
+) => {
+  const payload: any = { status: 'CANCELLED', status_reason: reason };
+  let query = supabase
+    .from('orders')
+    .update(payload)
+    .eq('id', Number(id))
+    .in('status', ['PENDING', 'PREPARING', 'READY'])
+    .select('*,order_items(*)')
+    .single();
+
+  let { data, error } = await query;
+
+  if (error && isMissingStatusReasonColumn(error)) {
+    const fallback = await supabase
+      .from('orders')
+      .update({ status: 'CANCELLED' })
+      .eq('id', Number(id))
+      .in('status', ['PENDING', 'PREPARING', 'READY'])
+      .select('*,order_items(*)')
+      .single();
+    data = fallback.data;
+    error = fallback.error;
+  }
+
+  if (error) throw new Error(errMsg(error, 'Failed to mark order as unavailable'));
+  return { order: toOrder(data), reason };
 };
 
 export const getActiveOrdersByTableAndPhone = async (tableNumber: number, phone: string) => {

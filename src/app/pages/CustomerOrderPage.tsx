@@ -17,8 +17,15 @@ const STATUS_TEXT_COLORS: Record<string, string> = {
   READY: 'text-green-600',
   COMPLETED: 'text-indigo-600',
   CANCELLED: 'text-red-600',
+  REJECTED: 'text-red-600',
+  OUT_OF_STOCK: 'text-red-600',
 };
-const statusLabel = (status: string) => (status === 'COMPLETED' ? 'SERVED' : status);
+const statusLabel = (status: string) => {
+  if (status === 'COMPLETED') return 'SERVED';
+  if (status === 'OUT_OF_STOCK') return 'OUT OF STOCK';
+  if (status === 'REJECTED') return 'REJECTED';
+  return status;
+};
 
 const sameIdSet = (a: string[], b: string[]) => {
   if (a.length !== b.length) return false;
@@ -98,9 +105,12 @@ export default function CustomerOrderPage() {
     menuItems.some((item) => String(item.categoryId) === String(category.id)),
   );
 
-  const sanitizeCartByAvailability = (availableItems: any[]) => {
-    const availableMap = new Map(
-      (availableItems || []).map((item: any) => [String(item.id), item]),
+  const sanitizeCartByAvailability = (allItems: any[]) => {
+    const allMap = new Map((allItems || []).map((item: any) => [String(item.id), item]));
+    const availableSet = new Set(
+      (allItems || [])
+        .filter((item: any) => item.available)
+        .map((item: any) => String(item.id)),
     );
     const removedIds: string[] = [];
 
@@ -108,7 +118,7 @@ export default function CustomerOrderPage() {
       let changed = false;
       const next: Record<string, number> = {};
       Object.entries(prev).forEach(([itemId, qty]) => {
-        if (availableMap.has(String(itemId))) {
+        if (availableSet.has(String(itemId))) {
           next[itemId] = qty;
         } else {
           changed = true;
@@ -125,7 +135,7 @@ export default function CustomerOrderPage() {
         return next;
       });
       const removedNames = removedIds.map((id) => {
-        const item = menuItems.find((m) => String(m.id) === String(id)) || availableMap.get(String(id));
+        const item = menuItems.find((m) => String(m.id) === String(id)) || allMap.get(String(id));
         return item?.name || `Item ${id}`;
       });
       toast.warning(
@@ -184,10 +194,9 @@ export default function CustomerOrderPage() {
         api.getCategories(),
         api.getMenuItems(),
       ]);
-      const availableItems = itemsRes.items.filter((item: any) => item.available);
       setCategories(categoriesRes.categories);
-      setMenuItems(availableItems);
-      sanitizeCartByAvailability(availableItems);
+      setMenuItems(itemsRes.items || []);
+      sanitizeCartByAvailability(itemsRes.items || []);
     } catch (error) {
       console.error('Error loading menu:', error);
       toast.error('Failed to load menu');
@@ -362,6 +371,13 @@ export default function CustomerOrderPage() {
       loadMenu();
     });
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      loadMenu();
+    }, 5000);
+    return () => clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -600,6 +616,9 @@ export default function CustomerOrderPage() {
                           <span className={`font-medium ${STATUS_TEXT_COLORS[o.status] || 'text-muted-foreground'}`}>{statusLabel(o.status)}</span>
                         )}
                       </div>
+                      {o.statusReason ? (
+                        <div className="mt-1 text-xs text-red-600">Reason: {o.statusReason}</div>
+                      ) : null}
                     </div>
                     <Button
                       variant="outline"
@@ -811,7 +830,7 @@ export default function CustomerOrderPage() {
               </div>
               <div className="grid gap-4 p-4">
                 {categoryItems.map(item => (
-                  <Card key={item.id} className="glass-grid-card p-4">
+                  <Card key={item.id} className={`glass-grid-card p-4 ${item.available ? '' : 'opacity-75'}`}>
                     <div className="flex gap-4 items-start">
                       {getMenuItemImage(item.name, item.image) && (
                         <button
@@ -835,6 +854,9 @@ export default function CustomerOrderPage() {
                         <h3 className="font-semibold">{item.name}</h3>
                         <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
                         <p className="text-lg font-bold mt-2">${item.price.toFixed(2)}</p>
+                        {!item.available && (
+                          <p className="mt-1 text-xs font-medium text-red-600">Unavailable right now</p>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 self-end">
                         {cart[item.id] ? (
@@ -842,7 +864,7 @@ export default function CustomerOrderPage() {
                             <Button
                               variant="outline"
                               size="icon"
-                              disabled={!phoneConfirmed}
+                              disabled={!phoneConfirmed || !item.available}
                               onClick={() => removeFromCart(item.id)}
                             >
                               <Minus className="w-4 h-4" />
@@ -851,17 +873,23 @@ export default function CustomerOrderPage() {
                             <Button
                               variant="outline"
                               size="icon"
-                              disabled={!phoneConfirmed}
+                              disabled={!phoneConfirmed || !item.available}
                               onClick={() => addToCart(item.id)}
                             >
                               <Plus className="w-4 h-4" />
                             </Button>
                           </>
                         ) : (
-                          <Button disabled={!phoneConfirmed} onClick={() => addToCart(item.id)}>
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add
-                          </Button>
+                          item.available ? (
+                            <Button disabled={!phoneConfirmed} onClick={() => addToCart(item.id)}>
+                              <Plus className="w-4 h-4 mr-2" />
+                              Add
+                            </Button>
+                          ) : (
+                            <Button variant="outline" disabled>
+                              Unavailable
+                            </Button>
+                          )
                         )}
                       </div>
                     </div>
