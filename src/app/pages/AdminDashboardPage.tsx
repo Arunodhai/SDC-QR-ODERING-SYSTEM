@@ -77,10 +77,10 @@ function InsightCard({
   iconClassName?: string;
 }) {
   return (
-    <Card className={`glass-grid-card p-4 border-slate-200/80 bg-white ${className || ''}`}>
+    <Card className={`glass-grid-card rounded-2xl p-4 border-slate-200/70 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.06)] ${className || ''}`}>
       <div className="flex items-center justify-between">
         <p className={`text-sm text-slate-600 ${titleClassName || ''}`}>{title}</p>
-        <div className={`text-slate-500 ${iconClassName || ''}`}>{icon}</div>
+        <div className={`rounded-full border border-slate-200 bg-slate-50 p-2 text-slate-500 ${iconClassName || ''}`}>{icon}</div>
       </div>
       <p className={`mt-2 text-3xl font-bold tracking-tight text-slate-900 ${valueClassName || ''}`}>{value}</p>
       <p className={`mt-2 text-xs text-slate-500 ${hintClassName || ''}`}>{hint}</p>
@@ -335,9 +335,9 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="page-shell bg-gradient-to-b from-slate-50 via-white to-slate-100/70">
+    <div className="page-shell bg-[radial-gradient(1200px_420px_at_0%_-10%,rgba(20,184,166,0.08),transparent),linear-gradient(180deg,#f8fafc,#f8fafc)]">
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        <Card className="glass-grid-card overflow-hidden border-slate-200/80 bg-white">
+        <Card className="glass-grid-card overflow-hidden border-slate-200/80 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.07)]">
           <div className="h-1 w-full bg-gradient-to-r from-teal-500/40 via-cyan-400/40 to-emerald-500/40" />
           <div className="p-4 md:p-4.5">
             <div className="grid gap-3 xl:grid-cols-[1fr_560px] xl:items-center">
@@ -347,15 +347,15 @@ export default function AdminDashboardPage() {
                   <p className="text-xs uppercase tracking-[0.18em] text-teal-700 font-semibold">Live Operations</p>
                 </div>
                 <h2 className="brand-display mt-0.5 text-2xl md:text-3xl font-bold text-slate-900">Dashboard</h2>
-                <p className="mt-0.5 text-sm text-muted-foreground">Real-time performance snapshot for the selected date.</p>
+                <p className="mt-1 text-sm text-slate-500">Real-time performance snapshot for the selected date.</p>
               </div>
 
               <div className="grid grid-cols-2 gap-2 xl:min-w-[560px]">
-                <div className="rounded-lg border border-slate-900 bg-slate-900 px-3 py-2.5">
+                <div className="rounded-xl border border-slate-900 bg-slate-900 px-3 py-2.5 shadow-[0_8px_18px_rgba(15,23,42,0.28)]">
                   <p className="text-[11px] uppercase tracking-wide text-slate-300">Paid conversion</p>
                   <p className="mt-0.5 text-xl font-bold text-white">{formatPercent(stats.paidRate)}</p>
                 </div>
-                <div className="rounded-lg border border-slate-900 bg-slate-900 px-3 py-2.5">
+                <div className="rounded-xl border border-slate-900 bg-slate-900 px-3 py-2.5 shadow-[0_8px_18px_rgba(15,23,42,0.28)]">
                   <p className="text-[11px] uppercase tracking-wide text-slate-300">Peak hour</p>
                   <p className="mt-0.5 text-xl font-bold text-white">{peakHour}</p>
                 </div>
@@ -388,22 +388,13 @@ export default function AdminDashboardPage() {
             value={String(todaySessionCount)}
             hint={`${stats.activeTables} active tables today`}
             icon={<Users className="w-4 h-4" />}
-            className="border-slate-900 bg-slate-900"
-            titleClassName="text-slate-300"
-            valueClassName="text-white"
-            hintClassName="text-slate-400"
-            iconClassName="text-slate-300"
           />
           <InsightCard
             title="Revenue"
             value={formatCurrency(stats.revenue)}
             hint={`Avg ticket ${formatCurrency(stats.avgTicket)}`}
             icon={<DollarSign className="w-4 h-4" />}
-            className="border-slate-900 bg-slate-900"
-            titleClassName="text-slate-300"
-            valueClassName="text-emerald-300"
-            hintClassName="text-slate-400"
-            iconClassName="text-slate-300"
+            valueClassName="text-emerald-700"
           />
           <InsightCard
             title="Open Queue"

@@ -493,48 +493,57 @@ export default function AdminOrdersPage() {
   }
 
   return (
-    <div className="page-shell">
+    <div className="page-shell bg-[radial-gradient(1000px_380px_at_0%_-5%,rgba(20,184,166,0.06),transparent),linear-gradient(180deg,#f8fafc,#f8fafc)]">
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="mb-6">
-          <h2 className="brand-display text-3xl font-bold mb-4">Orders</h2>
+        <Card className="glass-grid-card mb-6 border-slate-200/80 bg-white p-4 shadow-[0_10px_28px_rgba(15,23,42,0.06)]">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-700">Live Orders</p>
+              <h2 className="brand-display mt-1 text-3xl font-bold text-slate-900">Orders</h2>
+              <p className="mt-1 text-sm text-slate-500">Track payment groups, session rounds, and bill status in one view.</p>
+            </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Filter className="w-4 h-4" />
-            <Select
-              value={filter}
-              onValueChange={(value) => {
-                setFilter(value);
-                if (value === 'today') setFilterDate('');
-              }}
-            >
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Orders</SelectItem>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="PAID">Paid Only</SelectItem>
-                <SelectItem value="UNPAID">Unpaid Only</SelectItem>
-              </SelectContent>
-            </Select>
-            {filter !== 'today' && (
-              <>
-                <input
-                  type="date"
-                  value={filterDate}
-                  onChange={(e) => setFilterDate(e.target.value)}
-                  className="h-9 rounded-md border px-3 text-sm"
-                  aria-label="Filter by date"
-                />
-                {filterDate && (
-                  <Button variant="outline" size="sm" onClick={() => setFilterDate('')}>
-                    Clear Date
-                  </Button>
-                )}
-              </>
-            )}
+            <div className="flex flex-wrap items-center gap-2 md:justify-end">
+              <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 py-1.5">
+                <Filter className="h-4 w-4 text-slate-500" />
+                <Select
+                  value={filter}
+                  onValueChange={(value) => {
+                    setFilter(value);
+                    if (value === 'today') setFilterDate('');
+                  }}
+                >
+                  <SelectTrigger className="h-8 w-40 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Orders</SelectItem>
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="PAID">Paid Only</SelectItem>
+                    <SelectItem value="UNPAID">Unpaid Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {filter !== 'today' && (
+                <>
+                  <input
+                    type="date"
+                    value={filterDate}
+                    onChange={(e) => setFilterDate(e.target.value)}
+                    className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800"
+                    aria-label="Filter by date"
+                  />
+                  {filterDate && (
+                    <Button variant="outline" size="sm" className="h-10 rounded-lg" onClick={() => setFilterDate('')}>
+                      Clear Date
+                    </Button>
+                  )}
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {groupedOrders.map((group) => {
@@ -563,23 +572,23 @@ export default function AdminOrdersPage() {
                   : groupPaidMethods[0] || '-'
                 : '-';
             return (
-              <Card key={groupKey} className="glass-grid-card p-4 h-fit">
+              <Card key={groupKey} className="glass-grid-card h-fit rounded-2xl border-slate-200/80 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-lg font-bold">Table {group.tableNumber}</h3>
-                    <p className="text-sm text-muted-foreground">
+                    <h3 className="text-[30px] leading-none font-semibold text-slate-900">Table {group.tableNumber}</h3>
+                    <p className="mt-2 text-sm text-slate-500">
                       Name: {group.customerName || 'Guest'}
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-slate-500">
                       Mobile: {group.customerPhone || '-'}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-slate-500">
                       {group.orders.length} round(s) • {format(new Date(group.startedAt), 'MMM dd, yyyy • h:mm a')}
                     </p>
                   </div>
                   <div className="text-right min-w-[190px] shrink-0">
-                    <div className="text-lg font-bold">${groupTotal.toFixed(2)}</div>
-                    <div className="text-xs text-muted-foreground">Payable (excludes cancelled)</div>
+                    <div className="text-4xl leading-none font-semibold text-slate-900">${groupTotal.toFixed(2)}</div>
+                    <div className="mt-1 text-xs text-slate-500">Payable (excludes cancelled)</div>
                     <div className="mt-1 flex justify-end">
                       <Badge className={PAYMENT_COLORS[groupPaymentStatus as keyof typeof PAYMENT_COLORS]}>
                         {groupPaymentStatus === 'PAID'
@@ -593,6 +602,7 @@ export default function AdminOrdersPage() {
                       <div className="mt-2 flex flex-col items-end gap-2">
                         <Button
                           size="sm"
+                          className="rounded-lg"
                           onClick={() =>
                             startGroupPayment(
                               { tableNumber: group.tableNumber, customerPhone: group.customerPhone },
@@ -613,7 +623,7 @@ export default function AdminOrdersPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-8 px-2"
+                        className="h-8 rounded-lg px-2"
                         onClick={() =>
                           generateFinalBill({
                             tableNumber: group.tableNumber,
@@ -630,7 +640,7 @@ export default function AdminOrdersPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-8 px-2"
+                    className="h-8 rounded-lg px-2"
                     onClick={() =>
                       setSelectedGroupDetails({
                         groupKey,
