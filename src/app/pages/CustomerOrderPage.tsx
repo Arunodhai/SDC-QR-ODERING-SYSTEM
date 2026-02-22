@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Plus, Minus, ShoppingCart, Coffee, Trash2, ChevronDown, BellRing } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
@@ -91,7 +91,9 @@ export default function CustomerOrderPage() {
   const [loading, setLoading] = useState(true);
   const [categoryJump, setCategoryJump] = useState<string>('');
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
+  const [showSyncPulse, setShowSyncPulse] = useState(false);
   const latestFinalBillIdRef = useRef<string>('');
+  const syncPulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cartStorageKey = `sdc:cart:${tableNumber || 'unknown'}:${customerPhone || 'guest'}`;
   const roundByOrderId = userOrders
     .slice()
@@ -105,35 +107,40 @@ export default function CustomerOrderPage() {
     menuItems.some((item) => String(item.categoryId) === String(category.id)),
   );
 
-  const sanitizeCartByAvailability = (allItems: any[]) => {
+  const sanitizeCartByAvailability = useCallback((allItems: any[]) => {
     const allMap = new Map((allItems || []).map((item: any) => [String(item.id), item]));
     const availableSet = new Set(
       (allItems || [])
         .filter((item: any) => item.available)
         .map((item: any) => String(item.id)),
     );
-    const removedIds = Object.keys(cart).filter((itemId) => !availableSet.has(String(itemId)));
-    if (removedIds.length === 0) return;
-
-    const nextCart: Record<string, number> = {};
-    Object.entries(cart).forEach(([itemId, qty]) => {
-      if (availableSet.has(String(itemId))) nextCart[itemId] = qty;
+    const removedIds: string[] = [];
+    setCart((prev) => {
+      const nextCart: Record<string, number> = {};
+      Object.entries(prev).forEach(([itemId, qty]) => {
+        if (availableSet.has(String(itemId))) {
+          nextCart[itemId] = qty;
+        } else {
+          removedIds.push(String(itemId));
+        }
+      });
+      return removedIds.length ? nextCart : prev;
     });
-    setCart(nextCart);
 
+    if (!removedIds.length) return;
     setItemNotes((prev) => {
       const next = { ...prev };
       removedIds.forEach((itemId) => delete next[itemId]);
       return next;
     });
     const removedNames = removedIds.map((id) => {
-      const item = menuItems.find((m) => String(m.id) === String(id)) || allMap.get(String(id));
+      const item = allMap.get(String(id));
       return item?.name || `Item ${id}`;
     });
     toast.warning(
       `Removed unavailable item${removedNames.length > 1 ? 's' : ''}: ${removedNames.join(', ')}`,
     );
-  };
+  }, []);
 
   useEffect(() => {
     loadMenu();
@@ -179,7 +186,7 @@ export default function CustomerOrderPage() {
     );
   }, [cart, itemNotes, phoneConfirmed, customerPhone, cartStorageKey]);
 
-  const loadMenu = async () => {
+  const loadMenu = useCallback(async () => {
     try {
       const [categoriesRes, itemsRes] = await Promise.all([
         api.getCategories(),
@@ -188,13 +195,22 @@ export default function CustomerOrderPage() {
       setCategories(categoriesRes.categories);
       setMenuItems(itemsRes.items || []);
       sanitizeCartByAvailability(itemsRes.items || []);
+      setShowSyncPulse(true);
+      if (syncPulseTimerRef.current) clearTimeout(syncPulseTimerRef.current);
+      syncPulseTimerRef.current = setTimeout(() => setShowSyncPulse(false), 900);
     } catch (error) {
       console.error('Error loading menu:', error);
       toast.error('Failed to load menu');
     } finally {
       setLoading(false);
     }
-  };
+  }, [sanitizeCartByAvailability]);
+
+  useEffect(() => {
+    return () => {
+      if (syncPulseTimerRef.current) clearTimeout(syncPulseTimerRef.current);
+    };
+  }, []);
 
   const addToCart = (itemId: string) => {
     setCart(prev => ({ ...prev, [itemId]: (prev[itemId] || 0) + 1 }));
@@ -245,6 +261,7 @@ export default function CustomerOrderPage() {
   const getCartTotal = () => {
     return Object.entries(cart).reduce((sum, [itemId, qty]) => {
       const item = menuItems.find(i => i.id === itemId);
+      if (!item?.available) return sum;
       return sum + (item?.price || 0) * qty;
     }, 0);
   };
@@ -253,7 +270,7 @@ export default function CustomerOrderPage() {
     return Object.entries(cart)
       .map(([itemId, qty]) => {
         const item = menuItems.find(i => i.id === itemId);
-        if (!item) return null;
+        if (!item || !item.available) return null;
         return {
           id: itemId,
           name: item.name,
@@ -267,7 +284,11 @@ export default function CustomerOrderPage() {
   };
 
   const getCartItemCount = () => {
-    return Object.values(cart).reduce((sum, qty) => sum + qty, 0);
+    return Object.entries(cart).reduce((sum, [itemId, qty]) => {
+      const item = menuItems.find((i) => i.id === itemId);
+      if (!item?.available) return sum;
+      return sum + qty;
+    }, 0);
   };
 
   const isValidPhone = (value: string) => /^\d{8,15}$/.test(value.trim());
@@ -362,14 +383,14 @@ export default function CustomerOrderPage() {
       loadMenu();
     });
     return () => unsubscribe();
-  }, []);
+  }, [loadMenu]);
 
   useEffect(() => {
     const timer = setInterval(() => {
       loadMenu();
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [loadMenu]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -488,6 +509,17 @@ export default function CustomerOrderPage() {
               )}
             </div>
             <div className="flex items-center gap-2 shrink-0">
+              {phoneConfirmed && (
+                <div className="flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] text-muted-foreground">
+                  <span className="relative inline-flex h-2.5 w-2.5">
+                    {showSyncPulse ? (
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
+                    ) : null}
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                  </span>
+                  Sync
+                </div>
+              )}
               {getCartItemCount() > 0 && (
                 <Badge variant="secondary" className="text-base px-2.5 py-1 bg-primary/10 text-primary">
                   <ShoppingCart className="w-4 h-4 mr-1" />
@@ -847,12 +879,16 @@ export default function CustomerOrderPage() {
                         <p className="text-lg font-bold mt-2">${item.price.toFixed(2)}</p>
                       </div>
                       <div className="flex items-center gap-2 self-end">
-                        {cart[item.id] ? (
+                        {!item.available ? (
+                          <Button variant="outline" disabled>
+                            Unavailable
+                          </Button>
+                        ) : cart[item.id] ? (
                           <>
                             <Button
                               variant="outline"
                               size="icon"
-                              disabled={!phoneConfirmed || !item.available}
+                              disabled={!phoneConfirmed}
                               onClick={() => removeFromCart(item.id)}
                             >
                               <Minus className="w-4 h-4" />
@@ -861,23 +897,17 @@ export default function CustomerOrderPage() {
                             <Button
                               variant="outline"
                               size="icon"
-                              disabled={!phoneConfirmed || !item.available}
+                              disabled={!phoneConfirmed}
                               onClick={() => addToCart(item.id)}
                             >
                               <Plus className="w-4 h-4" />
                             </Button>
                           </>
                         ) : (
-                          item.available ? (
-                            <Button disabled={!phoneConfirmed} onClick={() => addToCart(item.id)}>
-                              <Plus className="w-4 h-4 mr-2" />
-                              Add
-                            </Button>
-                          ) : (
-                            <Button variant="outline" disabled>
-                              Unavailable
-                            </Button>
-                          )
+                          <Button disabled={!phoneConfirmed} onClick={() => addToCart(item.id)}>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add
+                          </Button>
                         )}
                       </div>
                     </div>

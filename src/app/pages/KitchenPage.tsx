@@ -419,6 +419,20 @@ export default function KitchenPage() {
                               <div className="space-y-2">
                                 {statusOrders.map((order: any) => (
                                   <div key={order.id} className="rounded-md border p-2">
+                                    {(() => {
+                                      const unavailableNames = (order.items || [])
+                                        .filter(
+                                          (item: any) =>
+                                            !item.isCancelled &&
+                                            item.menuItemId &&
+                                            unavailableItemIds.has(String(item.menuItemId)),
+                                        )
+                                        .map((item: any) => item.name);
+                                      const hasUnavailable = unavailableNames.length > 0;
+                                      const alreadyApplied =
+                                        !hasUnavailable && String(order.statusReason || '').toLowerCase().includes('unavailable');
+                                      return (
+                                        <>
                                     <div className="flex items-start justify-between mb-1">
                                       <div>
                                         <p className="text-sm font-semibold">Order #{order.id}</p>
@@ -436,22 +450,11 @@ export default function KitchenPage() {
                                         </div>
                                       ))}
                                     </div>
-                                    {(() => {
-                                      const unavailableNames = (order.items || [])
-                                        .filter(
-                                          (item: any) =>
-                                            !item.isCancelled &&
-                                            item.menuItemId &&
-                                            unavailableItemIds.has(String(item.menuItemId)),
-                                        )
-                                        .map((item: any) => item.name);
-                                      if (!unavailableNames.length) return null;
-                                      return (
+                                    {hasUnavailable ? (
                                       <div className="mb-2 rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[11px] text-red-700">
                                         Unavailable now: {Array.from(new Set(unavailableNames)).join(', ')}
                                       </div>
-                                      );
-                                    })()}
+                                    ) : null}
                                     <div className="mt-3 mb-2 text-xs font-semibold text-right">Total: ${order.total.toFixed(2)}</div>
                                     <div className="grid grid-cols-2 gap-2">
                                       <Button
@@ -468,10 +471,14 @@ export default function KitchenPage() {
                                         className="w-full border-red-300 text-red-700 hover:bg-red-50"
                                         size="sm"
                                         onClick={() => markOutOfStock(order.id)}
+                                        disabled={!hasUnavailable}
                                       >
-                                        Apply Unavailable
+                                        {alreadyApplied ? 'Applied' : 'Apply Unavailable'}
                                       </Button>
                                     </div>
+                                        </>
+                                      );
+                                    })()}
                                   </div>
                                 ))}
                               </div>

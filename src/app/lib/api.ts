@@ -721,12 +721,20 @@ export const applyUnavailableItemsToOrder = async (id: string) => {
   if (menuError) throw new Error(errMsg(menuError, 'Failed to check item availability'));
 
   const menuMap = new Map((menuRows || []).map((row: any) => [Number(row.id), row]));
+  const unavailableMenuNames = new Set(
+    (menuRows || [])
+      .filter((row: any) => !row.is_available)
+      .map((row: any) => String(row.name || '').trim().toLowerCase()),
+  );
+
   const targetItemRows = orderItems.filter((item: any) => {
     const menuId = Number(item.menu_item_id);
-    if (!menuId) return false;
-    const menu = menuMap.get(menuId);
+    const rawName = String(item.item_name || '').replace(/\s*\(Note:.*\)\s*$/i, '').trim().toLowerCase();
+    const menu = menuId ? menuMap.get(menuId) : null;
     const alreadyCancelled = Boolean(item.is_cancelled);
-    return Boolean(menu && !menu.is_available && !alreadyCancelled);
+    const unavailableById = Boolean(menu && !menu.is_available);
+    const unavailableByName = rawName ? unavailableMenuNames.has(rawName) : false;
+    return !alreadyCancelled && (unavailableById || unavailableByName);
   });
 
   if (!targetItemRows.length) {
@@ -768,7 +776,10 @@ export const applyUnavailableItemsToOrder = async (id: string) => {
   if (refreshedError) throw new Error(errMsg(refreshedError, 'Failed to refresh order'));
 
   const refreshedItems = refreshedOrderRow?.order_items || [];
-  const payableItems = refreshedItems.filter((item: any) => !item.is_cancelled);
+  const cancelledByThisAction = new Set(targetIds.map((v) => Number(v)));
+  const payableItems = refreshedItems.filter(
+    (item: any) => !item.is_cancelled && !cancelledByThisAction.has(Number(item.id)),
+  );
   const newTotal = payableItems.reduce((sum: number, item: any) => sum + Number(item.line_total || 0), 0);
   const allItemsUnavailable = payableItems.length === 0;
   const orderReason = `Unavailable item${unavailableNames.length > 1 ? 's' : ''} removed: ${unavailableNames.join(', ')}`;

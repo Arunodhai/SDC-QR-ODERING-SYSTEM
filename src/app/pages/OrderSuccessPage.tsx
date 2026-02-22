@@ -111,6 +111,11 @@ export default function OrderSuccessPage() {
 
   const status = cancelled ? 'CANCELLED' : (order?.status || 'PENDING');
   const statusReason = order?.statusReason || '';
+  const visibleItems = (order?.items || []).filter((item: any) => !item.isCancelled);
+  const visibleItemsTotal = visibleItems.reduce(
+    (sum: number, item: any) => sum + Number(item.price || 0) * Number(item.quantity || 0),
+    0,
+  );
   const activeStep = Math.max(STATUS_STEPS.indexOf(status), 0);
   const statusIcon = useMemo(() => {
     if (status === 'CANCELLED') return <CheckCircle className="w-18 h-18 text-gray-500 mx-auto mb-4" />;
@@ -235,7 +240,7 @@ export default function OrderSuccessPage() {
         <div className="mt-5">
           {loading && <p className="text-sm text-muted-foreground">Loading order details...</p>}
           {!loading && error && <p className="text-sm text-red-600">{error}</p>}
-          {!loading && !error && order?.items?.length > 0 && (
+          {!loading && !error && visibleItems.length > 0 && (
             <div className="space-y-2">
               <div className="rounded-xl border border-white/80 bg-white/70 backdrop-blur">
                 <div className="grid grid-cols-12 gap-2 border-b bg-white/70 px-3 py-2 text-xs font-semibold text-muted-foreground">
@@ -243,7 +248,7 @@ export default function OrderSuccessPage() {
                   <span className="col-span-2 text-center">Qty</span>
                   <span className="col-span-4 text-right">Price</span>
                 </div>
-                {order.items.map((item: any, idx: number) => (
+                {visibleItems.map((item: any, idx: number) => (
                   <div key={idx} className="grid grid-cols-12 gap-2 px-3 py-2 text-sm border-b last:border-b-0">
                     <span className="col-span-6">{item.name}</span>
                     <span className="col-span-2 text-center">{item.quantity}</span>
@@ -253,9 +258,12 @@ export default function OrderSuccessPage() {
               </div>
               <div className="grid grid-cols-12 gap-2 rounded-lg bg-slate-50/80 px-3 py-2 text-sm">
                 <span className="col-span-8 font-semibold">Items Total</span>
-                <span className="col-span-4 text-right font-bold">${Number(order.total || 0).toFixed(2)}</span>
+                <span className="col-span-4 text-right font-bold">${Number(visibleItemsTotal || 0).toFixed(2)}</span>
               </div>
             </div>
+          )}
+          {!loading && !error && visibleItems.length === 0 && (
+            <p className="text-sm text-muted-foreground">No active items remaining in this order.</p>
           )}
         </div>
 
