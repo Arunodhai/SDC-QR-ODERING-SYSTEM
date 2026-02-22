@@ -365,7 +365,9 @@ export default function AdminDashboardPage() {
             <div className="grid gap-3 xl:grid-cols-[1fr_560px] xl:items-center">
               <div>
                 <div className="flex items-center gap-1.5">
-                  <span className="live-ops-dot" aria-hidden="true" />
+                  <span className="live-ops-ring" aria-hidden="true">
+                    <span className="live-ops-core" />
+                  </span>
                   <p className="text-xs uppercase tracking-[0.18em] text-teal-700 font-semibold">Live Operations</p>
                 </div>
                 <h2 className="brand-display mt-0.5 text-2xl md:text-3xl font-bold text-slate-900">Dashboard</h2>
@@ -381,12 +383,12 @@ export default function AdminDashboardPage() {
                   <p className="text-[11px] uppercase tracking-wide text-slate-500">Peak hour</p>
                   <p className="mt-0.5 text-xl font-bold text-slate-900">{peakHour}</p>
                 </div>
-                <div className="col-span-2 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2">
+                <div className="col-span-2 grid grid-cols-[200px_minmax(0,1fr)] gap-2">
                   <input
                     type="date"
                     value={filterDate}
                     onChange={(e) => setFilterDate(e.target.value)}
-                    className="h-10 w-full rounded-lg border border-white/80 bg-white/80 px-3 text-sm text-slate-800 backdrop-blur"
+                    className="h-10 w-[200px] rounded-lg border border-white/80 bg-white/80 px-3 text-sm text-slate-800 backdrop-blur"
                   />
                   <button
                     type="button"
@@ -404,7 +406,7 @@ export default function AdminDashboardPage() {
           </div>
         </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
           <InsightCard
             title="Dining Sessions"
             value={String(todaySessionCount)}
@@ -436,28 +438,43 @@ export default function AdminDashboardPage() {
             hint={`${stats.total} total orders today`}
             icon={<Clock3 className="w-4 h-4" />}
           />
-          <InsightCard
-            title="Cash Payments"
-            value={String(paymentMethodCounts.cash)}
-            hint="Paid orders via cash/counter"
-            icon={<DollarSign className="w-4 h-4" />}
-            className="xl:col-span-1"
-          />
-          <InsightCard
-            title="Card Payments"
-            value={String(paymentMethodCounts.card)}
-            hint="Paid orders via card"
-            icon={<DollarSign className="w-4 h-4" />}
-            className="xl:col-span-1"
-          />
-          <InsightCard
-            title="UPI Payments"
-            value={String(paymentMethodCounts.upi)}
-            hint="Paid orders via UPI"
-            icon={<DollarSign className="w-4 h-4" />}
-            className="xl:col-span-1"
-          />
         </div>
+
+        <Card className="glass-grid-card rounded-2xl border-slate-200/70 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-slate-900">Payment Mix (Paid Orders)</h3>
+            <p className="text-xs text-slate-500">Cash / Card / UPI</p>
+          </div>
+          <div className="flex h-3 w-full overflow-hidden rounded-full border border-slate-200 bg-slate-100">
+            {(() => {
+              const total = paymentMethodCounts.cash + paymentMethodCounts.card + paymentMethodCounts.upi || 1;
+              const cashPct = (paymentMethodCounts.cash / total) * 100;
+              const cardPct = (paymentMethodCounts.card / total) * 100;
+              const upiPct = (paymentMethodCounts.upi / total) * 100;
+              return (
+                <>
+                  <span className="h-full bg-emerald-500" style={{ width: `${cashPct}%` }} />
+                  <span className="h-full bg-indigo-500" style={{ width: `${cardPct}%` }} />
+                  <span className="h-full bg-cyan-500" style={{ width: `${upiPct}%` }} />
+                </>
+              );
+            })()}
+          </div>
+          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">Cash</p>
+              <p className="text-lg font-semibold text-emerald-900">{paymentMethodCounts.cash}</p>
+            </div>
+            <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-indigo-700">Card</p>
+              <p className="text-lg font-semibold text-indigo-900">{paymentMethodCounts.card}</p>
+            </div>
+            <div className="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-cyan-700">UPI</p>
+              <p className="text-lg font-semibold text-cyan-900">{paymentMethodCounts.upi}</p>
+            </div>
+          </div>
+        </Card>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
           <Card className="glass-grid-card p-5 xl:col-span-2 bg-white border-slate-200/80">

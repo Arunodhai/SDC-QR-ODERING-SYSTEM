@@ -350,6 +350,25 @@
     animation: liveDotBlink 1.3s steps(1, end) infinite;
   }
 
+  .live-ops-ring {
+    display: inline-flex;
+    width: 0.74rem;
+    height: 0.74rem;
+    border-radius: 999px;
+    border: 1.6px solid #0f172a;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+  }
+
+  .live-ops-core {
+    width: 0.44rem;
+    height: 0.44rem;
+    border-radius: 999px;
+    background: #22c55e;
+    animation: liveDotBlink 1.2s ease-in-out infinite;
+  }
+
   @keyframes liveOpsBlink {
     0%, 48%, 100% {
       opacity: 1;

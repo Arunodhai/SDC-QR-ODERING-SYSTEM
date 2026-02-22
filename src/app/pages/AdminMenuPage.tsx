@@ -38,6 +38,7 @@ export default function AdminMenuPage() {
   const [uploading, setUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
   const [togglingItemIds, setTogglingItemIds] = useState<Record<string, boolean>>({});
+  const [itemCategoryFilter, setItemCategoryFilter] = useState('all');
 
   useEffect(() => {
     let mounted = true;
@@ -246,10 +247,17 @@ export default function AdminMenuPage() {
               {apiConnected === false && <span className="text-red-700">Not connected</span>}
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2 text-sm lg:justify-end">
-            <span className="sdc-pill">Categories: {categories.length}</span>
-            <span className="sdc-pill">Items: {menuItems.length}</span>
-            <Button variant="outline" size="sm" className="rounded-xl bg-white/75" onClick={loadData}>Refresh</Button>
+          <div className="flex flex-wrap items-center gap-4 text-sm lg:justify-end">
+            <span className="font-medium text-slate-900">Categories: {categories.length}</span>
+            <span className="font-medium text-slate-900">Items: {menuItems.length}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-md border-slate-300 bg-white text-slate-900 hover:bg-slate-50"
+              onClick={loadData}
+            >
+              Refresh
+            </Button>
           </div>
         </div>
         </Card>
@@ -269,20 +277,20 @@ export default function AdminMenuPage() {
               </Button>
             </div>
 
-            <div className="grid gap-4">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
               {categories.map(category => (
-                <Card key={category.id} className="sdc-panel-card p-4 flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold">{category.name}</h3>
+                <Card key={category.id} className="sdc-panel-card p-3">
+                  <div className="mb-3">
+                    <h3 className="text-base font-semibold leading-tight">{category.name}</h3>
                     <p className="text-sm text-muted-foreground">
                       {menuItems.filter(i => String(i.categoryId) === String(category.id)).length} items
                     </p>
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="icon" onClick={() => openEditCategory(category)}>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openEditCategory(category)}>
                       <Edit className="w-4 h-4" />
                     </Button>
-                    <Button variant="outline" size="icon" onClick={() => handleDeleteCategory(category.id)}>
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleDeleteCategory(category.id)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -307,6 +315,20 @@ export default function AdminMenuPage() {
                 <Plus className="w-4 h-4 mr-2" />
                 Add Item
               </Button>
+            </div>
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <Label className="text-sm text-slate-700">Category filter</Label>
+              <Select value={itemCategoryFilter} onValueChange={setItemCategoryFilter}>
+                <SelectTrigger className="w-[260px] rounded-md border-slate-300 bg-white">
+                  <SelectValue placeholder="All categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All categories</SelectItem>
+                  {categories.map(cat => (
+                    <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {loadingData && (
@@ -344,7 +366,9 @@ export default function AdminMenuPage() {
               </Card>
             )}
 
-            {!loadingData && categories.map(category => {
+            {!loadingData && categories
+              .filter((category) => itemCategoryFilter === 'all' || String(category.id) === String(itemCategoryFilter))
+              .map(category => {
               const categoryItems = menuItems.filter(item => String(item.categoryId) === String(category.id));
               if (categoryItems.length === 0) return null;
 
