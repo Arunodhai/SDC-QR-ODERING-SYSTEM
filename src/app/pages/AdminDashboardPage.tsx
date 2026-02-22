@@ -170,6 +170,28 @@ export default function AdminDashboardPage() {
     };
   }, [todayOrders]);
 
+  const paymentMethodCounts = useMemo(() => {
+    const paidOrders = todayOrders.filter((o) => o.paymentStatus === 'PAID' && o.status !== 'CANCELLED');
+    const counts = { cash: 0, card: 0, upi: 0 };
+
+    paidOrders.forEach((order) => {
+      const method = String(order.paymentMethod || '').toUpperCase();
+      if (method === 'CARD') {
+        counts.card += 1;
+        return;
+      }
+      if (method === 'UPI') {
+        counts.upi += 1;
+        return;
+      }
+      if (method === 'COUNTER' || method === 'CASH') {
+        counts.cash += 1;
+      }
+    });
+
+    return counts;
+  }, [todayOrders]);
+
   const todaySessionCount = useMemo(() => {
     const map = new Map<string, any[]>();
     todayOrders.forEach((order) => {
@@ -343,7 +365,7 @@ export default function AdminDashboardPage() {
             <div className="grid gap-3 xl:grid-cols-[1fr_560px] xl:items-center">
               <div>
                 <div className="flex items-center gap-1.5">
-                  <span className="inline-flex h-1.5 w-1.5 rounded-full bg-teal-500" />
+                  <span className="live-ops-dot" aria-hidden="true" />
                   <p className="text-xs uppercase tracking-[0.18em] text-teal-700 font-semibold">Live Operations</p>
                 </div>
                 <h2 className="brand-display mt-0.5 text-2xl md:text-3xl font-bold text-slate-900">Dashboard</h2>
@@ -382,7 +404,7 @@ export default function AdminDashboardPage() {
           </div>
         </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           <InsightCard
             title="Dining Sessions"
             value={String(todaySessionCount)}
@@ -413,6 +435,27 @@ export default function AdminDashboardPage() {
             value={String(stats.cancelled)}
             hint={`${stats.total} total orders today`}
             icon={<Clock3 className="w-4 h-4" />}
+          />
+          <InsightCard
+            title="Cash Payments"
+            value={String(paymentMethodCounts.cash)}
+            hint="Paid orders via cash/counter"
+            icon={<DollarSign className="w-4 h-4" />}
+            className="xl:col-span-1"
+          />
+          <InsightCard
+            title="Card Payments"
+            value={String(paymentMethodCounts.card)}
+            hint="Paid orders via card"
+            icon={<DollarSign className="w-4 h-4" />}
+            className="xl:col-span-1"
+          />
+          <InsightCard
+            title="UPI Payments"
+            value={String(paymentMethodCounts.upi)}
+            hint="Paid orders via UPI"
+            icon={<DollarSign className="w-4 h-4" />}
+            className="xl:col-span-1"
           />
         </div>
 
