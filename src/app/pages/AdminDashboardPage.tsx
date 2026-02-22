@@ -77,13 +77,13 @@ function InsightCard({
   iconClassName?: string;
 }) {
   return (
-    <Card className={`glass-grid-card p-4 border-slate-200/70 bg-white ${className || ''}`}>
+    <Card className={`glass-grid-card p-4 border-slate-200/80 bg-white ${className || ''}`}>
       <div className="flex items-center justify-between">
-        <p className={`text-sm text-muted-foreground ${titleClassName || ''}`}>{title}</p>
+        <p className={`text-sm text-slate-600 ${titleClassName || ''}`}>{title}</p>
         <div className={`text-slate-500 ${iconClassName || ''}`}>{icon}</div>
       </div>
-      <p className={`mt-2 text-3xl font-bold tracking-tight ${valueClassName || ''}`}>{value}</p>
-      <p className={`mt-2 text-xs text-muted-foreground ${hintClassName || ''}`}>{hint}</p>
+      <p className={`mt-2 text-3xl font-bold tracking-tight text-slate-900 ${valueClassName || ''}`}>{value}</p>
+      <p className={`mt-2 text-xs text-slate-500 ${hintClassName || ''}`}>{hint}</p>
     </Card>
   );
 }
@@ -339,8 +339,8 @@ export default function AdminDashboardPage() {
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <Card className="glass-grid-card overflow-hidden border-slate-200/80 bg-white">
           <div className="h-1 w-full bg-gradient-to-r from-teal-500/40 via-cyan-400/40 to-emerald-500/40" />
-          <div className="p-4 md:p-5">
-            <div className="grid gap-3 xl:grid-cols-[1fr_620px] xl:items-center">
+          <div className="p-4 md:p-4.5">
+            <div className="grid gap-3 xl:grid-cols-[1fr_560px] xl:items-center">
               <div>
                 <div className="flex items-center gap-1.5">
                   <span className="inline-flex h-1.5 w-1.5 rounded-full bg-teal-500" />
@@ -350,7 +350,7 @@ export default function AdminDashboardPage() {
                 <p className="mt-0.5 text-sm text-muted-foreground">Real-time performance snapshot for the selected date.</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 xl:min-w-[620px]">
+              <div className="grid grid-cols-2 gap-2 xl:min-w-[560px]">
                 <div className="rounded-lg border border-slate-900 bg-slate-900 px-3 py-2.5">
                   <p className="text-[11px] uppercase tracking-wide text-slate-300">Paid conversion</p>
                   <p className="mt-0.5 text-xl font-bold text-white">{formatPercent(stats.paidRate)}</p>
@@ -364,7 +364,7 @@ export default function AdminDashboardPage() {
                     type="date"
                     value={filterDate}
                     onChange={(e) => setFilterDate(e.target.value)}
-                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm"
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800"
                   />
                   <button
                     type="button"
@@ -401,7 +401,7 @@ export default function AdminDashboardPage() {
             icon={<DollarSign className="w-4 h-4" />}
             className="border-slate-900 bg-slate-900"
             titleClassName="text-slate-300"
-            valueClassName="text-emerald-400"
+            valueClassName="text-emerald-300"
             hintClassName="text-slate-400"
             iconClassName="text-slate-300"
           />
@@ -410,33 +410,18 @@ export default function AdminDashboardPage() {
             value={String(currentQueue)}
             hint={`${stats.preparing} preparing, ${stats.ready} ready, ${stats.unpaid} unpaid`}
             icon={<ListChecks className="w-4 h-4" />}
-            className="border-slate-900 bg-slate-900"
-            titleClassName="text-slate-300"
-            valueClassName="text-white"
-            hintClassName="text-slate-400"
-            iconClassName="text-slate-300"
           />
           <InsightCard
             title="Served"
             value={String(stats.served)}
             hint={`Completion ${formatPercent(stats.completionRate)}`}
             icon={<TrendingUp className="w-4 h-4" />}
-            className="border-slate-900 bg-slate-900"
-            titleClassName="text-slate-300"
-            valueClassName="text-white"
-            hintClassName="text-slate-400"
-            iconClassName="text-slate-300"
           />
           <InsightCard
             title="Cancelled"
             value={String(stats.cancelled)}
             hint={`${stats.total} total orders today`}
             icon={<Clock3 className="w-4 h-4" />}
-            className="border-slate-900 bg-slate-900"
-            titleClassName="text-slate-300"
-            valueClassName="text-white"
-            hintClassName="text-slate-400"
-            iconClassName="text-slate-300"
           />
         </div>
 
