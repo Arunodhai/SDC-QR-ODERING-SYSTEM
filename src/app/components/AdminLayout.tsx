@@ -32,7 +32,7 @@ export default function AdminLayout() {
   return (
     <div className="page-shell h-screen overflow-hidden">
       <div className="mx-auto h-full max-w-[1700px] p-3 lg:p-4">
-        <div className="flex h-full gap-3 overflow-hidden lg:gap-4">
+        <div className="flex h-full gap-2 overflow-hidden lg:gap-2.5">
             <AdminNav collapsed={sidebarCollapsed} onToggleCollapse={toggleSidebar} />
             <main className="admin-main-surface min-w-0 flex-1 overflow-y-auto rounded-[8px]">
               <Outlet />

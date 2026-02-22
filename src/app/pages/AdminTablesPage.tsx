@@ -162,17 +162,17 @@ export default function AdminTablesPage() {
                 >
                   <QRCodeSVG
                     value={getTableURL(table.tableNumber)}
-                    size={74}
+                    size={84}
                     level="H"
-                    imageSettings={getQrImageSettings(74)}
+                    imageSettings={getQrImageSettings(84)}
                   />
                 </button>
-                <div className="flex items-center justify-center gap-1">
+                <div className="flex items-center justify-center gap-2.5">
                   <h3 className="text-[20px] font-semibold tracking-tight text-slate-900">Table {table.tableNumber}</h3>
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-6 w-6 shrink-0"
+                    className="h-6 w-6 shrink-0 border-slate-200 bg-transparent shadow-none hover:bg-transparent"
                     onClick={() => handleDeleteTable(table.id)}
                   >
                     <Trash2 className="w-3 h-3" />

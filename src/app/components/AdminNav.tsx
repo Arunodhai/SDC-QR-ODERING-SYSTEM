@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { LayoutGrid, Table2, Receipt, LogOut, ChefHat, BarChart3, ChevronRight, ChevronLeft, User } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router';
 import { Button } from './ui/button';
@@ -12,6 +13,18 @@ type AdminNavProps = {
 export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [showCollapsedAccount, setShowCollapsedAccount] = useState(false);
+  const accountRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const onDocClick = (event: MouseEvent) => {
+      if (!accountRef.current) return;
+      if (accountRef.current.contains(event.target as Node)) return;
+      setShowCollapsedAccount(false);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -34,25 +47,26 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
   return (
     <>
       <aside
-        className={`group relative hidden h-full shrink-0 overflow-hidden lg:sticky lg:top-0 lg:flex lg:flex-col lg:justify-between lg:transition-[width,padding] lg:duration-200 ${
+        className={`group relative hidden h-full shrink-0 overflow-visible lg:sticky lg:top-0 lg:flex lg:flex-col lg:justify-between lg:transition-[width,padding] lg:duration-200 ${
           collapsed ? 'lg:w-[88px] lg:p-3' : 'lg:w-[280px] lg:p-5'
         }`}
       >
         <div>
           <div className={`mb-6 ${collapsed ? 'px-0' : 'px-1'}`}>
-            <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-start'}`}>
+            <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-start gap-2.5'}`}>
               <img src={logo12} alt="Stories de Café" className="h-9 w-9 object-contain" />
+              {!collapsed && (
+                <div>
+                  <p className="brand-display text-[1.9rem] font-bold leading-none text-slate-900">Stories de Café</p>
+                  <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">Admin Console</p>
+                </div>
+              )}
             </div>
             {collapsed ? (
               <div className="mt-1 text-center">
                 <p className="text-[10px] font-semibold leading-tight text-slate-700">Stories de Café</p>
               </div>
-            ) : (
-              <div className="mt-2">
-              <p className="brand-display text-xl font-bold leading-tight text-slate-900">Stories de Café</p>
-              <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">Admin Console</p>
-              </div>
-            )}
+            ) : null}
           </div>
 
           {!collapsed && (
@@ -67,8 +81,8 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
               return (
                 <Link key={item.path} to={item.path} className="block">
                   <span
-                    className={`flex items-center rounded-[8px] px-3 py-2.5 text-sm font-medium transition ${
-                      collapsed ? 'justify-center' : 'gap-3'
+                    className={`flex rounded-[8px] px-3 py-2.5 text-sm font-medium transition ${
+                      collapsed ? 'flex-col items-center justify-center gap-1.5 px-1 py-2' : 'items-center gap-3'
                     } ${
                       isActive
                         ? 'bg-white text-slate-900 shadow-[0_10px_20px_rgba(15,23,42,0.12)]'
@@ -76,7 +90,7 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
                     }`}
                   >
                     <Icon className={`h-[18px] w-[18px] ${isActive ? 'text-slate-900' : 'text-slate-500'}`} />
-                    {!collapsed && <span>{item.label}</span>}
+                    {collapsed ? <span className="text-[9px] leading-none">{item.label}</span> : <span>{item.label}</span>}
                   </span>
                 </Link>
               );
@@ -107,14 +121,30 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
               </div>
             </>
           ) : (
-            <div className="flex justify-center">
+            <div ref={accountRef} className="relative flex justify-center">
               <button
                 type="button"
+                onClick={() => setShowCollapsedAccount((s) => !s)}
                 className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white/85 text-slate-600"
                 aria-label="Admin user"
               >
                 <User className="h-4 w-4" />
               </button>
+              {showCollapsedAccount && (
+                <div className="absolute bottom-0 left-full ml-2 w-52 rounded-[8px] border border-slate-200 bg-white p-3 shadow-[0_14px_24px_rgba(15,23,42,0.18)]">
+                  <div className="mb-2 flex items-center gap-2">
+                    <img src={logo12} alt="Admin avatar" className="h-8 w-8 rounded-full border border-slate-200 bg-white object-contain p-0.5" />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-slate-800">Admin</p>
+                      <p className="truncate text-xs text-slate-500">storiesdecafe.com</p>
+                    </div>
+                  </div>
+                  <Button variant="outline" className="w-full justify-start rounded-[8px]" onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -122,7 +152,7 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
         <button
           type="button"
           onClick={onToggleCollapse}
-          className="absolute -right-3 top-1/2 z-20 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-600 shadow-[0_8px_16px_rgba(15,23,42,0.18)] opacity-0 transition group-hover:opacity-100 lg:inline-flex"
+          className="absolute -right-4 top-1/2 z-30 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-600 shadow-[0_8px_16px_rgba(15,23,42,0.18)] opacity-0 transition group-hover:opacity-100 lg:inline-flex"
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
