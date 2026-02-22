@@ -192,6 +192,19 @@ export default function AdminDashboardPage() {
     return counts;
   }, [todayOrders]);
 
+  const paymentMixData = useMemo(() => {
+    const rows = [
+      { key: 'cash', label: 'Cash', count: paymentMethodCounts.cash, color: '#10b981' },
+      { key: 'card', label: 'Card', count: paymentMethodCounts.card, color: '#6366f1' },
+      { key: 'upi', label: 'UPI', count: paymentMethodCounts.upi, color: '#06b6d4' },
+    ];
+    const total = rows.reduce((sum, row) => sum + row.count, 0);
+    return rows.map((row) => ({
+      ...row,
+      percent: total ? (row.count / total) * 100 : 0,
+    }));
+  }, [paymentMethodCounts]);
+
   const todaySessionCount = useMemo(() => {
     const map = new Map<string, any[]>();
     todayOrders.forEach((order) => {
@@ -445,33 +458,49 @@ export default function AdminDashboardPage() {
             <h3 className="text-sm font-semibold text-slate-900">Payment Mix (Paid Orders)</h3>
             <p className="text-xs text-slate-500">Cash / Card / UPI</p>
           </div>
-          <div className="flex h-3 w-full overflow-hidden rounded-full border border-slate-200 bg-slate-100">
-            {(() => {
-              const total = paymentMethodCounts.cash + paymentMethodCounts.card + paymentMethodCounts.upi || 1;
-              const cashPct = (paymentMethodCounts.cash / total) * 100;
-              const cardPct = (paymentMethodCounts.card / total) * 100;
-              const upiPct = (paymentMethodCounts.upi / total) * 100;
-              return (
-                <>
-                  <span className="h-full bg-emerald-500" style={{ width: `${cashPct}%` }} />
-                  <span className="h-full bg-indigo-500" style={{ width: `${cardPct}%` }} />
-                  <span className="h-full bg-cyan-500" style={{ width: `${upiPct}%` }} />
-                </>
-              );
-            })()}
-          </div>
-          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">Cash</p>
-              <p className="text-lg font-semibold text-emerald-900">{paymentMethodCounts.cash}</p>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-[180px_minmax(0,1fr)] md:items-center">
+            <div className="h-[150px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={paymentMixData}
+                    dataKey="count"
+                    nameKey="label"
+                    innerRadius={42}
+                    outerRadius={66}
+                    paddingAngle={4}
+                    stroke="#fff"
+                    strokeWidth={2}
+                  >
+                    {paymentMixData.map((entry) => (
+                      <Cell key={entry.key} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: number, name: string) => [value, name]}
+                    contentStyle={{ borderRadius: 12, borderColor: '#e2e8f0' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
-            <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-indigo-700">Card</p>
-              <p className="text-lg font-semibold text-indigo-900">{paymentMethodCounts.card}</p>
-            </div>
-            <div className="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-cyan-700">UPI</p>
-              <p className="text-lg font-semibold text-cyan-900">{paymentMethodCounts.upi}</p>
+            <div className="space-y-2">
+              {paymentMixData.map((entry) => (
+                <div key={entry.key} className="rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2">
+                  <div className="mb-1 flex items-center justify-between text-sm">
+                    <span className="inline-flex items-center gap-2 font-medium text-slate-800">
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                      {entry.label}
+                    </span>
+                    <span className="font-semibold text-slate-900">{entry.count}</span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                    <div
+                      className="h-full rounded-full"
+                      style={{ width: `${entry.percent}%`, backgroundColor: entry.color }}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </Card>

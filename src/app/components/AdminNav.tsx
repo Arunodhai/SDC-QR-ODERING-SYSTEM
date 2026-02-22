@@ -255,7 +255,7 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
         <button
           type="button"
           onClick={onToggleCollapse}
-          className="absolute -right-5 top-1/2 z-[95] hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-600 shadow-[0_8px_16px_rgba(15,23,42,0.18)] opacity-0 transition peer-hover:opacity-100 hover:opacity-100 lg:inline-flex"
+          className="absolute -right-4 top-1/2 z-[95] hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-[10px] border border-slate-300 bg-white text-slate-600 shadow-[0_8px_16px_rgba(15,23,42,0.18)] opacity-0 transition peer-hover:opacity-100 hover:opacity-100 lg:inline-flex"
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
