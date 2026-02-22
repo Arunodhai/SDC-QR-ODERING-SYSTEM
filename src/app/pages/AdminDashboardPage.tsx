@@ -355,47 +355,47 @@ export default function AdminDashboardPage() {
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <Card className="glass-grid-card overflow-hidden border-slate-200/80 bg-white">
           <div className="h-1 w-full bg-gradient-to-r from-teal-500/40 via-cyan-400/40 to-emerald-500/40" />
-          <div className="p-5 md:p-6">
-            <div className="grid gap-4 xl:grid-cols-[1fr_340px] xl:items-center">
+          <div className="p-4 md:p-5">
+            <div className="grid gap-3 xl:grid-cols-[1fr_340px] xl:items-center">
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex h-2 w-2 rounded-full bg-teal-500" />
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-flex h-1.5 w-1.5 rounded-full bg-teal-500" />
                   <p className="text-xs uppercase tracking-[0.18em] text-teal-700 font-semibold">Live Operations</p>
                 </div>
-                <h2 className="brand-display mt-1 text-3xl md:text-4xl font-bold text-slate-900">Dashboard</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Real-time performance snapshot for the selected date.</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700">
+                <h2 className="brand-display mt-0.5 text-2xl md:text-3xl font-bold text-slate-900">Dashboard</h2>
+                <p className="mt-0.5 text-sm text-muted-foreground">Real-time performance snapshot for the selected date.</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-700">
                     Date: {new Date(filterDate).toLocaleDateString()}
                   </span>
-                  <span className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700">
+                  <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-700">
                     Sessions: {todaySessionCount}
                   </span>
-                  <span className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700">
+                  <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-700">
                     Active tables: {stats.activeTables}
                   </span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2.5">
+              <div className="grid grid-cols-2 gap-1.5">
+                <div className="rounded-lg border border-slate-200 bg-slate-50/80 px-2.5 py-2">
                   <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Paid conversion</p>
-                  <p className="mt-1 text-2xl font-bold text-slate-900">{formatPercent(stats.paidRate)}</p>
+                  <p className="mt-0.5 text-xl font-bold text-slate-900">{formatPercent(stats.paidRate)}</p>
                 </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2.5">
+                <div className="rounded-lg border border-slate-200 bg-slate-50/80 px-2.5 py-2">
                   <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Peak hour</p>
-                  <p className="mt-1 text-2xl font-bold text-slate-900">{peakHour}</p>
+                  <p className="mt-0.5 text-xl font-bold text-slate-900">{peakHour}</p>
                 </div>
                 <input
                   type="date"
                   value={filterDate}
                   onChange={(e) => setFilterDate(e.target.value)}
-                  className="col-span-2 h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm"
+                  className="col-span-2 h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm"
                 />
                 <button
                   type="button"
                   onClick={printDailyCloseReport}
-                  className="col-span-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  className="col-span-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                 >
                   <span className="inline-flex items-center gap-2">
                     <Printer className="h-4 w-4" />
