@@ -504,7 +504,7 @@ export default function AdminOrdersPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2 md:justify-end">
-              <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white/70 px-2 py-1.5 backdrop-blur">
+              <div className="inline-flex items-center gap-2 rounded-xl bg-white/50 px-2 py-1.5">
                 <Filter className="h-4 w-4 text-slate-500" />
                 <Select
                   value={filter}
@@ -531,7 +531,7 @@ export default function AdminOrdersPage() {
                     type="date"
                     value={filterDate}
                     onChange={(e) => setFilterDate(e.target.value)}
-                    className="h-10 rounded-xl border border-slate-200/80 bg-white/70 px-3 text-sm text-slate-800 backdrop-blur"
+                    className="h-10 rounded-xl border-0 bg-white/50 px-3 text-sm text-slate-800 shadow-none outline-none"
                     aria-label="Filter by date"
                   />
                   {filterDate && (

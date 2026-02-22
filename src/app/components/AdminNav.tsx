@@ -47,26 +47,25 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
   return (
     <>
       <aside
-        className={`group relative hidden h-full shrink-0 overflow-visible lg:sticky lg:top-0 lg:flex lg:flex-col lg:justify-between lg:transition-[width,padding] lg:duration-200 ${
-          collapsed ? 'lg:w-[88px] lg:p-3' : 'lg:w-[280px] lg:p-5'
+        className={`group relative z-30 hidden h-full shrink-0 overflow-visible lg:sticky lg:top-0 lg:flex lg:flex-col lg:justify-between lg:transition-[width,padding] lg:duration-200 ${
+          collapsed ? 'lg:w-[72px] lg:p-2.5' : 'lg:w-[252px] lg:p-4'
         }`}
       >
         <div>
           <div className={`mb-6 ${collapsed ? 'px-0' : 'px-1'}`}>
             <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-start gap-2.5'}`}>
-              <img src={logo12} alt="Stories de Café" className="h-9 w-9 object-contain" />
+              <img
+                src={logo12}
+                alt="Stories de Café"
+                className={`${collapsed ? 'h-9 w-9' : 'h-11 w-11'} object-contain`}
+              />
               {!collapsed && (
                 <div>
-                  <p className="brand-display text-[1.9rem] font-bold leading-none text-slate-900">Stories de Café</p>
+                  <p className="brand-display text-[2rem] font-bold leading-none text-slate-900">Stories de Café</p>
                   <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">Admin Console</p>
                 </div>
               )}
             </div>
-            {collapsed ? (
-              <div className="mt-1 text-center">
-                <p className="text-[10px] font-semibold leading-tight text-slate-700">Stories de Café</p>
-              </div>
-            ) : null}
           </div>
 
           {!collapsed && (
@@ -90,7 +89,7 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
                     }`}
                   >
                     <Icon className={`h-[18px] w-[18px] ${isActive ? 'text-slate-900' : 'text-slate-500'}`} />
-                    {collapsed ? <span className="text-[9px] leading-none">{item.label}</span> : <span>{item.label}</span>}
+                    {collapsed ? <span className="text-[10px] font-medium leading-none">{item.label}</span> : <span>{item.label}</span>}
                   </span>
                 </Link>
               );
@@ -131,7 +130,7 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
                 <User className="h-4 w-4" />
               </button>
               {showCollapsedAccount && (
-                <div className="absolute bottom-0 left-full ml-2 w-52 rounded-[8px] border border-slate-200 bg-white p-3 shadow-[0_14px_24px_rgba(15,23,42,0.18)]">
+                <div className="absolute bottom-0 left-[calc(100%+12px)] z-[90] w-56 rounded-[8px] border border-slate-200 bg-white p-3 shadow-[0_14px_24px_rgba(15,23,42,0.18)]">
                   <div className="mb-2 flex items-center gap-2">
                     <img src={logo12} alt="Admin avatar" className="h-8 w-8 rounded-full border border-slate-200 bg-white object-contain p-0.5" />
                     <div className="min-w-0">
@@ -152,7 +151,7 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
         <button
           type="button"
           onClick={onToggleCollapse}
-          className="absolute -right-4 top-1/2 z-30 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-600 shadow-[0_8px_16px_rgba(15,23,42,0.18)] opacity-0 transition group-hover:opacity-100 lg:inline-flex"
+          className="absolute -right-5 top-1/2 z-[95] hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-600 shadow-[0_8px_16px_rgba(15,23,42,0.18)] opacity-0 transition group-hover:opacity-100 lg:inline-flex"
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
