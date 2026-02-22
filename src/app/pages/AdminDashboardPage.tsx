@@ -337,7 +337,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="page-shell bg-transparent">
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        <Card className="glass-grid-card overflow-hidden border-slate-200/80 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.07)]">
+        <Card className="glass-grid-card overflow-hidden border-slate-200/80 bg-white/80 shadow-[0_10px_28px_rgba(15,23,42,0.07)]">
           <div className="h-1 w-full bg-gradient-to-r from-teal-500/40 via-cyan-400/40 to-emerald-500/40" />
           <div className="p-4 md:p-4.5">
             <div className="grid gap-3 xl:grid-cols-[1fr_560px] xl:items-center">
@@ -351,25 +351,25 @@ export default function AdminDashboardPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-2 xl:min-w-[560px]">
-                <div className="rounded-xl border border-slate-900 bg-slate-900 px-3 py-2.5 shadow-[0_8px_18px_rgba(15,23,42,0.28)]">
-                  <p className="text-[11px] uppercase tracking-wide text-slate-300">Paid conversion</p>
-                  <p className="mt-0.5 text-xl font-bold text-white">{formatPercent(stats.paidRate)}</p>
+                <div className="rounded-xl border border-white/80 bg-white/78 px-3 py-2.5 backdrop-blur">
+                  <p className="text-[11px] uppercase tracking-wide text-slate-500">Paid conversion</p>
+                  <p className="mt-0.5 text-xl font-bold text-slate-900">{formatPercent(stats.paidRate)}</p>
                 </div>
-                <div className="rounded-xl border border-slate-900 bg-slate-900 px-3 py-2.5 shadow-[0_8px_18px_rgba(15,23,42,0.28)]">
-                  <p className="text-[11px] uppercase tracking-wide text-slate-300">Peak hour</p>
-                  <p className="mt-0.5 text-xl font-bold text-white">{peakHour}</p>
+                <div className="rounded-xl border border-white/80 bg-white/78 px-3 py-2.5 backdrop-blur">
+                  <p className="text-[11px] uppercase tracking-wide text-slate-500">Peak hour</p>
+                  <p className="mt-0.5 text-xl font-bold text-slate-900">{peakHour}</p>
                 </div>
                 <div className="col-span-2 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2">
                   <input
                     type="date"
                     value={filterDate}
                     onChange={(e) => setFilterDate(e.target.value)}
-                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800"
+                    className="h-10 w-full rounded-lg border border-white/80 bg-white/80 px-3 text-sm text-slate-800 backdrop-blur"
                   />
                   <button
                     type="button"
                     onClick={printDailyCloseReport}
-                    className="h-10 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    className="h-10 w-full min-w-0 rounded-lg border border-white/80 bg-white/80 px-3 text-sm font-semibold text-slate-700 backdrop-blur hover:bg-white"
                   >
                     <span className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap">
                       <Printer className="h-4 w-4" />
