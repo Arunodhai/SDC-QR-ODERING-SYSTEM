@@ -4,6 +4,7 @@ import { projectId, publicAnonKey } from '/utils/supabase/info';
 const supabaseUrl = `https://${projectId}.supabase.co`;
 const supabase = createClient(supabaseUrl, publicAnonKey);
 const imageBucket = 'menu-images';
+const adminAvatarBucket = 'admin-avatars';
 const kitchenSessionKey = 'sdc:kitchen-session-v1';
 
 const kitchenAuthSetupHint =
@@ -117,6 +118,116 @@ export const getAdminSession = async () => {
   const { data, error } = await supabase.auth.getSession();
   if (error) throw new Error(errMsg(error, 'Failed to get session'));
   return data.session;
+};
+
+const getCurrentAdminUser = async () => {
+  const { data, error } = await supabase.auth.getUser();
+  if (error) throw new Error(errMsg(error, 'Failed to get current user'));
+  if (!data.user) throw new Error('Admin is not authenticated');
+  return data.user;
+};
+
+const isMissingAdminProfileSetup = (error: any) => {
+  const message = String(error?.message || '');
+  return (
+    message.includes('admin_profiles') ||
+    message.includes('admin-avatars') ||
+    message.includes('storage') ||
+    message.includes('bucket')
+  );
+};
+
+const adminProfileSetupHint =
+  'Run sql/create_admin_profiles_and_avatars.sql in Supabase SQL editor to enable admin avatar storage.';
+
+export const getAdminProfile = async () => {
+  const user = await getCurrentAdminUser();
+  const { data, error } = await supabase
+    .from('admin_profiles')
+    .select('user_id, avatar_url, display_name')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingAdminProfileSetup(error)) {
+      throw new Error(adminProfileSetupHint);
+    }
+    throw new Error(errMsg(error, 'Failed to fetch admin profile'));
+  }
+
+  if (!data) {
+    return {
+      profile: {
+        userId: user.id,
+        avatarUrl: '',
+        displayName: user.user_metadata?.full_name || 'Admin',
+      },
+    };
+  }
+
+  return {
+    profile: {
+      userId: String(data.user_id),
+      avatarUrl: data.avatar_url || '',
+      displayName: data.display_name || user.user_metadata?.full_name || 'Admin',
+    },
+  };
+};
+
+export const uploadAdminAvatar = async (file: File) => {
+  const user = await getCurrentAdminUser();
+  const ext = (file.name.includes('.') ? file.name.split('.').pop() : 'png') || 'png';
+  const safeExt = ext.toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
+  const path = `${user.id}/avatar.${safeExt}`;
+
+  const { error: uploadError } = await supabase.storage.from(adminAvatarBucket).upload(path, file, { upsert: true });
+  if (uploadError) {
+    if (isMissingAdminProfileSetup(uploadError)) {
+      throw new Error(adminProfileSetupHint);
+    }
+    throw new Error(errMsg(uploadError, 'Failed to upload admin avatar'));
+  }
+
+  const { data: publicUrlData } = supabase.storage.from(adminAvatarBucket).getPublicUrl(path);
+  return { url: `${publicUrlData.publicUrl}?v=${Date.now()}` };
+};
+
+export const upsertAdminProfileAvatar = async (avatarUrl: string) => {
+  const user = await getCurrentAdminUser();
+  const displayName = (user.user_metadata?.full_name as string) || 'Admin';
+  const { data, error } = await supabase
+    .from('admin_profiles')
+    .upsert(
+      {
+        user_id: user.id,
+        avatar_url: avatarUrl || null,
+        display_name: displayName,
+      },
+      { onConflict: 'user_id' },
+    )
+    .select('user_id, avatar_url, display_name')
+    .single();
+
+  if (error) {
+    if (isMissingAdminProfileSetup(error)) {
+      throw new Error(adminProfileSetupHint);
+    }
+    throw new Error(errMsg(error, 'Failed to update admin profile'));
+  }
+
+  return {
+    profile: {
+      userId: String(data.user_id),
+      avatarUrl: data.avatar_url || '',
+      displayName: data.display_name || displayName,
+    },
+  };
+};
+
+export const saveAdminAvatar = async (file: File) => {
+  const { url } = await uploadAdminAvatar(file);
+  const { profile } = await upsertAdminProfileAvatar(url);
+  return { profile };
 };
 
 export const kitchenSignIn = async (password: string, name = 'Kitchen Manager') => {

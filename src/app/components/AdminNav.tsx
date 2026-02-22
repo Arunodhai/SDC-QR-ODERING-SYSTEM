@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router';
 import { Button } from './ui/button';
 import * as api from '../lib/api';
 import logo12 from '../../assets/logo12.png';
+import { toast } from 'sonner';
 
 type AdminNavProps = {
   collapsed: boolean;
@@ -16,12 +17,26 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
   const [showCollapsedAccount, setShowCollapsedAccount] = useState(false);
   const [showExpandedAccount, setShowExpandedAccount] = useState(false);
   const [adminAvatar, setAdminAvatar] = useState<string>('');
+  const [avatarLoading, setAvatarLoading] = useState(false);
   const accountRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    const storedAvatar = localStorage.getItem('sdc:admin-avatar');
-    if (storedAvatar) setAdminAvatar(storedAvatar);
+    let cancelled = false;
+    const loadAvatar = async () => {
+      try {
+        const { profile } = await api.getAdminProfile();
+        if (!cancelled) {
+          setAdminAvatar(profile.avatarUrl || '');
+        }
+      } catch (error) {
+        console.error('Failed to load admin profile avatar:', error);
+      }
+    };
+    loadAvatar();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -39,16 +54,21 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
     fileInputRef.current?.click();
   };
 
-  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = String(reader.result || '');
-      setAdminAvatar(result);
-      localStorage.setItem('sdc:admin-avatar', result);
-    };
-    reader.readAsDataURL(file);
+    if (avatarLoading) return;
+    setAvatarLoading(true);
+    try {
+      const { profile } = await api.saveAdminAvatar(file);
+      setAdminAvatar(profile.avatarUrl || '');
+      toast.success('Admin image updated');
+    } catch (error) {
+      console.error('Failed to save admin avatar:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to save admin image');
+    } finally {
+      setAvatarLoading(false);
+    }
     event.target.value = '';
   };
 
@@ -160,8 +180,13 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
 
                 {showExpandedAccount && (
                   <div className="absolute bottom-11 left-2 z-[90] w-52 rounded-[8px] border border-slate-200 bg-white p-2 shadow-[0_14px_24px_rgba(15,23,42,0.18)]">
-                    <Button variant="outline" className="mb-2 w-full justify-start rounded-[8px]" onClick={handlePickAvatar}>
-                      Upload image
+                    <Button
+                      variant="outline"
+                      className="mb-2 w-full justify-start rounded-[8px]"
+                      onClick={handlePickAvatar}
+                      disabled={avatarLoading}
+                    >
+                      {avatarLoading ? 'Uploading...' : 'Upload image'}
                     </Button>
                     <Button variant="outline" className="w-full justify-start rounded-[8px]" onClick={handleLogout}>
                       <LogOut className="mr-2 h-4 w-4" />
@@ -201,8 +226,13 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
                       <p className="truncate text-xs text-slate-500">admin@sdc.com</p>
                     </div>
                   </div>
-                  <Button variant="outline" className="mb-2 w-full justify-start rounded-[8px]" onClick={handlePickAvatar}>
-                    Upload image
+                  <Button
+                    variant="outline"
+                    className="mb-2 w-full justify-start rounded-[8px]"
+                    onClick={handlePickAvatar}
+                    disabled={avatarLoading}
+                  >
+                    {avatarLoading ? 'Uploading...' : 'Upload image'}
                   </Button>
                   <Button variant="outline" className="w-full justify-start rounded-[8px]" onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
