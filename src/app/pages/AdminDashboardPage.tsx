@@ -356,7 +356,7 @@ export default function AdminDashboardPage() {
         <Card className="glass-grid-card overflow-hidden border-slate-200/80 bg-white">
           <div className="h-1 w-full bg-gradient-to-r from-teal-500/40 via-cyan-400/40 to-emerald-500/40" />
           <div className="p-4 md:p-5">
-            <div className="grid gap-3 xl:grid-cols-[1fr_340px] xl:items-center">
+            <div className="grid gap-3 xl:grid-cols-[1fr_620px] xl:items-center">
               <div>
                 <div className="flex items-center gap-1.5">
                   <span className="inline-flex h-1.5 w-1.5 rounded-full bg-teal-500" />
@@ -377,28 +377,28 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-1.5">
-                <div className="rounded-lg border border-slate-200 bg-slate-50/80 px-2.5 py-2">
+              <div className="grid grid-cols-2 gap-2 xl:min-w-[620px]">
+                <div className="rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2.5">
                   <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Paid conversion</p>
                   <p className="mt-0.5 text-xl font-bold text-slate-900">{formatPercent(stats.paidRate)}</p>
                 </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50/80 px-2.5 py-2">
+                <div className="rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2.5">
                   <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Peak hour</p>
                   <p className="mt-0.5 text-xl font-bold text-slate-900">{peakHour}</p>
                 </div>
-                <div className="col-span-2 grid grid-cols-2 gap-1.5">
+                <div className="col-span-2 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2">
                   <input
                     type="date"
                     value={filterDate}
                     onChange={(e) => setFilterDate(e.target.value)}
-                    className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm"
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm"
                   />
                   <button
                     type="button"
                     onClick={printDailyCloseReport}
-                    className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    className="h-10 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                   >
-                    <span className="inline-flex items-center justify-center gap-2 whitespace-nowrap">
+                    <span className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap">
                       <Printer className="h-4 w-4" />
                       Print Daily Close Report
                     </span>
