@@ -386,22 +386,24 @@ export default function AdminDashboardPage() {
                   <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Peak hour</p>
                   <p className="mt-0.5 text-xl font-bold text-slate-900">{peakHour}</p>
                 </div>
-                <input
-                  type="date"
-                  value={filterDate}
-                  onChange={(e) => setFilterDate(e.target.value)}
-                  className="col-span-2 h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={printDailyCloseReport}
-                  className="col-span-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  <span className="inline-flex items-center gap-2">
-                    <Printer className="h-4 w-4" />
-                    Print Daily Close Report
-                  </span>
-                </button>
+                <div className="col-span-2 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-1.5">
+                  <input
+                    type="date"
+                    value={filterDate}
+                    onChange={(e) => setFilterDate(e.target.value)}
+                    className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={printDailyCloseReport}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <Printer className="h-4 w-4" />
+                      Print Daily Close Report
+                    </span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
