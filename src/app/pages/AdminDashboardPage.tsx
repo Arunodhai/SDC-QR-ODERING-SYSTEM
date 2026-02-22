@@ -354,40 +354,54 @@ export default function AdminDashboardPage() {
     <div className="page-shell bg-gradient-to-b from-slate-50 via-white to-slate-100/70">
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <Card className="glass-grid-card overflow-hidden border-slate-200/80 bg-white">
-          <div className="relative p-6 md:p-8">
-            <div className="relative flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+          <div className="h-1 w-full bg-gradient-to-r from-teal-500/40 via-cyan-400/40 to-emerald-500/40" />
+          <div className="p-5 md:p-6">
+            <div className="grid gap-4 xl:grid-cols-[1fr_340px] xl:items-center">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-teal-700 font-semibold">Live Operations</p>
-                <h2 className="brand-display text-4xl font-bold mt-2 text-slate-900">Dashboard</h2>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Real-time performance snapshot for the selected date.
-                </p>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex h-2 w-2 rounded-full bg-teal-500" />
+                  <p className="text-xs uppercase tracking-[0.18em] text-teal-700 font-semibold">Live Operations</p>
+                </div>
+                <h2 className="brand-display mt-1 text-3xl md:text-4xl font-bold text-slate-900">Dashboard</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Real-time performance snapshot for the selected date.</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700">
+                    Date: {new Date(filterDate).toLocaleDateString()}
+                  </span>
+                  <span className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700">
+                    Sessions: {todaySessionCount}
+                  </span>
+                  <span className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700">
+                    Active tables: {stats.activeTables}
+                  </span>
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-2 min-w-[260px]">
-                <div className="rounded-xl border border-slate-200 bg-white/90 p-3">
-                  <p className="text-xs text-muted-foreground">Paid conversion</p>
-                  <p className="text-lg font-semibold text-slate-900">{formatPercent(stats.paidRate)}</p>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2.5">
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Paid conversion</p>
+                  <p className="mt-1 text-2xl font-bold text-slate-900">{formatPercent(stats.paidRate)}</p>
                 </div>
-                <div className="rounded-xl border border-slate-200 bg-white/90 p-3">
-                  <p className="text-xs text-muted-foreground">Peak hour</p>
-                  <p className="text-lg font-semibold text-slate-900">{peakHour}</p>
+                <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2.5">
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Peak hour</p>
+                  <p className="mt-1 text-2xl font-bold text-slate-900">{peakHour}</p>
                 </div>
+                <input
+                  type="date"
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                  className="col-span-2 h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm"
+                />
                 <button
                   type="button"
                   onClick={printDailyCloseReport}
-                  className="col-span-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  className="col-span-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                 >
                   <span className="inline-flex items-center gap-2">
                     <Printer className="h-4 w-4" />
                     Print Daily Close Report
                   </span>
                 </button>
-                <input
-                  type="date"
-                  value={filterDate}
-                  onChange={(e) => setFilterDate(e.target.value)}
-                  className="col-span-2 h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm"
-                />
               </div>
             </div>
           </div>
