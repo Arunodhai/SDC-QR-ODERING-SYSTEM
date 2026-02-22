@@ -137,11 +137,11 @@ export default function AdminTablesPage() {
   return (
     <div className="page-shell">
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <Card className="glass-grid-card mb-6 rounded-2xl border-slate-200/80 p-4 shadow-[0_10px_28px_rgba(15,23,42,0.06)]">
+        <Card className="sdc-header-card mb-6 p-4">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-700">QR Management</p>
-            <h2 className="brand-display text-3xl font-bold">Tables</h2>
+            <h2 className="text-5xl font-semibold tracking-tight text-slate-900">Tables</h2>
           </div>
           <Button onClick={() => setShowDialog(true)} className="rounded-xl">
             <Plus className="w-4 h-4 mr-2" />
@@ -152,11 +152,11 @@ export default function AdminTablesPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {tables.map(table => (
-            <Card key={table.id} className="glass-grid-card p-4">
+            <Card key={table.id} className="sdc-panel-card p-4">
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  className="shrink-0 rounded-lg border bg-white p-2 transition hover:shadow cursor-zoom-in"
+                  className="shrink-0 rounded-xl border border-white/85 bg-white/90 p-2 transition hover:shadow cursor-zoom-in"
                   onClick={() => showQR(table)}
                   title="Click to view QR"
                 >
@@ -168,7 +168,7 @@ export default function AdminTablesPage() {
                   />
                 </button>
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-xl font-bold leading-tight">Table {table.tableNumber}</h3>
+                  <h3 className="text-[38px] leading-none font-semibold tracking-tight text-slate-900">Table {table.tableNumber}</h3>
                 </div>
                 <Button
                   variant="outline"

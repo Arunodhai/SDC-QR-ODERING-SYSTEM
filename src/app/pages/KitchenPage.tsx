@@ -293,7 +293,7 @@ export default function KitchenPage() {
     <div className="page-shell bg-[linear-gradient(180deg,#f7f9fb,#f3f5f7)]">
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="mb-6 grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_10px_26px_rgba(15,23,42,0.06)]">
+          <div className="sdc-header-card flex flex-wrap items-center justify-between gap-3 p-4">
             <div>
               <h1 className="brand-display text-2xl font-bold flex items-center gap-2">
                 <ChefHat className="w-6 h-6" />
@@ -304,7 +304,7 @@ export default function KitchenPage() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-              <nav className="flex gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
+              <nav className="flex gap-1 rounded-xl border border-slate-200 bg-white/70 p-1">
                 <Button
                   size="sm"
                   variant={viewMode === 'active' ? 'default' : 'ghost'}
@@ -334,7 +334,7 @@ export default function KitchenPage() {
             </div>
           </div>
           {!isAdminKitchen && (
-            <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-[0_10px_26px_rgba(15,23,42,0.06)]">
+            <div className="sdc-panel-card flex items-center gap-4 px-4 py-3">
               <div className="min-w-0">
                 <p className="truncate text-base font-semibold text-black">{kitchenUserName}</p>
                 <p className="mt-0.5 text-xs uppercase tracking-wide text-muted-foreground">Kitchen manager access</p>
@@ -362,7 +362,7 @@ export default function KitchenPage() {
           )}
         </div>
         {viewMode === 'active' && serviceRequests.length > 0 && (
-          <Card className="glass-grid-card mb-4 p-4">
+          <Card className="sdc-panel-card mb-4 p-4">
             <div className="mb-2 flex items-center gap-2">
               <BellRing className="h-4 w-4 text-amber-600" />
               <h3 className="font-semibold">Need Assistance Requests</h3>
@@ -408,7 +408,7 @@ export default function KitchenPage() {
                 const phoneLabel = group.phone.startsWith('NO_PHONE_') ? 'No mobile provided' : group.phone;
                 const tables = [...new Set(group.orders.map((o: any) => o.tableNumber))].join(', ');
                 return (
-                  <Card key={group.phone} className="glass-grid-card p-4">
+                  <Card key={group.phone} className="sdc-panel-card p-4">
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                       <div>
                         <p className="text-base font-semibold text-foreground">Table(s): {tables}</p>
@@ -425,7 +425,7 @@ export default function KitchenPage() {
                       {ACTIVE_STATUSES.map((status) => {
                         const statusOrders = group.orders.filter((o: any) => o.status === status);
                         return (
-                          <div key={status} className="rounded-lg border p-3 bg-white">
+                          <div key={status} className="rounded-xl border border-slate-200/80 p-3 bg-white/75">
                             <div className="mb-2 flex items-center justify-between">
                               <h4 className="font-semibold text-sm">{STATUS_TITLES[status]}</h4>
                               <Badge className={STATUS_COLORS[status as keyof typeof STATUS_COLORS]}>

@@ -496,9 +496,9 @@ export default function CustomerOrderPage() {
 
   return (
     <>
-    <div className="page-shell bg-[linear-gradient(180deg,#f7f9fb,#f3f5f7)] pb-24">
+    <div className="page-shell bg-[linear-gradient(180deg,#f7f9fb,#eff3f7)] pb-24">
       {/* Header */}
-      <div className="border-b border-slate-200 bg-white/95 backdrop-blur">
+      <div className="border-b border-slate-200/80 bg-white/86 backdrop-blur">
         <div className="max-w-5xl mx-auto px-4 py-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -562,7 +562,7 @@ export default function CustomerOrderPage() {
       </div>
 
       {phoneConfirmed && (
-        <div className="border-b border-slate-200 bg-white/95">
+        <div className="border-b border-slate-200/80 bg-white/86 backdrop-blur">
           <div className="max-w-5xl mx-auto px-4 py-3">
             <div className="grid grid-cols-3 gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-1">
               <Button
@@ -611,7 +611,7 @@ export default function CustomerOrderPage() {
         ) : null}
 
         {!phoneConfirmed && (
-          <Card className="glass-grid-card p-4 mb-6">
+          <Card className="sdc-panel-card p-4 mb-6">
             <h3 className="font-semibold mb-2">Enter Name and Mobile number to continue</h3>
             <p className="text-sm text-muted-foreground mb-3">
               Use the same number later to retrieve your orders and bill history.
@@ -633,7 +633,7 @@ export default function CustomerOrderPage() {
         )}
 
         {phoneConfirmed && activeTab === 'bill' && (
-          <Card className="glass-grid-card p-4 mb-6">
+          <Card className="sdc-panel-card p-4 mb-6">
             <h3 className="font-semibold mb-2">Your Orders</h3>
             {visibleUserOrders.length === 0 ? (
               <p className="text-sm text-muted-foreground">No orders for this number at Table {tableNumber}.</p>
@@ -670,7 +670,7 @@ export default function CustomerOrderPage() {
         )}
 
         {phoneConfirmed && activeTab === 'bill' && (
-          <Card className="glass-grid-card p-4 mb-6">
+          <Card className="sdc-panel-card p-4 mb-6">
             <h3 className="font-semibold mb-2">Your Bill</h3>
             {currentBill && currentBill.lineItems && currentBill.lineItems.length > 0 ? (
               <div className="space-y-2 text-sm">
@@ -755,7 +755,7 @@ export default function CustomerOrderPage() {
         )}
 
         {phoneConfirmed && activeTab === 'bill' && paidBillHistory.length > 0 && (
-          <Card className="glass-grid-card p-4 mb-6">
+          <Card className="sdc-panel-card p-4 mb-6">
             <h4 className="font-semibold mb-2">Paid Bills History</h4>
             <div className="space-y-2">
               {paidBillHistory.map((bill) => (
@@ -810,7 +810,7 @@ export default function CustomerOrderPage() {
         )}
 
         {phoneConfirmed && activeTab === 'menu' && menuCategories.length > 0 && (
-          <Card className="glass-grid-card p-3 mb-4">
+          <Card className="sdc-panel-card p-3 mb-4">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm font-medium">Browse by category</p>
               <select
@@ -856,7 +856,7 @@ export default function CustomerOrderPage() {
           if (categoryItems.length === 0) return null;
 
           return (
-            <Card key={category.id} id={`category-${category.id}`} className="glass-grid-card mb-6 overflow-hidden">
+            <Card key={category.id} id={`category-${category.id}`} className="sdc-panel-card mb-6 overflow-hidden">
               <div className="flex items-center justify-between border-b bg-white px-4 py-3">
                 <h2 className="text-lg font-bold">{category.name}</h2>
                 <span className="rounded-md border border-teal-200 bg-white px-2 py-0.5 text-xs text-teal-800">
@@ -865,7 +865,7 @@ export default function CustomerOrderPage() {
               </div>
               <div className="grid gap-4 p-4">
                 {categoryItems.map(item => (
-                  <Card key={item.id} className={`glass-grid-card p-4 ${item.available ? '' : 'opacity-75'}`}>
+                  <Card key={item.id} className={`sdc-panel-card p-4 ${item.available ? '' : 'opacity-75'}`}>
                     <div className="flex gap-4 items-start">
                       {getMenuItemImage(item.name, item.image) && (
                         <button
@@ -931,7 +931,7 @@ export default function CustomerOrderPage() {
         })}
 
         {phoneConfirmed && activeTab === 'cart' && (
-          <Card className="glass-grid-card p-4 mb-6">
+          <Card className="sdc-panel-card p-4 mb-6">
             <h3 className="font-semibold mb-3">Your Cart</h3>
             {getCartDetails().length === 0 ? (
               <p className="text-sm text-muted-foreground">Your cart is empty.</p>

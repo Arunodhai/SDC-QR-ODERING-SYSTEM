@@ -161,8 +161,8 @@ export default function OrderSuccessPage() {
   };
 
   return (
-    <div className="page-shell flex items-center justify-center bg-[linear-gradient(180deg,#ffffff,#f8fafc)] p-4">
-      <div className="max-w-xl w-full rounded-3xl border border-white/70 bg-white/70 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.12)] backdrop-blur-xl">
+    <div className="page-shell flex items-center justify-center bg-[linear-gradient(180deg,#f7f9fb,#eff3f7)] p-4">
+      <div className="max-w-xl w-full rounded-3xl border border-white/80 bg-white/74 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.12)] backdrop-blur-xl">
         <div className="text-center">
           {statusIcon}
           <h1 className="brand-display text-4xl font-bold mb-2">
@@ -175,7 +175,7 @@ export default function OrderSuccessPage() {
           </p>
         </div>
 
-        <div className="mt-5 rounded-2xl border border-white/80 bg-white/60 p-4 text-sm backdrop-blur">
+        <div className="mt-5 rounded-2xl border border-slate-200/80 bg-white/68 p-4 text-sm backdrop-blur">
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Order ID</span>
             <span className="font-semibold">#{orderId || '-'}</span>
@@ -201,7 +201,7 @@ export default function OrderSuccessPage() {
           </div>
         </div>
 
-        <div className="mt-5 rounded-2xl border border-white/80 bg-white/60 p-4 backdrop-blur">
+        <div className="mt-5 rounded-2xl border border-slate-200/80 bg-white/68 p-4 backdrop-blur">
           <div className="mb-3 flex items-center justify-between">
             <div className="text-sm font-semibold">Progress</div>
             {status !== 'CANCELLED' && (
@@ -264,7 +264,7 @@ export default function OrderSuccessPage() {
           {!loading && error && <p className="text-sm text-red-600">{error}</p>}
           {!loading && !error && allItems.length > 0 && (
             <div className="space-y-2">
-              <div className="rounded-xl border border-white/80 bg-white/70 backdrop-blur">
+              <div className="rounded-xl border border-slate-200/80 bg-white/72 backdrop-blur">
                 <div className="grid grid-cols-12 gap-2 border-b bg-white/70 px-3 py-2 text-xs font-semibold text-muted-foreground">
                   <span className="col-span-6">Item</span>
                   <span className="col-span-2 text-center">Qty</span>
@@ -297,7 +297,7 @@ export default function OrderSuccessPage() {
           )}
         </div>
 
-        <div className="mt-6 flex items-center justify-between rounded-xl border border-white/80 bg-white/60 px-3 py-2 text-sm backdrop-blur">
+        <div className="mt-6 flex items-center justify-between rounded-xl border border-slate-200/80 bg-white/68 px-3 py-2 text-sm backdrop-blur">
           <div className="flex items-center gap-2 text-muted-foreground">
             <img src={logo12} alt="Stories de Café" className="h-6 w-6 object-contain" />
             <span>Stories de Café</span>

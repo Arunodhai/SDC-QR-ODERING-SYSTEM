@@ -233,12 +233,12 @@ export default function AdminMenuPage() {
 
   return (
     <div className="page-shell">
-      <div className="max-w-7xl mx-auto px-4 py-4">
-        <Card className="glass-grid-card mb-4 rounded-2xl border-slate-200/80 p-4 shadow-[0_10px_28px_rgba(15,23,42,0.06)]">
+      <div className="max-w-7xl mx-auto px-4 py-5">
+        <Card className="sdc-header-card mb-5 p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-700">Menu Console</p>
-            <h2 className="brand-display text-3xl font-bold">Menu Management</h2>
+            <h2 className="text-5xl font-semibold tracking-tight text-slate-900">Menu Management</h2>
             <div className="mt-1 flex items-center gap-2 text-sm">
               <span className="font-semibold">Backend:</span>
               {apiConnected === null && <span className="text-muted-foreground">Checking...</span>}
@@ -247,9 +247,9 @@ export default function AdminMenuPage() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-sm lg:justify-end">
-            <span className="rounded-md bg-gray-100 px-2 py-1">Categories: {categories.length}</span>
-            <span className="rounded-md bg-gray-100 px-2 py-1">Items: {menuItems.length}</span>
-            <Button variant="outline" size="sm" onClick={loadData}>Refresh</Button>
+            <span className="sdc-pill">Categories: {categories.length}</span>
+            <span className="sdc-pill">Items: {menuItems.length}</span>
+            <Button variant="outline" size="sm" className="rounded-xl bg-white/75" onClick={loadData}>Refresh</Button>
           </div>
         </div>
         </Card>
@@ -262,7 +262,7 @@ export default function AdminMenuPage() {
 
           <TabsContent value="categories">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="brand-display text-3xl font-bold">Categories</h2>
+              <h2 className="text-[44px] font-semibold tracking-tight text-slate-900">Categories</h2>
               <Button onClick={() => setShowCategoryDialog(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Category
@@ -271,7 +271,7 @@ export default function AdminMenuPage() {
 
             <div className="grid gap-4">
               {categories.map(category => (
-                <Card key={category.id} className="glass-grid-card p-4 flex items-center justify-between">
+                <Card key={category.id} className="sdc-panel-card p-4 flex items-center justify-between">
                   <div>
                     <h3 className="font-semibold">{category.name}</h3>
                     <p className="text-sm text-muted-foreground">
@@ -293,7 +293,7 @@ export default function AdminMenuPage() {
 
           <TabsContent value="items">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="brand-display text-3xl font-bold">Menu Items</h2>
+              <h2 className="text-[44px] font-semibold tracking-tight text-slate-900">Menu Items</h2>
               <Button
                 onClick={() => {
                   if (categories.length === 0) {
@@ -310,14 +310,14 @@ export default function AdminMenuPage() {
             </div>
 
             {loadingData && (
-              <Card className="glass-grid-card p-8 text-center mb-6">
+              <Card className="sdc-panel-card p-8 text-center mb-6">
                 <h3 className="text-lg font-semibold mb-2">Loading menu data...</h3>
                 <p className="text-muted-foreground">Please wait.</p>
               </Card>
             )}
 
             {!loadingData && categories.length === 0 && menuItems.length === 0 && (
-              <Card className="glass-grid-card p-8 text-center mb-6">
+              <Card className="sdc-panel-card p-8 text-center mb-6">
                 <Coffee className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                 <h3 className="text-lg font-semibold mb-2">Get Started</h3>
                 <p className="text-muted-foreground mb-4">
@@ -330,7 +330,7 @@ export default function AdminMenuPage() {
             )}
 
             {!loadingData && categories.length > 0 && menuItems.length === 0 && (
-              <Card className="glass-grid-card p-8 text-center mb-6">
+              <Card className="sdc-panel-card p-8 text-center mb-6">
                 <h3 className="text-lg font-semibold mb-2">No menu items found</h3>
                 <p className="text-muted-foreground mb-4">
                   Categories exist, but there are no rows in <code>menu_items</code>.
@@ -349,16 +349,16 @@ export default function AdminMenuPage() {
               if (categoryItems.length === 0) return null;
 
               return (
-                <Card key={category.id} className="glass-grid-card mb-6 overflow-hidden">
-                  <div className="flex items-center justify-between border-b bg-white px-4 py-3">
+                <Card key={category.id} className="sdc-panel-card mb-6 overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-slate-200/80 bg-white/60 px-4 py-3">
                     <h3 className="text-base font-semibold">{category.name}</h3>
-                    <span className="rounded-md border border-teal-200 bg-white px-2 py-0.5 text-xs text-teal-800">
+                    <span className="sdc-pill border-teal-200 text-teal-700">
                       {categoryItems.length} item{categoryItems.length > 1 ? 's' : ''}
                     </span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 p-3">
                     {categoryItems.map(item => (
-                      <Card key={item.id} className="glass-grid-card p-3">
+                      <Card key={item.id} className="sdc-panel-card p-3">
                         <div className="flex gap-3 items-start">
                           {getMenuItemImage(item.name, item.image) && (
                             <button
