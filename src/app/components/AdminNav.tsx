@@ -28,9 +28,9 @@ export default function AdminNav() {
 
   return (
     <>
-      <aside className="hidden lg:flex lg:w-72 lg:flex-col lg:justify-between lg:rounded-[26px] lg:border lg:border-slate-200 lg:bg-white lg:p-4 lg:shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
+      <aside className="glass-surface hidden lg:flex lg:w-72 lg:flex-col lg:justify-between lg:rounded-[26px] lg:p-4">
         <div>
-          <div className="mb-6 flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 px-3 py-2.5">
+          <div className="mb-6 flex items-center gap-3 rounded-2xl border border-white/70 bg-white/55 px-3 py-2.5 backdrop-blur">
             <img src={logo12} alt="Stories de Café" className="h-12 w-12 object-contain" />
             <div>
               <p className="brand-display text-xl font-bold leading-tight text-slate-900">Stories de Café</p>
@@ -48,8 +48,8 @@ export default function AdminNav() {
                   <span
                     className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                       isActive
-                        ? 'bg-slate-900 text-white shadow-[0_8px_18px_rgba(15,23,42,0.26)]'
-                        : 'text-slate-700 hover:bg-slate-100'
+                        ? 'bg-slate-900 text-white shadow-[0_10px_20px_rgba(15,23,42,0.24)]'
+                        : 'text-slate-700 hover:bg-white/75'
                     }`}
                   >
                     <Icon className="h-4 w-4" />
@@ -61,15 +61,15 @@ export default function AdminNav() {
           </nav>
         </div>
 
-        <div className="mt-6 rounded-2xl border border-slate-100 bg-slate-50/70 p-3">
-          <Button variant="outline" className="w-full justify-start rounded-xl bg-white" onClick={handleLogout}>
+        <div className="mt-6 rounded-2xl border border-white/70 bg-white/50 p-3 backdrop-blur">
+          <Button variant="outline" className="w-full justify-start rounded-xl border-slate-200 bg-white/85" onClick={handleLogout}>
             <LogOut className="mr-2 h-4 w-4" />
             Logout
           </Button>
         </div>
       </aside>
 
-      <div className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
+      <div className="sticky top-0 z-30 border-b border-slate-200 bg-white/85 px-4 py-3 backdrop-blur-xl lg:hidden">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <img src={logo12} alt="Stories de Café" className="h-9 w-9 object-contain" />

@@ -217,19 +217,28 @@
   }
 
   .brand-display {
-    font-family: 'Playfair Display', Georgia, serif;
-    letter-spacing: 0.2px;
+    font-family: 'Manrope', 'Segoe UI', sans-serif;
+    letter-spacing: -0.01em;
   }
 
   .glass-grid-card {
-    @apply rounded-2xl border bg-card shadow-sm transition-all;
-    border-color: #e2e8f0;
-    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+    @apply rounded-2xl border shadow-sm transition-all;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.72));
+    border-color: rgba(226, 232, 240, 0.9);
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(14px);
   }
 
   .glass-grid-card:hover {
     transform: translateY(-1px);
-    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.09);
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.1);
+  }
+
+  .glass-surface {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.6));
+    border: 1px solid rgba(226, 232, 240, 0.85);
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(16px);
   }
 
   @keyframes sdcGradientShift {

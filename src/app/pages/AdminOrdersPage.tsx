@@ -493,7 +493,7 @@ export default function AdminOrdersPage() {
   }
 
   return (
-    <div className="page-shell bg-[radial-gradient(1000px_380px_at_0%_-5%,rgba(20,184,166,0.06),transparent),linear-gradient(180deg,#f8fafc,#f8fafc)]">
+    <div className="page-shell bg-transparent">
       <div className="max-w-7xl mx-auto px-4 py-6">
         <Card className="glass-grid-card mb-6 border-slate-200/80 bg-white p-4 shadow-[0_10px_28px_rgba(15,23,42,0.06)]">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">

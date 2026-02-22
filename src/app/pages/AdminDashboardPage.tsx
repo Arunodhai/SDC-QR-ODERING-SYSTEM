@@ -335,7 +335,7 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="page-shell bg-[radial-gradient(1200px_420px_at_0%_-10%,rgba(20,184,166,0.08),transparent),linear-gradient(180deg,#f8fafc,#f8fafc)]">
+    <div className="page-shell bg-transparent">
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <Card className="glass-grid-card overflow-hidden border-slate-200/80 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.07)]">
           <div className="h-1 w-full bg-gradient-to-r from-teal-500/40 via-cyan-400/40 to-emerald-500/40" />
