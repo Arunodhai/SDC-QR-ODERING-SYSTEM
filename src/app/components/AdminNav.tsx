@@ -48,7 +48,7 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
     <>
       <aside
         className={`group relative z-30 hidden h-full shrink-0 overflow-visible lg:sticky lg:top-0 lg:flex lg:flex-col lg:justify-between lg:transition-[width,padding] lg:duration-200 ${
-          collapsed ? 'lg:w-[72px] lg:p-2.5' : 'lg:w-[252px] lg:p-4'
+          collapsed ? 'lg:w-[68px] lg:p-2' : 'lg:w-[236px] lg:p-4'
         }`}
       >
         <div>
@@ -61,7 +61,7 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
               />
               {!collapsed && (
                 <div>
-                  <p className="brand-display text-[2rem] font-bold leading-none text-slate-900">Stories de Café</p>
+                  <p className="brand-display text-[1.55rem] font-bold leading-none text-slate-900">Stories de Café</p>
                   <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">Admin Console</p>
                 </div>
               )}
@@ -83,12 +83,24 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
                     className={`flex rounded-[8px] px-3 py-2.5 text-sm font-medium transition ${
                       collapsed ? 'flex-col items-center justify-center gap-1.5 px-1 py-2' : 'items-center gap-3'
                     } ${
-                      isActive
-                        ? 'bg-white text-slate-900 shadow-[0_10px_20px_rgba(15,23,42,0.12)]'
-                        : 'text-slate-700 hover:bg-white/70'
+                      collapsed
+                        ? isActive
+                          ? 'text-slate-900'
+                          : 'text-slate-700 hover:bg-white/60'
+                        : isActive
+                          ? 'bg-white text-slate-900 shadow-[0_10px_20px_rgba(15,23,42,0.12)]'
+                          : 'text-slate-700 hover:bg-white/70'
                     }`}
                   >
-                    <Icon className={`h-[18px] w-[18px] ${isActive ? 'text-slate-900' : 'text-slate-500'}`} />
+                    <span
+                      className={`inline-flex h-7 w-7 items-center justify-center rounded-full ${
+                        collapsed && isActive
+                          ? 'bg-slate-900 text-white shadow-[0_8px_14px_rgba(15,23,42,0.2)]'
+                          : ''
+                      }`}
+                    >
+                      <Icon className={`h-[18px] w-[18px] ${isActive ? (collapsed ? 'text-current' : 'text-slate-900') : 'text-slate-500'}`} />
+                    </span>
                     {collapsed ? <span className="text-[10px] font-medium leading-none">{item.label}</span> : <span>{item.label}</span>}
                   </span>
                 </Link>

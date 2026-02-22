@@ -80,6 +80,8 @@ export default function AdminOrdersPage() {
     | { type: 'BILL'; billId: string }
     | null
   >(null);
+  const [unavailableMenuIds, setUnavailableMenuIds] = useState<Set<string>>(new Set());
+  const [unavailableMenuNames, setUnavailableMenuNames] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
@@ -204,21 +206,49 @@ export default function AdminOrdersPage() {
 
   const loadOrders = async () => {
     try {
-      const [ordersRes, billsRes] = await Promise.all([
+      const [ordersRes, billsRes, menuRes] = await Promise.all([
         api.getOrders(),
         api.getFinalBills().catch((err) => {
           console.warn('Final bills not available for session split fallback:', err);
           return { bills: [] };
         }),
+        api.getMenuItems().catch(() => ({ items: [] })),
       ]);
       setOrders(ordersRes.orders);
       setFinalBills(billsRes.bills || []);
+      const unavailableItems = (menuRes.items || []).filter((item: any) => !item.available);
+      setUnavailableMenuIds(new Set(unavailableItems.map((item: any) => String(item.id))));
+      setUnavailableMenuNames(
+        new Set(
+          unavailableItems
+            .map((item: any) =>
+              String(item.name || '')
+                .replace(/\s*\(Note:.*\)\s*$/i, '')
+                .trim()
+                .toLowerCase(),
+            )
+            .filter(Boolean),
+        ),
+      );
     } catch (error) {
       console.error('Error loading orders:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to load orders');
     } finally {
       setLoading(false);
     }
+  };
+
+  const hasUnavailableItemsInOrder = (order: any) => {
+    return (order.items || []).some((item: any) => {
+      if (item.isCancelled) return false;
+      const idMatch = item.menuItemId && unavailableMenuIds.has(String(item.menuItemId));
+      const normalizedName = String(item.name || '')
+        .replace(/\s*\(Note:.*\)\s*$/i, '')
+        .trim()
+        .toLowerCase();
+      const nameMatch = normalizedName ? unavailableMenuNames.has(normalizedName) : false;
+      return idMatch || nameMatch;
+    });
   };
 
   const markGroupPaid = async (
@@ -498,7 +528,12 @@ export default function AdminOrdersPage() {
         <Card className="sdc-header-card mb-6 p-4">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-700">Live Orders</p>
+              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-teal-700">
+                <span className="relative inline-flex h-3 w-3 items-center justify-center rounded-full border border-black">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />
+                </span>
+                Live Orders
+              </p>
               <h2 className="mt-1 text-[2rem] font-semibold tracking-tight text-slate-900">Orders</h2>
               <p className="mt-1 text-sm text-slate-500">Track payment groups, session rounds, and bill status in one view.</p>
             </div>
@@ -531,7 +566,7 @@ export default function AdminOrdersPage() {
                     type="date"
                     value={filterDate}
                     onChange={(e) => setFilterDate(e.target.value)}
-                    className="h-10 rounded-xl border-0 bg-white/50 px-3 text-sm text-slate-800 shadow-none outline-none"
+                    className="h-10 rounded-xl border-0 bg-white/50 px-3 text-sm text-slate-800 shadow-none outline-none ring-0 focus:outline-none focus:ring-0"
                     aria-label="Filter by date"
                   />
                   {filterDate && (
@@ -575,7 +610,7 @@ export default function AdminOrdersPage() {
               <Card key={groupKey} className="sdc-panel-card h-fit p-3">
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-[1.95rem] leading-none font-semibold tracking-tight text-slate-900">Table {group.tableNumber}</h3>
+                    <h3 className="text-[1.6rem] leading-none font-semibold tracking-tight text-slate-900">Table {group.tableNumber}</h3>
                     <p className="mt-1.5 text-sm text-slate-500">
                       Name: {group.customerName || 'Guest'}
                     </p>
@@ -587,7 +622,7 @@ export default function AdminOrdersPage() {
                     </p>
                   </div>
                   <div className="text-right min-w-[165px] shrink-0">
-                    <div className="text-[2.05rem] leading-none font-semibold text-slate-900">${groupTotal.toFixed(2)}</div>
+                    <div className="text-[1.7rem] leading-none font-semibold text-slate-900">${groupTotal.toFixed(2)}</div>
                     <div className="mt-1 text-xs text-slate-500">Payable (excludes cancelled)</div>
                     <div className="mt-1 flex justify-end">
                       <Badge className={PAYMENT_COLORS[groupPaymentStatus as keyof typeof PAYMENT_COLORS]}>
@@ -837,7 +872,7 @@ export default function AdminOrdersPage() {
                     </div>
                   ))}
                 </div>
-                {['PENDING', 'PREPARING', 'READY'].includes(order.status) && (
+                {['PENDING', 'PREPARING', 'READY'].includes(order.status) && hasUnavailableItemsInOrder(order) && (
                   <div className="mt-2 flex justify-end">
                     <Button
                       size="sm"
