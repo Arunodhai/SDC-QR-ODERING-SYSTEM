@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Plus, Minus, ShoppingCart, Coffee, Trash2, ChevronDown, BellRing } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, Coffee, Trash2, ChevronDown, BellRing, X } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -91,9 +91,9 @@ export default function CustomerOrderPage() {
   const [loading, setLoading] = useState(true);
   const [categoryJump, setCategoryJump] = useState<string>('');
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
-  const [showSyncPulse, setShowSyncPulse] = useState(false);
+  const [cartAvailabilityPopup, setCartAvailabilityPopup] = useState<string>('');
   const latestFinalBillIdRef = useRef<string>('');
-  const syncPulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const popupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cartStorageKey = `sdc:cart:${tableNumber || 'unknown'}:${customerPhone || 'guest'}`;
   const roundByOrderId = userOrders
     .slice()
@@ -137,9 +137,11 @@ export default function CustomerOrderPage() {
       const item = allMap.get(String(id));
       return item?.name || `Item ${id}`;
     });
-    toast.warning(
-      `Removed unavailable item${removedNames.length > 1 ? 's' : ''}: ${removedNames.join(', ')}`,
-    );
+    const message = `Removed unavailable item${removedNames.length > 1 ? 's' : ''}: ${removedNames.join(', ')}`;
+    setCartAvailabilityPopup(message);
+    if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
+    popupTimerRef.current = setTimeout(() => setCartAvailabilityPopup(''), 3500);
+    toast.warning(message);
   }, []);
 
   useEffect(() => {
@@ -195,9 +197,6 @@ export default function CustomerOrderPage() {
       setCategories(categoriesRes.categories);
       setMenuItems(itemsRes.items || []);
       sanitizeCartByAvailability(itemsRes.items || []);
-      setShowSyncPulse(true);
-      if (syncPulseTimerRef.current) clearTimeout(syncPulseTimerRef.current);
-      syncPulseTimerRef.current = setTimeout(() => setShowSyncPulse(false), 900);
     } catch (error) {
       console.error('Error loading menu:', error);
       toast.error('Failed to load menu');
@@ -208,7 +207,7 @@ export default function CustomerOrderPage() {
 
   useEffect(() => {
     return () => {
-      if (syncPulseTimerRef.current) clearTimeout(syncPulseTimerRef.current);
+      if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
     };
   }, []);
 
@@ -509,17 +508,6 @@ export default function CustomerOrderPage() {
               )}
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              {phoneConfirmed && (
-                <div className="flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] text-muted-foreground">
-                  <span className="relative inline-flex h-2.5 w-2.5">
-                    {showSyncPulse ? (
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
-                    ) : null}
-                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                  </span>
-                  Sync
-                </div>
-              )}
               {getCartItemCount() > 0 && (
                 <Badge variant="secondary" className="text-base px-2.5 py-1 bg-primary/10 text-primary">
                   <ShoppingCart className="w-4 h-4 mr-1" />
@@ -598,6 +586,22 @@ export default function CustomerOrderPage() {
 
       {/* Menu */}
       <div className="max-w-5xl mx-auto px-4 py-6">
+        {cartAvailabilityPopup ? (
+          <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            <div className="flex items-start justify-between gap-2">
+              <span>{cartAvailabilityPopup}</span>
+              <button
+                type="button"
+                className="text-amber-700 hover:text-amber-900"
+                onClick={() => setCartAvailabilityPopup('')}
+                aria-label="Dismiss notice"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         {!phoneConfirmed && (
           <Card className="glass-grid-card p-4 mb-6">
             <h3 className="font-semibold mb-2">Enter Name and Mobile number to continue</h3>

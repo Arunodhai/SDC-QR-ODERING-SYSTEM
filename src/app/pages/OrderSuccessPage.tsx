@@ -1,4 +1,4 @@
-import { CheckCircle, Clock3, ChefHat, PartyPopper } from 'lucide-react';
+import { CheckCircle, Clock3, ChefHat, PartyPopper, XCircle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import * as api from '../lib/api';
@@ -118,7 +118,7 @@ export default function OrderSuccessPage() {
   );
   const activeStep = Math.max(STATUS_STEPS.indexOf(status), 0);
   const statusIcon = useMemo(() => {
-    if (status === 'CANCELLED') return <CheckCircle className="w-18 h-18 text-gray-500 mx-auto mb-4" />;
+    if (status === 'CANCELLED') return <XCircle className="w-18 h-18 text-red-500 mx-auto mb-4" />;
     if (status === 'PENDING') return <Clock3 className="w-18 h-18 text-amber-500 mx-auto mb-4" />;
     if (status === 'PREPARING') return <ChefHat className="w-18 h-18 text-blue-600 mx-auto mb-4" />;
     if (status === 'READY') return <PartyPopper className="w-18 h-18 text-green-600 mx-auto mb-4" />;
@@ -147,9 +147,13 @@ export default function OrderSuccessPage() {
       <div className="max-w-xl w-full rounded-3xl border border-white/70 bg-white/70 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.12)] backdrop-blur-xl">
         <div className="text-center">
           {statusIcon}
-          <h1 className="brand-display text-4xl font-bold mb-2">Order Placed!</h1>
+          <h1 className="brand-display text-4xl font-bold mb-2">
+            {status === 'CANCELLED' ? 'Order Cancelled' : 'Order Placed!'}
+          </h1>
           <p className="text-muted-foreground">
-            Track your order status live on this page.
+            {status === 'CANCELLED'
+              ? 'This order cannot be processed. Please place a new order.'
+              : 'Track your order status live on this page.'}
           </p>
         </div>
 

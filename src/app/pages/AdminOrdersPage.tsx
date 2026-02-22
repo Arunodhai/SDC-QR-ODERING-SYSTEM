@@ -163,6 +163,45 @@ export default function AdminOrdersPage() {
     win.print();
   };
 
+  const printSelectedGroupDetails = (group: any) => {
+    if (!group) return;
+    const activeOrders = (group.orders || []).filter((o: any) => o.status !== 'CANCELLED');
+    if (!activeOrders.length) {
+      toast.info('No payable items to print for this order group.');
+      return;
+    }
+    const lineItemsMap = new Map<string, { name: string; quantity: number; unitPrice: number; lineTotal: number }>();
+    activeOrders.forEach((order: any) => {
+      (order.items || [])
+        .filter((item: any) => !item.isCancelled)
+        .forEach((item: any) => {
+          const key = `${item.name}__${Number(item.price || 0)}`;
+          const current = lineItemsMap.get(key) || {
+            name: item.name,
+            quantity: 0,
+            unitPrice: Number(item.price || 0),
+            lineTotal: 0,
+          };
+          const qty = Number(item.quantity || 0);
+          const unit = Number(item.price || 0);
+          current.quantity += qty;
+          current.lineTotal += qty * unit;
+          lineItemsMap.set(key, current);
+        });
+    });
+
+    const lineItems = Array.from(lineItemsMap.values());
+    const total = lineItems.reduce((sum, item) => sum + Number(item.lineTotal || 0), 0);
+    printBill({
+      id: undefined,
+      tableNumber: Number(group.tableNumber),
+      phone: group.customerPhone || '',
+      lineItems,
+      total,
+      createdAt: group.startedAt,
+    });
+  };
+
   const loadOrders = async () => {
     try {
       const [ordersRes, billsRes] = await Promise.all([
@@ -812,6 +851,13 @@ export default function AdminOrdersPage() {
           ) : null}
 
           <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => printSelectedGroupDetails(selectedGroupDetails)}
+            >
+              <Printer className="w-4 h-4 mr-1" />
+              Print Bill
+            </Button>
             <Button variant="outline" onClick={() => setSelectedGroupDetails(null)}>
               Close
             </Button>

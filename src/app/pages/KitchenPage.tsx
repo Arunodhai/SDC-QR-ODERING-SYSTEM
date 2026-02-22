@@ -52,6 +52,7 @@ export default function KitchenPage() {
   const [kitchenUserName, setKitchenUserName] = useState('Kitchen Manager');
   const [serviceRequests, setServiceRequests] = useState<any[]>([]);
   const [unavailableItemIds, setUnavailableItemIds] = useState<Set<string>>(new Set());
+  const [appliedUnavailableOrderIds, setAppliedUnavailableOrderIds] = useState<Set<string>>(new Set());
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showUsernameDialog, setShowUsernameDialog] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -66,6 +67,7 @@ export default function KitchenPage() {
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
     let unsubscribe: (() => void) | null = null;
+    let unsubscribeMenu: (() => void) | null = null;
     let mounted = true;
 
     (async () => {
@@ -92,6 +94,9 @@ export default function KitchenPage() {
         unsubscribe = api.subscribeToOrderChanges(() => {
           loadOrders();
         });
+        unsubscribeMenu = api.subscribeToMenuItemChanges(() => {
+          loadOrders();
+        });
       } catch (error) {
         console.error('Session check failed:', error);
         navigate(isAdminKitchen ? '/admin/login' : '/kitchen/login');
@@ -102,6 +107,7 @@ export default function KitchenPage() {
       mounted = false;
       if (interval) clearInterval(interval);
       if (unsubscribe) unsubscribe();
+      if (unsubscribeMenu) unsubscribeMenu();
     };
   }, [navigate, isAdminKitchen]);
 
@@ -165,6 +171,14 @@ export default function KitchenPage() {
           .map((item: any) => String(item.id)),
       );
       setUnavailableItemIds(unavailableIds);
+      setAppliedUnavailableOrderIds((prev) => {
+        const next = new Set<string>();
+        const valid = new Set((ordersRes.orders || []).map((o: any) => String(o.id)));
+        prev.forEach((id) => {
+          if (valid.has(id)) next.add(id);
+        });
+        return next;
+      });
     } catch (error) {
       console.error('Error loading orders:', error);
     } finally {
@@ -210,6 +224,11 @@ export default function KitchenPage() {
       } else {
         toast.success(`Removed unavailable item(s): ${res.unavailableItems.join(', ')}`);
       }
+      setAppliedUnavailableOrderIds((prev) => {
+        const next = new Set(prev);
+        next.add(String(orderId));
+        return next;
+      });
       loadOrders();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to apply unavailable items');
@@ -430,7 +449,8 @@ export default function KitchenPage() {
                                         .map((item: any) => item.name);
                                       const hasUnavailable = unavailableNames.length > 0;
                                       const alreadyApplied =
-                                        !hasUnavailable && String(order.statusReason || '').toLowerCase().includes('unavailable');
+                                        appliedUnavailableOrderIds.has(String(order.id)) ||
+                                        (!hasUnavailable && String(order.statusReason || '').toLowerCase().includes('unavailable'));
                                       return (
                                         <>
                                     <div className="flex items-start justify-between mb-1">
@@ -456,7 +476,7 @@ export default function KitchenPage() {
                                       </div>
                                     ) : null}
                                     <div className="mt-3 mb-2 text-xs font-semibold text-right">Total: ${order.total.toFixed(2)}</div>
-                                    <div className="grid grid-cols-2 gap-2">
+                                    <div className={`grid ${hasUnavailable ? 'grid-cols-2' : 'grid-cols-1'} gap-2`}>
                                       <Button
                                         className="w-full"
                                         size="sm"
@@ -466,15 +486,17 @@ export default function KitchenPage() {
                                         {order.status === 'PREPARING' && 'Mark Ready'}
                                         {order.status === 'READY' && 'Mark Served'}
                                       </Button>
-                                      <Button
-                                        variant="outline"
-                                        className="w-full border-red-300 text-red-700 hover:bg-red-50"
-                                        size="sm"
-                                        onClick={() => markOutOfStock(order.id)}
-                                        disabled={!hasUnavailable}
-                                      >
-                                        {alreadyApplied ? 'Applied' : 'Apply Unavailable'}
-                                      </Button>
+                                      {hasUnavailable ? (
+                                        <Button
+                                          variant="outline"
+                                          className="w-full border-red-300 text-red-700 hover:bg-red-50"
+                                          size="sm"
+                                          onClick={() => markOutOfStock(order.id)}
+                                          disabled={alreadyApplied}
+                                        >
+                                          {alreadyApplied ? 'Applied' : 'Apply Unavailable'}
+                                        </Button>
+                                      ) : null}
                                     </div>
                                         </>
                                       );
