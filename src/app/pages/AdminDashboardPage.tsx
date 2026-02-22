@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   Activity,
-  BadgeDollarSign,
   BarChart3,
   Clock3,
   DollarSign,
@@ -62,21 +61,29 @@ function InsightCard({
   hint,
   icon,
   valueClassName,
+  className,
+  titleClassName,
+  hintClassName,
+  iconClassName,
 }: {
   title: string;
   value: string;
   hint: string;
   icon: React.ReactNode;
   valueClassName?: string;
+  className?: string;
+  titleClassName?: string;
+  hintClassName?: string;
+  iconClassName?: string;
 }) {
   return (
-    <Card className="glass-grid-card p-4 border-slate-200/70 bg-white">
+    <Card className={`glass-grid-card p-4 border-slate-200/70 bg-white ${className || ''}`}>
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{title}</p>
-        <div className="text-slate-500">{icon}</div>
+        <p className={`text-sm text-muted-foreground ${titleClassName || ''}`}>{title}</p>
+        <div className={`text-slate-500 ${iconClassName || ''}`}>{icon}</div>
       </div>
       <p className={`mt-2 text-3xl font-bold tracking-tight ${valueClassName || ''}`}>{value}</p>
-      <p className="mt-2 text-xs text-muted-foreground">{hint}</p>
+      <p className={`mt-2 text-xs text-muted-foreground ${hintClassName || ''}`}>{hint}</p>
     </Card>
   );
 }
@@ -256,29 +263,6 @@ export default function AdminDashboardPage() {
       .slice(0, 6);
   }, [todayOrders]);
 
-  const paymentMix = useMemo(() => {
-    const orderById = new Map(orders.map((o) => [String(o.id), o]));
-
-    // Count payment methods by paid bill/session, not by each individual order round.
-    const paidBillsToday = (finalBills || []).filter(
-      (b: any) => b.isPaid && localDateKey(new Date(b.paidAt || b.createdAt)) === filterDate,
-    );
-
-    const counts = new Map<string, number>();
-    paidBillsToday.forEach((bill: any) => {
-      const billOrders = (bill.orderIds || [])
-        .map((id: string) => orderById.get(String(id)))
-        .filter((o: any) => Boolean(o) && o.status !== 'CANCELLED' && o.paymentStatus === 'PAID');
-      if (!billOrders.length) return;
-      const method = billOrders.find((o: any) => o.paymentMethod)?.paymentMethod || 'UNKNOWN';
-      counts.set(method, (counts.get(method) || 0) + 1);
-    });
-
-    return Array.from(counts.entries())
-      .map(([method, count]) => ({ method, count }))
-      .sort((a, b) => b.count - a.count);
-  }, [finalBills, orders, filterDate]);
-
   const peakHour = useMemo(() => {
     if (!hourlyTrend.length) return '--';
     const peak = [...hourlyTrend].sort((a, b) => b.count - a.count)[0];
@@ -364,27 +348,16 @@ export default function AdminDashboardPage() {
                 </div>
                 <h2 className="brand-display mt-0.5 text-2xl md:text-3xl font-bold text-slate-900">Dashboard</h2>
                 <p className="mt-0.5 text-sm text-muted-foreground">Real-time performance snapshot for the selected date.</p>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-700">
-                    Date: {new Date(filterDate).toLocaleDateString()}
-                  </span>
-                  <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-700">
-                    Sessions: {todaySessionCount}
-                  </span>
-                  <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-700">
-                    Active tables: {stats.activeTables}
-                  </span>
-                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2 xl:min-w-[620px]">
-                <div className="rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2.5">
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Paid conversion</p>
-                  <p className="mt-0.5 text-xl font-bold text-slate-900">{formatPercent(stats.paidRate)}</p>
+                <div className="rounded-lg border border-slate-900 bg-slate-900 px-3 py-2.5">
+                  <p className="text-[11px] uppercase tracking-wide text-slate-300">Paid conversion</p>
+                  <p className="mt-0.5 text-xl font-bold text-white">{formatPercent(stats.paidRate)}</p>
                 </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2.5">
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Peak hour</p>
-                  <p className="mt-0.5 text-xl font-bold text-slate-900">{peakHour}</p>
+                <div className="rounded-lg border border-slate-900 bg-slate-900 px-3 py-2.5">
+                  <p className="text-[11px] uppercase tracking-wide text-slate-300">Peak hour</p>
+                  <p className="mt-0.5 text-xl font-bold text-white">{peakHour}</p>
                 </div>
                 <div className="col-span-2 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2">
                   <input
@@ -415,31 +388,55 @@ export default function AdminDashboardPage() {
             value={String(todaySessionCount)}
             hint={`${stats.activeTables} active tables today`}
             icon={<Users className="w-4 h-4" />}
+            className="border-slate-900 bg-slate-900"
+            titleClassName="text-slate-300"
+            valueClassName="text-white"
+            hintClassName="text-slate-400"
+            iconClassName="text-slate-300"
           />
           <InsightCard
             title="Revenue"
             value={formatCurrency(stats.revenue)}
             hint={`Avg ticket ${formatCurrency(stats.avgTicket)}`}
             icon={<DollarSign className="w-4 h-4" />}
-            valueClassName="text-emerald-700"
+            className="border-slate-900 bg-slate-900"
+            titleClassName="text-slate-300"
+            valueClassName="text-emerald-400"
+            hintClassName="text-slate-400"
+            iconClassName="text-slate-300"
           />
           <InsightCard
             title="Open Queue"
             value={String(currentQueue)}
             hint={`${stats.preparing} preparing, ${stats.ready} ready, ${stats.unpaid} unpaid`}
             icon={<ListChecks className="w-4 h-4" />}
+            className="border-slate-900 bg-slate-900"
+            titleClassName="text-slate-300"
+            valueClassName="text-white"
+            hintClassName="text-slate-400"
+            iconClassName="text-slate-300"
           />
           <InsightCard
             title="Served"
             value={String(stats.served)}
             hint={`Completion ${formatPercent(stats.completionRate)}`}
             icon={<TrendingUp className="w-4 h-4" />}
+            className="border-slate-900 bg-slate-900"
+            titleClassName="text-slate-300"
+            valueClassName="text-white"
+            hintClassName="text-slate-400"
+            iconClassName="text-slate-300"
           />
           <InsightCard
             title="Cancelled"
             value={String(stats.cancelled)}
             hint={`${stats.total} total orders today`}
             icon={<Clock3 className="w-4 h-4" />}
+            className="border-slate-900 bg-slate-900"
+            titleClassName="text-slate-300"
+            valueClassName="text-white"
+            hintClassName="text-slate-400"
+            iconClassName="text-slate-300"
           />
         </div>
 
@@ -532,8 +529,8 @@ export default function AdminDashboardPage() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-          <Card className="glass-grid-card p-5 xl:col-span-2 bg-white border-slate-200/80">
+        <div className="grid grid-cols-1 gap-4">
+          <Card className="glass-grid-card p-5 bg-white border-slate-200/80">
             <h3 className="font-semibold flex items-center gap-2 mb-4 text-slate-900">
               <ListOrdered className="w-4 h-4 text-amber-600" />
               Best Sellers (Today)
@@ -573,46 +570,6 @@ export default function AdminDashboardPage() {
                 </ResponsiveContainer>
               </div>
             )}
-          </Card>
-
-          <Card className="glass-grid-card p-5 bg-white border-slate-200/80">
-            <h3 className="font-semibold flex items-center gap-2 mb-4 text-slate-900">
-              <BadgeDollarSign className="w-4 h-4 text-emerald-600" />
-              Business Health
-            </h3>
-            <div className="space-y-3">
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs text-muted-foreground">Collection Efficiency</p>
-                <p className="text-2xl font-bold text-slate-900">{formatPercent(stats.paidRate)}</p>
-              </div>
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs text-muted-foreground">Average Ticket</p>
-                <p className="text-2xl font-bold text-slate-900">{formatCurrency(stats.avgTicket)}</p>
-              </div>
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs text-muted-foreground">Payment Methods</p>
-                {paymentMix.length === 0 ? (
-                  <p className="text-sm text-muted-foreground mt-1">No paid orders yet.</p>
-                ) : (
-                  <div className="mt-2 space-y-2">
-                    {paymentMix.slice(0, 4).map((method) => {
-                      const pct = stats.paid ? (method.count / stats.paid) * 100 : 0;
-                      return (
-                        <div key={method.method}>
-                          <div className="flex items-center justify-between text-xs mb-1">
-                            <span className="text-slate-700">{method.method}</span>
-                            <span className="font-semibold">{method.count}</span>
-                          </div>
-                          <div className="h-2 rounded bg-slate-200 overflow-hidden">
-                            <div className="h-full rounded bg-emerald-500" style={{ width: `${pct}%` }} />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
           </Card>
         </div>
       </div>
