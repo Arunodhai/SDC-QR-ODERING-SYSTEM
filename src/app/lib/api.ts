@@ -59,11 +59,31 @@ const toOrder = (row: any) => ({
   createdAt: row.created_at,
 });
 
+const normalizeItemName = (name: string) =>
+  String(name || '')
+    .replace(/\s*\(Note:.*\)\s*$/i, '')
+    .trim()
+    .toLowerCase();
+
+const getRemovedItemsFromReason = (reason?: string) => {
+  const msg = String(reason || '');
+  const match = msg.match(/Unavailable item(?:s)? removed:\s*(.+)$/i);
+  if (!match?.[1]) return new Set<string>();
+  return new Set(
+    match[1]
+      .split(',')
+      .map((part) => normalizeItemName(part))
+      .filter(Boolean),
+  );
+};
+
 const aggregateBillLineItems = (orders: any[]) => {
   const map = new Map<string, { name: string; quantity: number; unitPrice: number; lineTotal: number }>();
   (orders || []).forEach((order) => {
+    const removedNames = getRemovedItemsFromReason(order?.statusReason);
     (order.items || []).forEach((item: any) => {
       if (item.isCancelled) return;
+      if (removedNames.has(normalizeItemName(item.name))) return;
       const key = `${item.name}__${Number(item.price || 0)}`;
       const existing = map.get(key) || {
         name: item.name,

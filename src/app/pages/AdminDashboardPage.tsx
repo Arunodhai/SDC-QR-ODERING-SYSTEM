@@ -133,11 +133,12 @@ export default function AdminDashboardPage() {
 
   const stats = useMemo(() => {
     const unpaid = todayOrders.filter((o) => o.paymentStatus === 'UNPAID' && o.status !== 'CANCELLED');
-    const paid = todayOrders.filter((o) => o.paymentStatus === 'PAID');
+    const paid = todayOrders.filter((o) => o.paymentStatus === 'PAID' && o.status !== 'CANCELLED');
     const served = todayOrders.filter((o) => o.status === 'COMPLETED');
     const preparing = todayOrders.filter((o) => o.status === 'PREPARING');
     const ready = todayOrders.filter((o) => o.status === 'READY');
     const cancelled = todayOrders.filter((o) => o.status === 'CANCELLED');
+    const payableTotalOrders = paid.length + unpaid.length;
     const revenue = paid.reduce((sum, o) => sum + Number(o.total || 0), 0);
     const activeTables = new Set(
       todayOrders
@@ -157,8 +158,8 @@ export default function AdminDashboardPage() {
       activeTables,
       revenue,
       avgTicket: paid.length ? revenue / paid.length : 0,
-      paidRate: todayOrders.length ? paid.length / todayOrders.length : 0,
-      completionRate: todayOrders.length ? served.length / todayOrders.length : 0,
+      paidRate: payableTotalOrders ? paid.length / payableTotalOrders : 0,
+      completionRate: payableTotalOrders ? served.length / payableTotalOrders : 0,
     };
   }, [todayOrders]);
 
@@ -256,19 +257,19 @@ export default function AdminDashboardPage() {
   }, [todayOrders]);
 
   const paymentMix = useMemo(() => {
-    const today = new Date().toDateString();
     const orderById = new Map(orders.map((o) => [String(o.id), o]));
 
     // Count payment methods by paid bill/session, not by each individual order round.
     const paidBillsToday = (finalBills || []).filter(
-      (b: any) => b.isPaid && new Date(b.paidAt || b.createdAt).toDateString() === today,
+      (b: any) => b.isPaid && localDateKey(new Date(b.paidAt || b.createdAt)) === filterDate,
     );
 
     const counts = new Map<string, number>();
     paidBillsToday.forEach((bill: any) => {
       const billOrders = (bill.orderIds || [])
         .map((id: string) => orderById.get(String(id)))
-        .filter(Boolean);
+        .filter((o: any) => Boolean(o) && o.status !== 'CANCELLED' && o.paymentStatus === 'PAID');
+      if (!billOrders.length) return;
       const method = billOrders.find((o: any) => o.paymentMethod)?.paymentMethod || 'UNKNOWN';
       counts.set(method, (counts.get(method) || 0) + 1);
     });
@@ -276,7 +277,7 @@ export default function AdminDashboardPage() {
     return Array.from(counts.entries())
       .map(([method, count]) => ({ method, count }))
       .sort((a, b) => b.count - a.count);
-  }, [finalBills, orders]);
+  }, [finalBills, orders, filterDate]);
 
   const peakHour = useMemo(() => {
     if (!hourlyTrend.length) return '--';

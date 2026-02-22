@@ -145,6 +145,36 @@ export default function CustomerOrderPage() {
   }, []);
 
   useEffect(() => {
+    if (!phoneConfirmed) return;
+    if (!menuItems.length) return;
+    const unavailableInCart = Object.keys(cart).filter((itemId) => {
+      const item = menuItems.find((m) => String(m.id) === String(itemId));
+      return Boolean(item && !item.available);
+    });
+    if (!unavailableInCart.length) return;
+
+    const removedNames = unavailableInCart.map((id) => {
+      const item = menuItems.find((m) => String(m.id) === String(id));
+      return item?.name || `Item ${id}`;
+    });
+    setCart((prev) => {
+      const next = { ...prev };
+      unavailableInCart.forEach((id) => delete next[id]);
+      return next;
+    });
+    setItemNotes((prev) => {
+      const next = { ...prev };
+      unavailableInCart.forEach((id) => delete next[id]);
+      return next;
+    });
+    const message = `Removed unavailable item${removedNames.length > 1 ? 's' : ''}: ${removedNames.join(', ')}`;
+    setCartAvailabilityPopup(message);
+    if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
+    popupTimerRef.current = setTimeout(() => setCartAvailabilityPopup(''), 3500);
+    toast.warning(message);
+  }, [cart, menuItems, phoneConfirmed]);
+
+  useEffect(() => {
     loadMenu();
     const params = new URLSearchParams(window.location.search);
     const fromQuery = (params.get('phone') || '').replace(/[^\d]/g, '');

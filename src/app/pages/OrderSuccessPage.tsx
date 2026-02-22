@@ -111,7 +111,25 @@ export default function OrderSuccessPage() {
 
   const status = cancelled ? 'CANCELLED' : (order?.status || 'PENDING');
   const statusReason = order?.statusReason || '';
-  const visibleItems = (order?.items || []).filter((item: any) => !item.isCancelled);
+  const removedByReason = useMemo(() => {
+    const match = String(statusReason || '').match(/Unavailable item(?:s)? removed:\s*(.+)$/i);
+    if (!match?.[1]) return new Set<string>();
+    return new Set(
+      match[1]
+        .split(',')
+        .map((part) => part.replace(/\s*\(Note:.*\)\s*$/i, '').trim().toLowerCase())
+        .filter(Boolean),
+    );
+  }, [statusReason]);
+  const allItems = (order?.items || []).map((item: any) => {
+    const normalized = String(item.name || '')
+      .replace(/\s*\(Note:.*\)\s*$/i, '')
+      .trim()
+      .toLowerCase();
+    const removed = Boolean(item.isCancelled) || removedByReason.has(normalized);
+    return { ...item, removed };
+  });
+  const visibleItems = allItems.filter((item: any) => !item.removed);
   const visibleItemsTotal = visibleItems.reduce(
     (sum: number, item: any) => sum + Number(item.price || 0) * Number(item.quantity || 0),
     0,
@@ -244,7 +262,7 @@ export default function OrderSuccessPage() {
         <div className="mt-5">
           {loading && <p className="text-sm text-muted-foreground">Loading order details...</p>}
           {!loading && error && <p className="text-sm text-red-600">{error}</p>}
-          {!loading && !error && visibleItems.length > 0 && (
+          {!loading && !error && allItems.length > 0 && (
             <div className="space-y-2">
               <div className="rounded-xl border border-white/80 bg-white/70 backdrop-blur">
                 <div className="grid grid-cols-12 gap-2 border-b bg-white/70 px-3 py-2 text-xs font-semibold text-muted-foreground">
@@ -252,9 +270,17 @@ export default function OrderSuccessPage() {
                   <span className="col-span-2 text-center">Qty</span>
                   <span className="col-span-4 text-right">Price</span>
                 </div>
-                {visibleItems.map((item: any, idx: number) => (
-                  <div key={idx} className="grid grid-cols-12 gap-2 px-3 py-2 text-sm border-b last:border-b-0">
-                    <span className="col-span-6">{item.name}</span>
+                {allItems.map((item: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className={`grid grid-cols-12 gap-2 px-3 py-2 text-sm border-b last:border-b-0 ${
+                      item.removed ? 'bg-red-50/70 text-red-700' : ''
+                    }`}
+                  >
+                    <span className="col-span-6">
+                      {item.name}
+                      {item.removed ? <span className="ml-1 text-[11px] font-medium">(Removed)</span> : null}
+                    </span>
                     <span className="col-span-2 text-center">{item.quantity}</span>
                     <span className="col-span-4 text-right font-semibold">${Number(item.price || 0).toFixed(2)}</span>
                   </div>
