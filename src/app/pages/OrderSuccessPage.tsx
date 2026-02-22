@@ -306,13 +306,13 @@ export default function OrderSuccessPage() {
             to={
               table
                 ? `/table/${table}${
-                    phone ? `?phone=${encodeURIComponent(phone)}&returning=1` : ''
+                    phone ? `?phone=${encodeURIComponent(phone)}&returning=1&tab=bill` : '?tab=bill'
                   }`
                 : '/'
             }
             className="rounded-md border border-black bg-white px-3 py-1.5 font-medium text-black hover:bg-gray-50"
           >
-            Back to menu
+            &lt;- Back
           </Link>
         </div>
       </div>

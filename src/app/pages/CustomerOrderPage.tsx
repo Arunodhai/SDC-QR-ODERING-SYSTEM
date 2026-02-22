@@ -94,6 +94,7 @@ export default function CustomerOrderPage() {
   const [cartAvailabilityPopup, setCartAvailabilityPopup] = useState<string>('');
   const latestFinalBillIdRef = useRef<string>('');
   const popupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cartRef = useRef<Record<string, number>>({});
   const cartStorageKey = `sdc:cart:${tableNumber || 'unknown'}:${customerPhone || 'guest'}`;
   const roundByOrderId = userOrders
     .slice()
@@ -114,20 +115,15 @@ export default function CustomerOrderPage() {
         .filter((item: any) => item.available)
         .map((item: any) => String(item.id)),
     );
-    const removedIds: string[] = [];
-    setCart((prev) => {
-      const nextCart: Record<string, number> = {};
-      Object.entries(prev).forEach(([itemId, qty]) => {
-        if (availableSet.has(String(itemId))) {
-          nextCart[itemId] = qty;
-        } else {
-          removedIds.push(String(itemId));
-        }
-      });
-      return removedIds.length ? nextCart : prev;
-    });
+    const currentCart = cartRef.current || {};
+    const removedIds = Object.keys(currentCart).filter((itemId) => !availableSet.has(String(itemId)));
 
     if (!removedIds.length) return;
+    const nextCart: Record<string, number> = {};
+    Object.entries(currentCart).forEach(([itemId, qty]) => {
+      if (availableSet.has(String(itemId))) nextCart[itemId] = qty;
+    });
+    setCart(nextCart);
     setItemNotes((prev) => {
       const next = { ...prev };
       removedIds.forEach((itemId) => delete next[itemId]);
@@ -145,40 +141,16 @@ export default function CustomerOrderPage() {
   }, []);
 
   useEffect(() => {
-    if (!phoneConfirmed) return;
-    if (!menuItems.length) return;
-    const unavailableInCart = Object.keys(cart).filter((itemId) => {
-      const item = menuItems.find((m) => String(m.id) === String(itemId));
-      return Boolean(item && !item.available);
-    });
-    if (!unavailableInCart.length) return;
-
-    const removedNames = unavailableInCart.map((id) => {
-      const item = menuItems.find((m) => String(m.id) === String(id));
-      return item?.name || `Item ${id}`;
-    });
-    setCart((prev) => {
-      const next = { ...prev };
-      unavailableInCart.forEach((id) => delete next[id]);
-      return next;
-    });
-    setItemNotes((prev) => {
-      const next = { ...prev };
-      unavailableInCart.forEach((id) => delete next[id]);
-      return next;
-    });
-    const message = `Removed unavailable item${removedNames.length > 1 ? 's' : ''}: ${removedNames.join(', ')}`;
-    setCartAvailabilityPopup(message);
-    if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
-    popupTimerRef.current = setTimeout(() => setCartAvailabilityPopup(''), 3500);
-    toast.warning(message);
-  }, [cart, menuItems, phoneConfirmed]);
+    cartRef.current = cart;
+  }, [cart]);
 
   useEffect(() => {
     loadMenu();
     const params = new URLSearchParams(window.location.search);
     const fromQuery = (params.get('phone') || '').replace(/[^\d]/g, '');
     const returning = params.get('returning') === '1';
+    const requestedTab = params.get('tab');
+    const validTab = requestedTab === 'menu' || requestedTab === 'cart' || requestedTab === 'bill' ? requestedTab : null;
     const activePhoneKey = `sdc:active_phone:${tableNumber || 'unknown'}`;
     const fallbackPhone = (sessionStorage.getItem(activePhoneKey) || '').replace(/[^\d]/g, '');
     const initialPhone = fromQuery || fallbackPhone;
@@ -189,8 +161,12 @@ export default function CustomerOrderPage() {
       if (storedName) setCustomerName(storedName);
       if ((returning && tableNumber) || (!fromQuery && fallbackPhone)) {
         setPhoneConfirmed(true);
+        if (validTab) setActiveTab(validTab);
         loadCustomerData(initialPhone);
       }
+    }
+    if (!initialPhone && validTab) {
+      setActiveTab(validTab);
     }
   }, [tableNumber]);
 
@@ -201,6 +177,7 @@ export default function CustomerOrderPage() {
       if (!raw) return;
       const parsed = JSON.parse(raw);
       setCart(parsed.cart || {});
+      cartRef.current = parsed.cart || {};
       setItemNotes(parsed.itemNotes || {});
     } catch {
       // ignore corrupted session cart

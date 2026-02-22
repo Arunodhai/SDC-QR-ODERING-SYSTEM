@@ -37,6 +37,7 @@ export default function AdminMenuPage() {
   });
   const [uploading, setUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
+  const [togglingItemIds, setTogglingItemIds] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let mounted = true;
@@ -206,13 +207,27 @@ export default function AdminMenuPage() {
   };
 
   const toggleItemAvailability = async (item: any) => {
+    const nextAvailable = !item.available;
+    setMenuItems((prev) =>
+      prev.map((mi) => (mi.id === item.id ? { ...mi, available: nextAvailable } : mi)),
+    );
+    setTogglingItemIds((prev) => ({ ...prev, [item.id]: true }));
     try {
-      await api.updateMenuItem(item.id, { available: !item.available });
+      await api.updateMenuItem(item.id, { available: nextAvailable });
       toast.success(item.available ? 'Item disabled' : 'Item enabled');
-      loadData();
     } catch (error) {
+      // rollback local optimistic update
+      setMenuItems((prev) =>
+        prev.map((mi) => (mi.id === item.id ? { ...mi, available: item.available } : mi)),
+      );
       console.error('Error toggling availability:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to update item');
+    } finally {
+      setTogglingItemIds((prev) => {
+        const next = { ...prev };
+        delete next[item.id];
+        return next;
+      });
     }
   };
 
@@ -373,6 +388,7 @@ export default function AdminMenuPage() {
                                 <Switch
                                   checked={item.available}
                                   onCheckedChange={() => toggleItemAvailability(item)}
+                                  disabled={Boolean(togglingItemIds[item.id])}
                                 />
                               </div>
 
