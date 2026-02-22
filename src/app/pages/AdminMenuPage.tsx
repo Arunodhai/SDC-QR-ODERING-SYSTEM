@@ -234,8 +234,10 @@ export default function AdminMenuPage() {
   return (
     <div className="page-shell">
       <div className="max-w-7xl mx-auto px-4 py-4">
-        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <Card className="glass-grid-card mb-4 rounded-2xl border-slate-200/80 p-4 shadow-[0_10px_28px_rgba(15,23,42,0.06)]">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-700">Menu Console</p>
             <h2 className="brand-display text-3xl font-bold">Menu Management</h2>
             <div className="mt-1 flex items-center gap-2 text-sm">
               <span className="font-semibold">Backend:</span>
@@ -250,6 +252,7 @@ export default function AdminMenuPage() {
             <Button variant="outline" size="sm" onClick={loadData}>Refresh</Button>
           </div>
         </div>
+        </Card>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList>

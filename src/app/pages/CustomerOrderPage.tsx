@@ -496,23 +496,23 @@ export default function CustomerOrderPage() {
 
   return (
     <>
-    <div className="page-shell pb-24">
+    <div className="page-shell bg-[linear-gradient(180deg,#f7f9fb,#f3f5f7)] pb-24">
       {/* Header */}
-      <div className="border-b bg-white/95">
+      <div className="border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="max-w-5xl mx-auto px-4 py-4">
           <div className="flex items-start justify-between gap-3">
-            <div>
-              <h1 className="brand-display text-2xl font-bold flex items-center gap-2 leading-none">
-                <img src={logo12} alt="Stories de Café" className="h-7 w-7 object-contain" />
-                Stories de Café
+            <div className="min-w-0">
+              <h1 className="brand-display flex items-center gap-2 text-2xl font-bold leading-none text-slate-900">
+                <img src={logo12} alt="Stories de Café" className="h-8 w-8 shrink-0 object-contain" />
+                <span className="truncate">Stories de Café</span>
               </h1>
               {phoneConfirmed && (
-                <p className="mt-2 text-sm text-muted-foreground">
+                <p className="mt-2 truncate text-sm text-slate-600">
                   Table {tableNumber} • {customerName || 'Guest'} • {customerPhone}
                 </p>
               )}
               {!phoneConfirmed && (
-                <p className="mt-2 text-sm text-muted-foreground">Table {tableNumber}</p>
+                <p className="mt-2 text-sm text-slate-600">Table {tableNumber}</p>
               )}
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -562,19 +562,19 @@ export default function CustomerOrderPage() {
       </div>
 
       {phoneConfirmed && (
-        <div className="border-b bg-white/95">
+        <div className="border-b border-slate-200 bg-white/95">
           <div className="max-w-5xl mx-auto px-4 py-3">
-            <div className="grid grid-cols-3 gap-2 rounded-xl border bg-white p-1">
+            <div className="grid grid-cols-3 gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-1">
               <Button
                 variant={activeTab === 'menu' ? 'default' : 'ghost'}
-                className="w-full rounded-lg"
+                className="w-full rounded-xl"
                 onClick={() => setActiveTab('menu')}
               >
                 Menu
               </Button>
               <Button
                 variant={activeTab === 'cart' ? 'default' : 'ghost'}
-                className="w-full rounded-lg"
+                className="w-full rounded-xl"
                 onClick={() => setActiveTab('cart')}
               >
                 <ShoppingCart className="w-4 h-4 mr-1" />
@@ -582,10 +582,10 @@ export default function CustomerOrderPage() {
               </Button>
               <Button
                 variant={activeTab === 'bill' ? 'default' : 'ghost'}
-                className="w-full rounded-lg"
+                className="w-full rounded-xl"
                 onClick={() => setActiveTab('bill')}
               >
-                Orders & Bills
+                Orders/Bills
               </Button>
             </div>
           </div>

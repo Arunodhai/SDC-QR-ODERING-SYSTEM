@@ -2,23 +2,23 @@
 
 :root {
   --font-size: 16px;
-  --background: #ffffff;
-  --foreground: #111827;
+  --background: #f4f6f8;
+  --foreground: #0f172a;
   --card: #ffffff;
   --card-foreground: #111827;
   --popover: oklch(1 0 0);
   --popover-foreground: #111827;
   --primary: #0f766e;
   --primary-foreground: oklch(1 0 0);
-  --secondary: #f3f4f6;
+  --secondary: #f1f5f9;
   --secondary-foreground: #111827;
-  --muted: #f9fafb;
-  --muted-foreground: #6b7280;
-  --accent: #f3f4f6;
+  --muted: #f8fafc;
+  --muted-foreground: #64748b;
+  --accent: #edf2f7;
   --accent-foreground: #111827;
   --destructive: #d4183d;
   --destructive-foreground: #ffffff;
-  --border: #e5e7eb;
+  --border: #e2e8f0;
   --input: #ffffff;
   --input-background: #ffffff;
   --switch-background: #cbced4;
@@ -30,7 +30,7 @@
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
+  --radius: 0.8rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: #030213;
@@ -128,7 +128,7 @@
     @apply bg-background text-foreground antialiased;
     font-family: 'Manrope', 'Segoe UI', sans-serif;
     min-height: 100vh;
-    background: #ffffff;
+    background: linear-gradient(180deg, #f5f7f9 0%, #f3f5f7 100%);
   }
 
   /**
@@ -186,19 +186,19 @@
 
   [data-slot='card'] {
     background: #ffffff;
-    box-shadow: 0 8px 20px rgba(17, 24, 39, 0.06);
-    border-color: #e5e7eb;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+    border-color: #e2e8f0;
   }
 
   [data-slot='button'][data-variant='default'],
   [data-slot='button']:not([data-variant]) {
-    box-shadow: 0 6px 16px rgba(15, 118, 110, 0.2);
+    box-shadow: 0 8px 18px rgba(15, 118, 110, 0.18);
   }
 
   [data-slot='input'],
   textarea,
   [data-slot='select-trigger'] {
-    border-color: #d1d5db;
+    border-color: #d6dee8;
     background: #ffffff;
   }
 }
@@ -223,11 +223,13 @@
 
   .glass-grid-card {
     @apply rounded-2xl border bg-card shadow-sm transition-all;
+    border-color: #e2e8f0;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
   }
 
   .glass-grid-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 24px rgba(17, 24, 39, 0.1);
+    transform: translateY(-1px);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.09);
   }
 
   @keyframes sdcGradientShift {

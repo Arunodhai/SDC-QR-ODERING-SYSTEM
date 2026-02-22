@@ -42,8 +42,8 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="page-shell flex items-center justify-center p-4">
-      <Card className="max-w-md w-full p-8 bg-card/90">
+    <div className="page-shell flex items-center justify-center bg-[linear-gradient(180deg,#f7f9fb,#f2f5f7)] p-4">
+      <Card className="max-w-md w-full rounded-[26px] border-slate-200 p-8 bg-white shadow-[0_16px_38px_rgba(15,23,42,0.08)]">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
             <img src={logo12} alt="Stories de Café" className="h-10 w-10 object-contain" />

@@ -8,20 +8,20 @@ export default function HomePage() {
   const navigate = useNavigate();
 
   return (
-    <div className="page-shell">
-      <div className="mx-auto max-w-6xl px-4 py-10 md:py-12">
+    <div className="page-shell bg-[linear-gradient(180deg,#f7f9fb,#f2f5f7)]">
+      <div className="mx-auto max-w-6xl px-4 py-8 md:py-10">
         {/* Header */}
-        <div className="text-center mb-10 md:mb-12">
+        <div className="mb-8 rounded-[26px] border border-slate-200 bg-white px-6 py-8 text-center shadow-[0_14px_36px_rgba(15,23,42,0.07)] md:mb-10">
           <div className="flex items-center justify-center gap-3 mb-4">
             <img src={logo12} alt="Stories de Café" className="h-16 w-16 object-contain" />
             <h1 className="brand-display text-4xl font-bold md:text-5xl">Stories de Café</h1>
           </div>
-          <p className="text-lg text-muted-foreground md:text-xl">Restaurant Ordering System</p>
+          <p className="text-base text-slate-500 md:text-lg">Restaurant Ordering System</p>
         </div>
 
         {/* Quick Access Cards */}
         <div className="grid md:grid-cols-2 gap-6 mb-12">
-          <Card className="glass-grid-card cursor-pointer p-8" onClick={() => navigate('/admin/login')}>
+          <Card className="glass-grid-card cursor-pointer rounded-[24px] border-slate-200 p-8 shadow-[0_10px_28px_rgba(15,23,42,0.06)]" onClick={() => navigate('/admin/login')}>
             <div className="flex items-start gap-4">
               <div className="rounded-xl bg-primary/10 p-3">
                 <LayoutGrid className="w-8 h-8 text-primary" />
@@ -37,7 +37,7 @@ export default function HomePage() {
             </div>
           </Card>
 
-          <Card className="glass-grid-card cursor-pointer p-8" onClick={() => navigate('/kitchen/login')}>
+          <Card className="glass-grid-card cursor-pointer rounded-[24px] border-slate-200 p-8 shadow-[0_10px_28px_rgba(15,23,42,0.06)]" onClick={() => navigate('/kitchen/login')}>
             <div className="flex items-start gap-4">
               <div className="rounded-xl bg-amber-100/80 p-3">
                 <ChefHat className="w-8 h-8 text-amber-700" />
@@ -55,7 +55,7 @@ export default function HomePage() {
         </div>
 
         {/* How it Works */}
-        <Card className="glass-grid-card p-8 mb-8">
+        <Card className="glass-grid-card mb-8 rounded-[24px] border-slate-200 p-8 shadow-[0_10px_28px_rgba(15,23,42,0.06)]">
           <h2 className="text-2xl font-bold mb-6">How it Works</h2>
           <div className="grid md:grid-cols-3 gap-8">
             <div>

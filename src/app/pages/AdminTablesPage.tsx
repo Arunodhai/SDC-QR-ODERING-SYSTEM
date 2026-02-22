@@ -137,13 +137,18 @@ export default function AdminTablesPage() {
   return (
     <div className="page-shell">
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="brand-display text-3xl font-bold">Tables</h2>
-          <Button onClick={() => setShowDialog(true)}>
+        <Card className="glass-grid-card mb-6 rounded-2xl border-slate-200/80 p-4 shadow-[0_10px_28px_rgba(15,23,42,0.06)]">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-700">QR Management</p>
+            <h2 className="brand-display text-3xl font-bold">Tables</h2>
+          </div>
+          <Button onClick={() => setShowDialog(true)} className="rounded-xl">
             <Plus className="w-4 h-4 mr-2" />
             Add Table
           </Button>
         </div>
+        </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {tables.map(table => (

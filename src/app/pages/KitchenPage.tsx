@@ -290,21 +290,21 @@ export default function KitchenPage() {
   }
 
   return (
-    <div className="page-shell">
+    <div className="page-shell bg-[linear-gradient(180deg,#f7f9fb,#f3f5f7)]">
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="mb-6 grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_10px_26px_rgba(15,23,42,0.06)]">
             <div>
               <h1 className="brand-display text-2xl font-bold flex items-center gap-2">
                 <ChefHat className="w-6 h-6" />
                 Kitchen Orders
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-slate-500">
                 {viewMode === 'active' ? `${activeOrders.length} active orders` : `${historyOrders.length} historical orders`}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-              <nav className="flex gap-1 rounded-xl border bg-white p-1">
+              <nav className="flex gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
                 <Button
                   size="sm"
                   variant={viewMode === 'active' ? 'default' : 'ghost'}
@@ -328,13 +328,13 @@ export default function KitchenPage() {
                   type="date"
                   value={historyDate}
                   onChange={(e) => setHistoryDate(e.target.value)}
-                  className="h-9 rounded-md border px-3 text-sm"
+                  className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm"
                 />
               )}
             </div>
           </div>
           {!isAdminKitchen && (
-            <div className="flex items-center gap-4 rounded-xl border bg-white px-4 py-3">
+            <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-[0_10px_26px_rgba(15,23,42,0.06)]">
               <div className="min-w-0">
                 <p className="truncate text-base font-semibold text-black">{kitchenUserName}</p>
                 <p className="mt-0.5 text-xs uppercase tracking-wide text-muted-foreground">Kitchen manager access</p>
