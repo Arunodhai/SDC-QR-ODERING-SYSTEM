@@ -1,4 +1,4 @@
-import { LayoutGrid, Table2, Receipt, LogOut, ChefHat, BarChart3, ChevronRight, ChevronLeft } from 'lucide-react';
+import { LayoutGrid, Table2, Receipt, LogOut, ChefHat, BarChart3, ChevronRight, ChevronLeft, User } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router';
 import { Button } from './ui/button';
 import * as api from '../lib/api';
@@ -34,23 +34,32 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
   return (
     <>
       <aside
-        className={`group relative hidden h-full shrink-0 overflow-hidden lg:sticky lg:top-0 lg:flex lg:flex-col lg:justify-between lg:border lg:border-slate-200/80 lg:bg-[linear-gradient(180deg,rgba(233,242,238,0.72),rgba(241,247,245,0.56))] lg:transition-[width,padding] lg:duration-200 ${
+        className={`group relative hidden h-full shrink-0 overflow-hidden lg:sticky lg:top-0 lg:flex lg:flex-col lg:justify-between lg:transition-[width,padding] lg:duration-200 ${
           collapsed ? 'lg:w-[88px] lg:p-3' : 'lg:w-[280px] lg:p-5'
-        } rounded-[8px]`}
+        }`}
       >
         <div>
-          <div className={`mb-6 flex items-center ${collapsed ? 'justify-center' : 'justify-start'} px-1`}>
-            <img src={logo12} alt="Stories de Café" className="h-9 w-9 object-contain" />
+          <div className={`mb-6 ${collapsed ? 'px-0' : 'px-1'}`}>
+            <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-start'}`}>
+              <img src={logo12} alt="Stories de Café" className="h-9 w-9 object-contain" />
+            </div>
+            {collapsed ? (
+              <div className="mt-1 text-center">
+                <p className="text-[10px] font-semibold leading-tight text-slate-700">Stories de Café</p>
+              </div>
+            ) : (
+              <div className="mt-2">
+              <p className="brand-display text-xl font-bold leading-tight text-slate-900">Stories de Café</p>
+              <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">Admin Console</p>
+              </div>
+            )}
           </div>
 
           {!collapsed && (
-            <div className="mb-6 px-1">
-              <p className="brand-display text-xl font-bold leading-tight text-slate-900">Stories de Café</p>
-              <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">Admin Console</p>
+            <div className="mb-1">
+              <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Main Menu</p>
             </div>
           )}
-
-          {!collapsed && <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Main Menu</p>}
           <nav className="space-y-1.5">
             {navItems.map(item => {
               const Icon = item.icon;
@@ -76,9 +85,10 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
         </div>
 
         <div className="mt-6 space-y-2">
-          {!collapsed && <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Account</p>}
-          <div className={`rounded-[8px] border border-white/70 bg-white/55 p-3 backdrop-blur ${collapsed ? 'px-2' : ''}`}>
-            {!collapsed && (
+          {!collapsed ? (
+            <>
+              <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Account</p>
+              <div className="rounded-[8px] border border-white/70 bg-white/55 p-3 backdrop-blur">
               <div className="mb-2 flex items-center gap-2">
                 <img src={logo12} alt="Admin avatar" className="h-8 w-8 rounded-full border border-slate-200 bg-white object-contain p-0.5" />
                 <div className="min-w-0">
@@ -86,16 +96,27 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
                   <p className="truncate text-xs text-slate-500">storiesdecafe.com</p>
                 </div>
               </div>
-            )}
             <Button
               variant="outline"
-              className={`w-full rounded-[8px] border-slate-200 bg-white/90 ${collapsed ? 'justify-center px-0' : 'justify-start'}`}
+                  className="w-full justify-start rounded-[8px] border-slate-200 bg-white/90"
               onClick={handleLogout}
             >
-              <LogOut className={`${collapsed ? '' : 'mr-2'} h-4 w-4`} />
-              {!collapsed && 'Logout'}
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
             </Button>
-          </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex justify-center">
+              <button
+                type="button"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white/85 text-slate-600"
+                aria-label="Admin user"
+              >
+                <User className="h-4 w-4" />
+              </button>
+            </div>
+          )}
         </div>
 
         <button

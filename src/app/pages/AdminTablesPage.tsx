@@ -150,32 +150,32 @@ export default function AdminTablesPage() {
         </div>
         </Card>
 
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
+        <div className="grid [grid-template-columns:repeat(auto-fill,minmax(145px,1fr))] gap-2.5">
           {tables.map(table => (
-            <Card key={table.id} className="sdc-panel-card aspect-square p-3">
-              <div className="flex flex-col items-center">
+            <Card key={table.id} className="sdc-panel-card aspect-square p-2">
+              <div className="flex h-full flex-col items-center justify-between">
                 <button
                   type="button"
-                  className="mb-3 shrink-0 rounded-md border border-white/85 bg-white/90 p-2 transition hover:shadow cursor-zoom-in"
+                  className="shrink-0 rounded-md border border-white/85 bg-white/90 p-1 transition hover:shadow cursor-zoom-in"
                   onClick={() => showQR(table)}
                   title="Click to view QR"
                 >
                   <QRCodeSVG
                     value={getTableURL(table.tableNumber)}
-                    size={96}
+                    size={74}
                     level="H"
-                    imageSettings={getQrImageSettings(96)}
+                    imageSettings={getQrImageSettings(74)}
                   />
                 </button>
-                <div className="flex w-full items-center justify-between gap-2">
-                  <h3 className="text-lg font-semibold tracking-tight text-slate-900">Table {table.tableNumber}</h3>
+                <div className="flex items-center justify-center gap-1">
+                  <h3 className="text-[20px] font-semibold tracking-tight text-slate-900">Table {table.tableNumber}</h3>
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8 shrink-0"
+                    className="h-6 w-6 shrink-0"
                     onClick={() => handleDeleteTable(table.id)}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3 h-3" />
                   </Button>
                 </div>
               </div>
