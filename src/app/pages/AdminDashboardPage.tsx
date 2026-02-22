@@ -398,7 +398,7 @@ export default function AdminDashboardPage() {
                     onClick={printDailyCloseReport}
                     className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                   >
-                    <span className="inline-flex items-center gap-2">
+                    <span className="inline-flex items-center gap-2 whitespace-nowrap">
                       <Printer className="h-4 w-4" />
                       Print Daily Close Report
                     </span>
