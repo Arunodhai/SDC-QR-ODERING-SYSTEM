@@ -499,7 +499,7 @@ export default function AdminOrdersPage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-700">Live Orders</p>
-              <h2 className="mt-1 text-5xl font-semibold tracking-tight text-slate-900">Orders</h2>
+              <h2 className="mt-1 text-4xl font-semibold tracking-tight text-slate-900">Orders</h2>
               <p className="mt-1 text-sm text-slate-500">Track payment groups, session rounds, and bill status in one view.</p>
             </div>
 
@@ -575,7 +575,7 @@ export default function AdminOrdersPage() {
               <Card key={groupKey} className="sdc-panel-card h-fit p-4">
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-[52px] leading-none font-semibold tracking-tight text-slate-900">Table {group.tableNumber}</h3>
+                    <h3 className="text-4xl leading-none font-semibold tracking-tight text-slate-900">Table {group.tableNumber}</h3>
                     <p className="mt-2 text-sm text-slate-500">
                       Name: {group.customerName || 'Guest'}
                     </p>
@@ -587,7 +587,7 @@ export default function AdminOrdersPage() {
                     </p>
                   </div>
                   <div className="text-right min-w-[190px] shrink-0">
-                    <div className="text-4xl leading-none font-semibold text-slate-900">${groupTotal.toFixed(2)}</div>
+                    <div className="text-3xl leading-none font-semibold text-slate-900">${groupTotal.toFixed(2)}</div>
                     <div className="mt-1 text-xs text-slate-500">Payable (excludes cancelled)</div>
                     <div className="mt-1 flex justify-end">
                       <Badge className={PAYMENT_COLORS[groupPaymentStatus as keyof typeof PAYMENT_COLORS]}>

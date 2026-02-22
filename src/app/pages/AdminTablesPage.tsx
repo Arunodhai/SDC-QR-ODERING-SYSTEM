@@ -137,11 +137,11 @@ export default function AdminTablesPage() {
   return (
     <div className="page-shell">
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <Card className="sdc-header-card mb-6 p-4">
+        <Card className="sdc-header-card mb-5 p-4">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-700">QR Management</p>
-            <h2 className="text-5xl font-semibold tracking-tight text-slate-900">Tables</h2>
+            <h2 className="text-4xl font-semibold tracking-tight text-slate-900">Tables</h2>
           </div>
           <Button onClick={() => setShowDialog(true)} className="rounded-xl">
             <Plus className="w-4 h-4 mr-2" />
@@ -150,34 +150,34 @@ export default function AdminTablesPage() {
         </div>
         </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
           {tables.map(table => (
-            <Card key={table.id} className="sdc-panel-card p-4">
-              <div className="flex items-center gap-3">
+            <Card key={table.id} className="sdc-panel-card aspect-square p-3">
+              <div className="flex flex-col items-center">
                 <button
                   type="button"
-                  className="shrink-0 rounded-xl border border-white/85 bg-white/90 p-2 transition hover:shadow cursor-zoom-in"
+                  className="mb-3 shrink-0 rounded-md border border-white/85 bg-white/90 p-2 transition hover:shadow cursor-zoom-in"
                   onClick={() => showQR(table)}
                   title="Click to view QR"
                 >
                   <QRCodeSVG
                     value={getTableURL(table.tableNumber)}
-                    size={80}
+                    size={96}
                     level="H"
-                    imageSettings={getQrImageSettings(80)}
+                    imageSettings={getQrImageSettings(96)}
                   />
                 </button>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-[38px] leading-none font-semibold tracking-tight text-slate-900">Table {table.tableNumber}</h3>
+                <div className="flex w-full items-center justify-between gap-2">
+                  <h3 className="text-lg font-semibold tracking-tight text-slate-900">Table {table.tableNumber}</h3>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 shrink-0"
+                    onClick={() => handleDeleteTable(table.id)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="shrink-0"
-                  onClick={() => handleDeleteTable(table.id)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
               </div>
             </Card>
           ))}

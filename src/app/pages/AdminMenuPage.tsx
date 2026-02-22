@@ -238,7 +238,7 @@ export default function AdminMenuPage() {
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-700">Menu Console</p>
-            <h2 className="text-5xl font-semibold tracking-tight text-slate-900">Menu Management</h2>
+            <h2 className="text-4xl font-semibold tracking-tight text-slate-900">Menu Management</h2>
             <div className="mt-1 flex items-center gap-2 text-sm">
               <span className="font-semibold">Backend:</span>
               {apiConnected === null && <span className="text-muted-foreground">Checking...</span>}
@@ -262,7 +262,7 @@ export default function AdminMenuPage() {
 
           <TabsContent value="categories">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-[44px] font-semibold tracking-tight text-slate-900">Categories</h2>
+              <h2 className="text-4xl font-semibold tracking-tight text-slate-900">Categories</h2>
               <Button onClick={() => setShowCategoryDialog(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Category
@@ -293,7 +293,7 @@ export default function AdminMenuPage() {
 
           <TabsContent value="items">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-[44px] font-semibold tracking-tight text-slate-900">Menu Items</h2>
+              <h2 className="text-4xl font-semibold tracking-tight text-slate-900">Menu Items</h2>
               <Button
                 onClick={() => {
                   if (categories.length === 0) {
