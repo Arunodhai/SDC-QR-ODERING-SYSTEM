@@ -243,12 +243,18 @@ export default function AdminOrdersPage() {
 
   const markOrderUnavailable = async (orderId: string) => {
     try {
-      await api.rejectOrderOutOfStock(orderId);
-      toast.success('Order marked as out of stock');
+      const res = await api.applyUnavailableItemsToOrder(orderId);
+      if (!res.unavailableItems.length) {
+        toast.info('No unavailable items found in this order.');
+      } else if (res.allItemsUnavailable) {
+        toast.warning(`All items unavailable. Order cancelled: ${res.unavailableItems.join(', ')}`);
+      } else {
+        toast.success(`Removed unavailable item(s): ${res.unavailableItems.join(', ')}`);
+      }
       setSelectedGroupDetails(null);
       await loadOrders();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to mark order unavailable');
+      toast.error(error instanceof Error ? error.message : 'Failed to apply unavailable items');
     }
   };
 
@@ -790,7 +796,7 @@ export default function AdminOrdersPage() {
                       className="border-red-300 text-red-700 hover:bg-red-50"
                       onClick={() => markOrderUnavailable(order.id)}
                     >
-                      Mark unavailable after order
+                      Apply unavailable items
                     </Button>
                   </div>
                 )}

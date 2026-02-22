@@ -112,36 +112,27 @@ export default function CustomerOrderPage() {
         .filter((item: any) => item.available)
         .map((item: any) => String(item.id)),
     );
-    const removedIds: string[] = [];
+    const removedIds = Object.keys(cart).filter((itemId) => !availableSet.has(String(itemId)));
+    if (removedIds.length === 0) return;
 
-    setCart((prev) => {
-      let changed = false;
-      const next: Record<string, number> = {};
-      Object.entries(prev).forEach(([itemId, qty]) => {
-        if (availableSet.has(String(itemId))) {
-          next[itemId] = qty;
-        } else {
-          changed = true;
-          removedIds.push(String(itemId));
-        }
-      });
-      return changed ? next : prev;
+    const nextCart: Record<string, number> = {};
+    Object.entries(cart).forEach(([itemId, qty]) => {
+      if (availableSet.has(String(itemId))) nextCart[itemId] = qty;
     });
+    setCart(nextCart);
 
-    if (removedIds.length > 0) {
-      setItemNotes((prev) => {
-        const next = { ...prev };
-        removedIds.forEach((itemId) => delete next[itemId]);
-        return next;
-      });
-      const removedNames = removedIds.map((id) => {
-        const item = menuItems.find((m) => String(m.id) === String(id)) || allMap.get(String(id));
-        return item?.name || `Item ${id}`;
-      });
-      toast.warning(
-        `Removed unavailable item${removedNames.length > 1 ? 's' : ''}: ${removedNames.join(', ')}`,
-      );
-    }
+    setItemNotes((prev) => {
+      const next = { ...prev };
+      removedIds.forEach((itemId) => delete next[itemId]);
+      return next;
+    });
+    const removedNames = removedIds.map((id) => {
+      const item = menuItems.find((m) => String(m.id) === String(id)) || allMap.get(String(id));
+      return item?.name || `Item ${id}`;
+    });
+    toast.warning(
+      `Removed unavailable item${removedNames.length > 1 ? 's' : ''}: ${removedNames.join(', ')}`,
+    );
   };
 
   useEffect(() => {
@@ -846,7 +837,7 @@ export default function CustomerOrderPage() {
                           <img
                             src={getMenuItemImage(item.name, item.image)}
                             alt={item.name}
-                            className="h-full w-full rounded-lg object-contain"
+                            className={`h-full w-full rounded-lg object-contain ${item.available ? '' : 'grayscale'}`}
                           />
                         </button>
                       )}
@@ -854,9 +845,6 @@ export default function CustomerOrderPage() {
                         <h3 className="font-semibold">{item.name}</h3>
                         <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
                         <p className="text-lg font-bold mt-2">${item.price.toFixed(2)}</p>
-                        {!item.available && (
-                          <p className="mt-1 text-xs font-medium text-red-600">Unavailable right now</p>
-                        )}
                       </div>
                       <div className="flex items-center gap-2 self-end">
                         {cart[item.id] ? (

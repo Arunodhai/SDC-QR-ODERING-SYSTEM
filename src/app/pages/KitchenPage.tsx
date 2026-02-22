@@ -202,11 +202,17 @@ export default function KitchenPage() {
 
   const markOutOfStock = async (orderId: string) => {
     try {
-      await api.rejectOrderOutOfStock(orderId);
-      toast.success('Order marked as out of stock');
+      const res = await api.applyUnavailableItemsToOrder(orderId);
+      if (!res.unavailableItems.length) {
+        toast.info('No unavailable items found in this order.');
+      } else if (res.allItemsUnavailable) {
+        toast.warning(`All items unavailable. Order cancelled: ${res.unavailableItems.join(', ')}`);
+      } else {
+        toast.success(`Removed unavailable item(s): ${res.unavailableItems.join(', ')}`);
+      }
       loadOrders();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to mark order as unavailable');
+      toast.error(error instanceof Error ? error.message : 'Failed to apply unavailable items');
     }
   };
 
@@ -430,14 +436,22 @@ export default function KitchenPage() {
                                         </div>
                                       ))}
                                     </div>
-                                    {(order.items || []).some(
-                                      (item: any) =>
-                                        item.menuItemId && unavailableItemIds.has(String(item.menuItemId)),
-                                    ) && (
+                                    {(() => {
+                                      const unavailableNames = (order.items || [])
+                                        .filter(
+                                          (item: any) =>
+                                            !item.isCancelled &&
+                                            item.menuItemId &&
+                                            unavailableItemIds.has(String(item.menuItemId)),
+                                        )
+                                        .map((item: any) => item.name);
+                                      if (!unavailableNames.length) return null;
+                                      return (
                                       <div className="mb-2 rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[11px] text-red-700">
-                                        One or more items in this order are now unavailable.
+                                        Unavailable now: {Array.from(new Set(unavailableNames)).join(', ')}
                                       </div>
-                                    )}
+                                      );
+                                    })()}
                                     <div className="mt-3 mb-2 text-xs font-semibold text-right">Total: ${order.total.toFixed(2)}</div>
                                     <div className="grid grid-cols-2 gap-2">
                                       <Button
@@ -455,7 +469,7 @@ export default function KitchenPage() {
                                         size="sm"
                                         onClick={() => markOutOfStock(order.id)}
                                       >
-                                        Mark Unavailable
+                                        Apply Unavailable
                                       </Button>
                                     </div>
                                   </div>

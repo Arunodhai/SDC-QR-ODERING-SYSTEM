@@ -39,6 +39,9 @@ const toOrderItem = (row: any) => ({
   name: row.item_name,
   price: Number(row.unit_price || 0),
   quantity: Number(row.quantity || 0),
+  lineTotal: Number(row.line_total || 0),
+  isCancelled: Boolean(row.is_cancelled),
+  cancelReason: row.cancel_reason || '',
 });
 
 const toOrder = (row: any) => ({
@@ -60,6 +63,7 @@ const aggregateBillLineItems = (orders: any[]) => {
   const map = new Map<string, { name: string; quantity: number; unitPrice: number; lineTotal: number }>();
   (orders || []).forEach((order) => {
     (order.items || []).forEach((item: any) => {
+      if (item.isCancelled) return;
       const key = `${item.name}__${Number(item.price || 0)}`;
       const existing = map.get(key) || {
         name: item.name,
@@ -487,6 +491,11 @@ const isMissingStatusReasonColumn = (error: any) => {
   return msg.includes('status_reason') || msg.includes('cancellation_reason') || msg.includes('cancel_reason');
 };
 
+const isMissingOrderItemCancelColumns = (error: any) => {
+  const msg = String(error?.message || '');
+  return msg.includes('is_cancelled') || msg.includes('cancel_reason');
+};
+
 export const updateOrderStatus = async (id: string, status: string, statusReason?: string) => {
   const patch: any = { status };
   if (statusReason !== undefined) patch.status_reason = statusReason;
@@ -680,6 +689,116 @@ export const rejectOrderOutOfStock = async (
 
   if (error) throw new Error(errMsg(error, 'Failed to mark order as unavailable'));
   return { order: toOrder(data), reason };
+};
+
+export const applyUnavailableItemsToOrder = async (id: string) => {
+  const orderId = Number(id);
+  const { data: orderRow, error: orderError } = await supabase
+    .from('orders')
+    .select('*,order_items(*)')
+    .eq('id', orderId)
+    .single();
+
+  if (orderError) throw new Error(errMsg(orderError, 'Failed to fetch order'));
+
+  const orderItems = orderRow?.order_items || [];
+  const menuItemIds = Array.from(
+    new Set(
+      orderItems
+        .map((item: any) => Number(item.menu_item_id))
+        .filter(Boolean),
+    ),
+  );
+
+  if (!menuItemIds.length) {
+    return { order: toOrder(orderRow), unavailableItems: [] as string[], allItemsUnavailable: false };
+  }
+
+  const { data: menuRows, error: menuError } = await supabase
+    .from('menu_items')
+    .select('id,name,is_available')
+    .in('id', menuItemIds);
+  if (menuError) throw new Error(errMsg(menuError, 'Failed to check item availability'));
+
+  const menuMap = new Map((menuRows || []).map((row: any) => [Number(row.id), row]));
+  const targetItemRows = orderItems.filter((item: any) => {
+    const menuId = Number(item.menu_item_id);
+    if (!menuId) return false;
+    const menu = menuMap.get(menuId);
+    const alreadyCancelled = Boolean(item.is_cancelled);
+    return Boolean(menu && !menu.is_available && !alreadyCancelled);
+  });
+
+  if (!targetItemRows.length) {
+    return { order: toOrder(orderRow), unavailableItems: [] as string[], allItemsUnavailable: false };
+  }
+
+  const unavailableNames = Array.from(
+    new Set(
+      targetItemRows.map((item: any) => {
+        const menu = menuMap.get(Number(item.menu_item_id));
+        return String(menu?.name || item.item_name || 'Unknown item');
+      }),
+    ),
+  );
+
+  const targetIds = targetItemRows.map((item: any) => Number(item.id)).filter(Boolean);
+  if (targetIds.length) {
+    const reasonText = `Unavailable item${unavailableNames.length > 1 ? 's' : ''}: ${unavailableNames.join(', ')}`;
+    const { error: updateItemsError } = await supabase
+      .from('order_items')
+      .update({ is_cancelled: true, cancel_reason: reasonText })
+      .in('id', targetIds);
+
+    if (updateItemsError) {
+      if (isMissingOrderItemCancelColumns(updateItemsError)) {
+        const { error: deleteItemsError } = await supabase.from('order_items').delete().in('id', targetIds);
+        if (deleteItemsError) throw new Error(errMsg(deleteItemsError, 'Failed to remove unavailable items'));
+      } else {
+        throw new Error(errMsg(updateItemsError, 'Failed to update unavailable items'));
+      }
+    }
+  }
+
+  const { data: refreshedOrderRow, error: refreshedError } = await supabase
+    .from('orders')
+    .select('*,order_items(*)')
+    .eq('id', orderId)
+    .single();
+  if (refreshedError) throw new Error(errMsg(refreshedError, 'Failed to refresh order'));
+
+  const refreshedItems = refreshedOrderRow?.order_items || [];
+  const payableItems = refreshedItems.filter((item: any) => !item.is_cancelled);
+  const newTotal = payableItems.reduce((sum: number, item: any) => sum + Number(item.line_total || 0), 0);
+  const allItemsUnavailable = payableItems.length === 0;
+  const orderReason = `Unavailable item${unavailableNames.length > 1 ? 's' : ''} removed: ${unavailableNames.join(', ')}`;
+  const patch: any = { total_amount: newTotal, status_reason: orderReason };
+  if (allItemsUnavailable) patch.status = 'CANCELLED';
+
+  const { data: updatedOrderRow, error: updateOrderError } = await supabase
+    .from('orders')
+    .update(patch)
+    .eq('id', orderId)
+    .select('*,order_items(*)')
+    .single();
+
+  if (updateOrderError) {
+    if (isMissingStatusReasonColumn(updateOrderError)) {
+      const fallbackPatch: any = { total_amount: newTotal };
+      if (allItemsUnavailable) fallbackPatch.status = 'CANCELLED';
+      const { data: fallbackRow, error: fallbackError } = await supabase
+        .from('orders')
+        .update(fallbackPatch)
+        .eq('id', orderId)
+        .select('*,order_items(*)')
+        .single();
+      if (fallbackError) throw new Error(errMsg(fallbackError, 'Failed to update order'));
+      return { order: toOrder(fallbackRow), unavailableItems: unavailableNames, allItemsUnavailable };
+    }
+    throw new Error(errMsg(updateOrderError, 'Failed to update order'));
+  }
+
+  return { order: toOrder(updatedOrderRow), unavailableItems: unavailableNames, allItemsUnavailable };
 };
 
 export const getActiveOrdersByTableAndPhone = async (tableNumber: number, phone: string) => {
