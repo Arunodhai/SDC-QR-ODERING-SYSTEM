@@ -462,6 +462,20 @@ export default function AdminDashboardPage() {
             <div className="h-[150px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
+                  <defs>
+                    <linearGradient id="payGradCash" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#34d399" />
+                      <stop offset="100%" stopColor="#059669" />
+                    </linearGradient>
+                    <linearGradient id="payGradCard" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#818cf8" />
+                      <stop offset="100%" stopColor="#4f46e5" />
+                    </linearGradient>
+                    <linearGradient id="payGradUpi" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#22d3ee" />
+                      <stop offset="100%" stopColor="#0891b2" />
+                    </linearGradient>
+                  </defs>
                   <Pie
                     data={paymentMixData}
                     dataKey="count"
@@ -472,9 +486,15 @@ export default function AdminDashboardPage() {
                     stroke="#fff"
                     strokeWidth={2}
                   >
-                    {paymentMixData.map((entry) => (
-                      <Cell key={entry.key} fill={entry.color} />
-                    ))}
+                    {paymentMixData.map((entry) => {
+                      const fill =
+                        entry.key === 'cash'
+                          ? 'url(#payGradCash)'
+                          : entry.key === 'card'
+                            ? 'url(#payGradCard)'
+                            : 'url(#payGradUpi)';
+                      return <Cell key={entry.key} fill={fill} />;
+                    })}
                   </Pie>
                   <Tooltip
                     formatter={(value: number, name: string) => [value, name]}
@@ -496,7 +516,15 @@ export default function AdminDashboardPage() {
                   <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
                     <div
                       className="h-full rounded-full"
-                      style={{ width: `${entry.percent}%`, backgroundColor: entry.color }}
+                      style={{
+                        width: `${entry.percent}%`,
+                        backgroundImage:
+                          entry.key === 'cash'
+                            ? 'linear-gradient(90deg,#34d399,#059669)'
+                            : entry.key === 'card'
+                              ? 'linear-gradient(90deg,#818cf8,#4f46e5)'
+                              : 'linear-gradient(90deg,#22d3ee,#0891b2)',
+                      }}
                     />
                   </div>
                 </div>
