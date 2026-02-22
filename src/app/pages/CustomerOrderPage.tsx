@@ -27,6 +27,17 @@ const statusLabel = (status: string) => {
   return status;
 };
 
+const customerOrderNote = (reason?: string) => {
+  const text = String(reason || '').trim();
+  if (!text) return '';
+  const unavailableMatch = text.match(/Unavailable item(?:s)? removed:\s*(.+)$/i);
+  if (unavailableMatch?.[1]) {
+    const names = unavailableMatch[1].trim();
+    return `Some items in this order were unavailable and removed${names ? ` (${names})` : ''}.`;
+  }
+  return text;
+};
+
 const sameIdSet = (a: string[], b: string[]) => {
   if (a.length !== b.length) return false;
   const aa = [...a].sort();
@@ -93,7 +104,6 @@ export default function CustomerOrderPage() {
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
   const [cartAvailabilityPopup, setCartAvailabilityPopup] = useState<string>('');
   const latestFinalBillIdRef = useRef<string>('');
-  const popupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cartRef = useRef<Record<string, number>>({});
   const cartStorageKey = `sdc:cart:${tableNumber || 'unknown'}:${customerPhone || 'guest'}`;
   const roundByOrderId = userOrders
@@ -135,9 +145,6 @@ export default function CustomerOrderPage() {
     });
     const message = `Removed unavailable item${removedNames.length > 1 ? 's' : ''}: ${removedNames.join(', ')}`;
     setCartAvailabilityPopup(message);
-    if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
-    popupTimerRef.current = setTimeout(() => setCartAvailabilityPopup(''), 3500);
-    toast.warning(message);
   }, []);
 
   useEffect(() => {
@@ -211,12 +218,6 @@ export default function CustomerOrderPage() {
       setLoading(false);
     }
   }, [sanitizeCartByAvailability]);
-
-  useEffect(() => {
-    return () => {
-      if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
-    };
-  }, []);
 
   const addToCart = (itemId: string) => {
     setCart(prev => ({ ...prev, [itemId]: (prev[itemId] || 0) + 1 }));
@@ -594,12 +595,12 @@ export default function CustomerOrderPage() {
       {/* Menu */}
       <div className="max-w-5xl mx-auto px-4 py-6">
         {cartAvailabilityPopup ? (
-          <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
             <div className="flex items-start justify-between gap-2">
               <span>{cartAvailabilityPopup}</span>
               <button
                 type="button"
-                className="text-amber-700 hover:text-amber-900"
+                className="text-red-700 hover:text-red-900"
                 onClick={() => setCartAvailabilityPopup('')}
                 aria-label="Dismiss notice"
               >
@@ -651,7 +652,7 @@ export default function CustomerOrderPage() {
                         )}
                       </div>
                       {o.statusReason ? (
-                        <div className="mt-1 text-xs text-red-600">Reason: {o.statusReason}</div>
+                        <div className="mt-1 text-xs text-red-600">{customerOrderNote(o.statusReason)}</div>
                       ) : null}
                     </div>
                     <Button
