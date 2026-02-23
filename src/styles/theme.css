@@ -129,7 +129,9 @@
     font-family: 'Manrope', 'Segoe UI', sans-serif;
     min-height: 100vh;
     background-color: #e8eff5;
-    background-image: url('../assets/gradiantbg.png');
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.22)),
+      url('../assets/gradiantbg.png');
     background-position: center;
     background-size: cover;
     background-repeat: no-repeat;
