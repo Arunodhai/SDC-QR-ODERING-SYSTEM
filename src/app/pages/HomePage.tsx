@@ -2,6 +2,8 @@ import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import logo12 from '../../assets/logo12.png';
 import gradiantBg5 from '../../assets/gradiantbg5.jpg';
+import administratorIcon from '../../assets/administrator.png';
+import utensilsIcon from '../../assets/utensils.png';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -32,7 +34,10 @@ export default function HomePage() {
         <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-[clamp(24px,3.5vw,56px)]">
           <div className="flex w-full justify-center">
             <section className="w-full max-w-[560px] translate-x-29 self-center">
-              <p className="leading-none text-black [font-size:clamp(16px,1.45vw,30px)]">Control Center</p>
+              <div className="inline-flex translate-x-3 items-center gap-2">
+                <img src={administratorIcon} alt="" aria-hidden="true" className="h-[clamp(25px,2.05vw,46px)] w-[clamp(25px,2.05vw,46px)] object-contain" />
+                <p className="leading-none text-black [font-size:clamp(16px,1.45vw,30px)]">Control Center</p>
+              </div>
               <h2 className="mt-1.5 leading-[0.96] font-medium text-black [font-size:clamp(44px,3.95vw,78px)]">Admin Portal</h2>
               <p className="mt-2.5 leading-[1.1] text-black [font-size:clamp(16px,1.45vw,30px)]">Manage menu, tables, and orders.</p>
               <button
@@ -50,7 +55,10 @@ export default function HomePage() {
 
           <div className="flex w-full justify-center">
             <section className="w-full max-w-[560px] translate-x-28 self-center">
-              <p className="leading-none text-black [font-size:clamp(16px,1.45vw,30px)]">Live Queue</p>
+              <div className="inline-flex items-center gap-2">
+                <img src={utensilsIcon} alt="" aria-hidden="true" className="h-[clamp(22px,1.85vw,40px)] w-[clamp(22px,1.85vw,40px)] object-contain" />
+                <p className="leading-none text-black [font-size:clamp(16px,1.45vw,30px)]">Live Queue</p>
+              </div>
               <h2 className="mt-1.5 leading-[0.96] font-medium text-black [font-size:clamp(44px,3.95vw,78px)]">Kitchen View</h2>
               <p className="mt-2.5 leading-[1.1] text-black [font-size:clamp(16px,1.45vw,30px)]">View and manage incoming orders.</p>
               <button
