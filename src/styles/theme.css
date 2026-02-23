@@ -129,9 +129,10 @@
     font-family: 'Manrope', 'Segoe UI', sans-serif;
     min-height: 100vh;
     background:
-      radial-gradient(980px 520px at 82% 8%, rgba(125, 233, 255, 0.38), transparent 63%),
-      radial-gradient(980px 560px at 18% 92%, rgba(255, 179, 163, 0.36), transparent 62%),
-      radial-gradient(860px 520px at 92% 96%, rgba(214, 164, 255, 0.3), transparent 64%),
+      radial-gradient(980px 520px at 82% 8%, rgba(88, 224, 255, 0.46), transparent 63%),
+      radial-gradient(980px 560px at 18% 92%, rgba(255, 166, 144, 0.44), transparent 62%),
+      radial-gradient(780px 420px at 40% 88%, rgba(255, 188, 162, 0.28), transparent 64%),
+      radial-gradient(860px 520px at 92% 96%, rgba(199, 132, 255, 0.36), transparent 64%),
       linear-gradient(180deg, #f8fbff 0%, #f6f9ff 46%, #f3f7ff 100%);
     background-attachment: fixed;
   }
