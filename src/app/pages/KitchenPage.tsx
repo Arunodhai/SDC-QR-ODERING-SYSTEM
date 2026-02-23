@@ -290,7 +290,7 @@ export default function KitchenPage() {
   }
 
   return (
-    <div className="page-shell bg-[linear-gradient(180deg,#f7f9fb,#f3f5f7)]">
+    <div className="page-shell bg-transparent">
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="mb-6 grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
           <div className="sdc-header-card flex flex-wrap items-center justify-between gap-3 p-4">

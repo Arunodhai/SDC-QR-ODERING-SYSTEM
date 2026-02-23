@@ -722,10 +722,9 @@ export default function AdminDashboardPage() {
                   <BarChart data={topItems} layout="vertical" margin={{ top: 8, right: 10, left: 20, bottom: 8 }}>
                     <defs>
                       <linearGradient id="topItemsBarGradient" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="#f3c47c" />
-                        <stop offset="35%" stopColor="#ed8faa" />
-                        <stop offset="70%" stopColor="#9b8ce7" />
-                        <stop offset="100%" stopColor="#71bfe1" />
+                        <stop offset="0%" stopColor="#fde68a" />
+                        <stop offset="55%" stopColor="#fb923c" />
+                        <stop offset="100%" stopColor="#f97316" />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />

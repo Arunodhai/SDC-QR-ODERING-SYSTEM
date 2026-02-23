@@ -134,7 +134,7 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
                           ? 'text-slate-900'
                           : 'text-slate-700 hover:bg-white/60'
                         : isActive
-                          ? 'border-l-4 border-teal-600 bg-white/70 pl-2 text-slate-900 shadow-none'
+                          ? 'bg-transparent text-slate-950 font-semibold text-[1.06rem]'
                           : 'text-slate-700 hover:bg-white/70'
                     }`}
                   >
@@ -142,10 +142,12 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
                       className={`inline-flex h-7 w-7 items-center justify-center rounded-full ${
                         collapsed && isActive
                           ? 'bg-slate-900 text-white shadow-[0_8px_14px_rgba(15,23,42,0.2)]'
+                          : isActive
+                            ? 'bg-slate-900 text-white shadow-[0_8px_14px_rgba(15,23,42,0.18)]'
                           : ''
                       }`}
                     >
-                      <Icon className={`h-[18px] w-[18px] ${isActive ? (collapsed ? 'text-current' : 'text-slate-900') : 'text-slate-500'}`} />
+                      <Icon className={`h-[18px] w-[18px] ${isActive ? 'text-current' : 'text-slate-500'}`} />
                     </span>
                     {collapsed ? <span className="text-[10px] font-medium leading-none">{item.label}</span> : <span>{item.label}</span>}
                   </span>

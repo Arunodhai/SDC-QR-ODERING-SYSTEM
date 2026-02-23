@@ -113,7 +113,7 @@ export default function CustomerOrderPage() {
       acc[String(order.id)] = index + 1;
       return acc;
     }, {});
-  const visibleUserOrders = userOrders.filter((o) => o.status !== 'CANCELLED');
+  const visibleUserOrders = userOrders;
   const menuCategories = categories.filter((category) =>
     menuItems.some((item) => String(item.categoryId) === String(category.id)),
   );
