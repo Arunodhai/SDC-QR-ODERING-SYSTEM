@@ -866,31 +866,33 @@ export default function CustomerOrderPage() {
               <div className="grid gap-4 p-4">
                 {categoryItems.map(item => (
                   <Card key={item.id} className={`sdc-panel-card p-4 ${item.available ? '' : 'opacity-75'}`}>
-                    <div className="flex gap-4 items-start">
-                      {getMenuItemImage(item.name, item.image) && (
-                        <button
-                          type="button"
-                          className="h-24 w-24 shrink-0 rounded-xl border bg-white p-1 transition hover:shadow cursor-zoom-in"
-                          onClick={() =>
-                            setPreviewImage({
-                              src: getMenuItemImage(item.name, item.image),
-                              name: item.name,
-                            })
-                          }
-                        >
-                          <img
-                            src={getMenuItemImage(item.name, item.image)}
-                            alt={item.name}
-                            className={`h-full w-full rounded-lg object-contain ${item.available ? '' : 'grayscale'}`}
-                          />
-                        </button>
-                      )}
-                      <div className="flex-1">
-                        <h3 className="font-semibold">{item.name}</h3>
-                        <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
-                        <p className="text-lg font-bold mt-2">${item.price.toFixed(2)}</p>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
+                      <div className="flex min-w-0 flex-1 gap-3 sm:gap-4">
+                        {getMenuItemImage(item.name, item.image) && (
+                          <button
+                            type="button"
+                            className="h-24 w-24 shrink-0 rounded-xl border bg-white p-1 transition hover:shadow cursor-zoom-in"
+                            onClick={() =>
+                              setPreviewImage({
+                                src: getMenuItemImage(item.name, item.image),
+                                name: item.name,
+                              })
+                            }
+                          >
+                            <img
+                              src={getMenuItemImage(item.name, item.image)}
+                              alt={item.name}
+                              className={`h-full w-full rounded-lg object-contain ${item.available ? '' : 'grayscale'}`}
+                            />
+                          </button>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-semibold">{item.name}</h3>
+                          <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+                          <p className="text-lg font-bold mt-2">${item.price.toFixed(2)}</p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 self-end">
+                      <div className="flex items-center gap-2 self-end sm:shrink-0">
                         {!item.available ? (
                           <Button variant="outline" disabled>
                             Unavailable
