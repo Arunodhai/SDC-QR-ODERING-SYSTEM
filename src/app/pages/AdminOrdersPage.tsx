@@ -380,6 +380,24 @@ export default function AdminOrdersPage() {
 
         for (let i = 0; i < ordered.length; i++) {
           const current = ordered[i];
+          const shouldSplitAfterCancelledOnlySession =
+            currentSession.length > 0 &&
+            current.status !== 'CANCELLED' &&
+            currentSession.every((o) => o.status === 'CANCELLED');
+          if (shouldSplitAfterCancelledOnlySession) {
+            sessionized.push({
+              tableNumber: group.tableNumber,
+              customerPhone: group.customerPhone,
+              customerName: group.customerName,
+              sessionIndex,
+              orders: currentSession,
+              startedAt: currentSession[0].createdAt,
+              endedAt: currentSession[currentSession.length - 1].createdAt,
+            });
+            sessionIndex += 1;
+            currentSession = [];
+          }
+
           currentSession.push(current);
           const shouldCloseSession =
             i < ordered.length - 1 && sessionBoundaryOrderIds.has(String(current.id));
@@ -401,6 +419,24 @@ export default function AdminOrdersPage() {
         // Fallback for legacy data without final_bills.
         for (let i = 0; i < ordered.length; i++) {
           const current = ordered[i];
+          const shouldSplitAfterCancelledOnlySession =
+            currentSession.length > 0 &&
+            current.status !== 'CANCELLED' &&
+            currentSession.every((o) => o.status === 'CANCELLED');
+          if (shouldSplitAfterCancelledOnlySession) {
+            sessionized.push({
+              tableNumber: group.tableNumber,
+              customerPhone: group.customerPhone,
+              customerName: group.customerName,
+              sessionIndex,
+              orders: currentSession,
+              startedAt: currentSession[0].createdAt,
+              endedAt: currentSession[currentSession.length - 1].createdAt,
+            });
+            sessionIndex += 1;
+            currentSession = [];
+          }
+
           const startNew =
             i > 0 &&
             current.paymentStatus === 'UNPAID' &&
