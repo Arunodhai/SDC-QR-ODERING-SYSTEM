@@ -854,7 +854,7 @@ export default function AdminOrdersPage() {
       </Dialog>
 
       <Dialog open={Boolean(selectedGroupDetails)} onOpenChange={(open) => !open && setSelectedGroupDetails(null)}>
-        <DialogContent className="max-w-3xl border-white/70 bg-white/62 shadow-[0_26px_56px_rgba(15,23,42,0.22)] backdrop-blur-2xl supports-[backdrop-filter]:bg-white/55">
+        <DialogContent className="max-w-3xl border-white/80 bg-gradient-to-br from-white/80 via-white/72 to-cyan-50/60 shadow-[0_26px_56px_rgba(15,23,42,0.16)] backdrop-blur-2xl supports-[backdrop-filter]:bg-white/68">
           <DialogHeader>
             <DialogTitle>
               Table {selectedGroupDetails?.tableNumber} • Order Details
@@ -868,7 +868,7 @@ export default function AdminOrdersPage() {
 
           <div className="max-h-[65vh] overflow-y-auto space-y-3 pr-1">
             {(selectedGroupDetails?.orders || []).map((order: any, idx: number) => (
-                <div key={order.id} className="rounded-lg border border-white/70 bg-white/60 p-3 backdrop-blur-md supports-[backdrop-filter]:bg-white/52">
+                <div key={order.id} className="rounded-lg border border-white/85 bg-gradient-to-br from-white/82 to-white/68 p-3 backdrop-blur-md supports-[backdrop-filter]:bg-white/74">
                 <div className="mb-2 flex items-start justify-between gap-2">
                     <div>
                       <div className="flex items-center gap-2">

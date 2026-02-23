@@ -127,41 +127,14 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Manrope', 'Segoe UI', sans-serif;
-    position: relative;
     min-height: 100vh;
     overflow-x: hidden;
     background-color: #e8eff5;
-    background-image: linear-gradient(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.12));
+    background-image: url('../assets/gradiantbg5.jpg');
+    background-position: top left;
+    background-size: 100% 100%;
     background-repeat: no-repeat;
     background-attachment: fixed;
-  }
-
-  body::before {
-    content: '';
-    position: fixed;
-    inset: -14%;
-    z-index: 0;
-    pointer-events: none;
-    background-image: url('../assets/gradiantbg5.jpg');
-    background-position: center;
-    background-size: cover;
-    background-repeat: no-repeat;
-    transform-origin: 50% 50%;
-    animation: none;
-  }
-
-  body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background: linear-gradient(rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.16));
-  }
-
-  #root {
-    position: relative;
-    z-index: 1;
   }
 
   /**
@@ -290,7 +263,7 @@
     isolation: isolate;
     background:
       linear-gradient(145deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.34)),
-      radial-gradient(1000px 520px at 8% -18%, rgba(125, 233, 255, 0.12), transparent 58%),
+      radial-gradient(1000px 520px at 8% -18%, rgba(125, 233, 255, 0), transparent 58%),
       radial-gradient(900px 500px at 108% 0%, rgba(214, 164, 255, 0.1), transparent 56%),
       radial-gradient(980px 540px at -8% 108%, rgba(255, 179, 163, 0.11), transparent 60%);
     border: 1px solid rgba(255, 255, 255, 0.58);
