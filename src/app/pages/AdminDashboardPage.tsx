@@ -88,6 +88,54 @@ function InsightCard({
   );
 }
 
+function GrowthSparkCard({
+  title,
+  value,
+  hint,
+  icon,
+  trend,
+}: {
+  title: string;
+  value: string;
+  hint: string;
+  icon: React.ReactNode;
+  trend: HourBucket[];
+}) {
+  return (
+    <Card className="glass-grid-card rounded-2xl border-slate-200/70 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm text-slate-600">{title}</p>
+          <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900">{value}</p>
+          <p className="mt-2 text-xs text-slate-500">{hint}</p>
+        </div>
+        <div className="rounded-full border border-slate-200 bg-slate-50 p-2 text-slate-500">{icon}</div>
+      </div>
+      <div className="mt-3 h-14 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={trend} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id="growthSparkFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.35} />
+                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.04} />
+              </linearGradient>
+            </defs>
+            <Area
+              type="monotone"
+              dataKey="count"
+              stroke="#7c3aed"
+              strokeWidth={2.5}
+              fill="url(#growthSparkFill)"
+              dot={false}
+              isAnimationActive={false}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </Card>
+  );
+}
+
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<any[]>([]);
@@ -136,6 +184,17 @@ export default function AdminDashboardPage() {
   const todayOrders = useMemo(
     () => orders.filter((o) => localDateKey(new Date(o.createdAt)) === filterDate),
     [orders, filterDate],
+  );
+
+  const previousDateKey = useMemo(() => {
+    const d = new Date(`${filterDate}T00:00:00`);
+    d.setDate(d.getDate() - 1);
+    return localDateKey(d);
+  }, [filterDate]);
+
+  const previousDayOrders = useMemo(
+    () => orders.filter((o) => localDateKey(new Date(o.createdAt)) === previousDateKey),
+    [orders, previousDateKey],
   );
 
   const stats = useMemo(() => {
@@ -279,6 +338,17 @@ export default function AdminDashboardPage() {
     return buckets;
   }, [todayOrders]);
 
+  const growthMetrics = useMemo(() => {
+    const currentCount = todayOrders.filter((o) => o.status !== 'CANCELLED').length;
+    const previousCount = previousDayOrders.filter((o) => o.status !== 'CANCELLED').length;
+    const growth = previousCount > 0 ? ((currentCount - previousCount) / previousCount) * 100 : currentCount > 0 ? 100 : 0;
+    return {
+      growth,
+      currentCount,
+      previousCount,
+    };
+  }, [todayOrders, previousDayOrders]);
+
   const topItems = useMemo(() => {
     const map = new Map<string, { name: string; qty: number; sales: number }>();
     todayOrders
@@ -419,7 +489,7 @@ export default function AdminDashboardPage() {
           </div>
         </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-4">
           <InsightCard
             title="Dining Sessions"
             value={String(todaySessionCount)}
@@ -450,6 +520,13 @@ export default function AdminDashboardPage() {
             value={String(stats.cancelled)}
             hint={`${stats.total} total orders today`}
             icon={<Clock3 className="w-4 h-4" />}
+          />
+          <GrowthSparkCard
+            title="Order Growth"
+            value={`${growthMetrics.growth >= 0 ? '+' : ''}${growthMetrics.growth.toFixed(1)}%`}
+            hint={`vs previous day (${growthMetrics.previousCount} -> ${growthMetrics.currentCount})`}
+            icon={<TrendingUp className="w-4 h-4" />}
+            trend={hourlyTrend}
           />
         </div>
 
