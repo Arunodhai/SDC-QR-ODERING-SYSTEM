@@ -45,11 +45,11 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const STATUS_GRADIENTS: Record<string, { start: string; end: string }> = {
-  PENDING: { start: '#fbbf24', end: '#f59e0b' },
-  PREPARING: { start: '#fb7185', end: '#e11d48' },
-  READY: { start: '#22d3ee', end: '#0891b2' },
-  COMPLETED: { start: '#34d399', end: '#059669' },
-  CANCELLED: { start: '#cbd5e1', end: '#64748b' },
+  PENDING: { start: '#fbbf24', end: '#f97316' },
+  PREPARING: { start: '#fb7185', end: '#db2777' },
+  READY: { start: '#38bdf8', end: '#2563eb' },
+  COMPLETED: { start: '#34d399', end: '#16a34a' },
+  CANCELLED: { start: '#94a3b8', end: '#475569' },
 };
 
 const formatCurrency = (value: number) => `$${value.toFixed(2)}`;
@@ -94,19 +94,26 @@ function GrowthSparkCard({
   hint,
   icon,
   trend,
+  growthValue,
 }: {
   title: string;
   value: string;
   hint: string;
   icon: React.ReactNode;
   trend: HourBucket[];
+  growthValue: number;
 }) {
+  const isPositive = growthValue >= 0;
+  const sparkStart = isPositive ? '#22c55e' : '#f97316';
+  const sparkEnd = isPositive ? '#16a34a' : '#dc2626';
+  const valueColor = isPositive ? 'text-emerald-700' : 'text-rose-700';
+
   return (
     <Card className="glass-grid-card rounded-2xl border-slate-200/70 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm text-slate-600">{title}</p>
-          <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900">{value}</p>
+          <p className={`mt-2 text-3xl font-bold tracking-tight ${valueColor}`}>{value}</p>
           <p className="mt-2 text-xs text-slate-500">{hint}</p>
         </div>
         <div className="rounded-full border border-slate-200 bg-slate-50 p-2 text-slate-500">{icon}</div>
@@ -116,14 +123,14 @@ function GrowthSparkCard({
           <AreaChart data={trend} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="growthSparkFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.35} />
-                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.04} />
+                <stop offset="5%" stopColor={sparkStart} stopOpacity={0.35} />
+                <stop offset="95%" stopColor={sparkEnd} stopOpacity={0.04} />
               </linearGradient>
             </defs>
             <Area
               type="monotone"
               dataKey="count"
-              stroke="#7c3aed"
+              stroke={sparkEnd}
               strokeWidth={2.5}
               fill="url(#growthSparkFill)"
               dot={false}
@@ -527,6 +534,7 @@ export default function AdminDashboardPage() {
             hint={`vs previous day (${growthMetrics.previousCount} -> ${growthMetrics.currentCount})`}
             icon={<TrendingUp className="w-4 h-4" />}
             trend={hourlyTrend}
+            growthValue={growthMetrics.growth}
           />
         </div>
 
@@ -624,8 +632,9 @@ export default function AdminDashboardPage() {
                 <AreaChart data={hourlyTrend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="ordersGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#14b8a6" stopOpacity={0.03} />
+                      <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.38} />
+                      <stop offset="55%" stopColor="#2dd4bf" stopOpacity={0.24} />
+                      <stop offset="95%" stopColor="#818cf8" stopOpacity={0.05} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -635,7 +644,7 @@ export default function AdminDashboardPage() {
                     cursor={{ stroke: '#14b8a6', strokeOpacity: 0.25 }}
                     contentStyle={{ borderRadius: 12, borderColor: '#e2e8f0', boxShadow: '0 8px 24px rgba(2, 6, 23, 0.08)' }}
                   />
-                  <Area type="monotone" dataKey="count" stroke="#0f766e" strokeWidth={3} fill="url(#ordersGradient)" />
+                  <Area type="monotone" dataKey="count" stroke="#2563eb" strokeWidth={3} fill="url(#ordersGradient)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -713,8 +722,10 @@ export default function AdminDashboardPage() {
                   <BarChart data={topItems} layout="vertical" margin={{ top: 8, right: 10, left: 20, bottom: 8 }}>
                     <defs>
                       <linearGradient id="topItemsBarGradient" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="#fbbf24" />
-                        <stop offset="100%" stopColor="#f97316" />
+                        <stop offset="0%" stopColor="#f59e0b" />
+                        <stop offset="35%" stopColor="#fb7185" />
+                        <stop offset="70%" stopColor="#a78bfa" />
+                        <stop offset="100%" stopColor="#38bdf8" />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
