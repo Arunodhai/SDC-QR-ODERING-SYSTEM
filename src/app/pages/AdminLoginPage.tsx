@@ -7,6 +7,7 @@ import { Card } from '../components/ui/card';
 import { toast } from 'sonner';
 import * as api from '../lib/api';
 import logo12 from '../../assets/logo12.png';
+import administratorIcon from '../../assets/administrator.png';
 
 export default function AdminLoginPage() {
   const navigate = useNavigate();
@@ -49,7 +50,10 @@ export default function AdminLoginPage() {
             <img src={logo12} alt="Stories de Café" className="h-10 w-10 object-contain" />
             <h1 className="brand-display text-3xl font-bold">Stories de Café</h1>
           </div>
-          <p className="text-muted-foreground">Admin Login</p>
+          <p className="text-muted-foreground inline-flex items-center justify-center gap-2">
+            <img src={administratorIcon} alt="" aria-hidden="true" className="h-6 w-6 object-contain" />
+            <span>Admin Login</span>
+          </p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">

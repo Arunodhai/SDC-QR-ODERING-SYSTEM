@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { ChefHat, Lock, ArrowLeft } from 'lucide-react';
+import { Lock, ArrowLeft } from 'lucide-react';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import * as api from '../lib/api';
+import utensilsIcon from '../../assets/utensils.png';
 
 export default function KitchenLoginPage() {
   const navigate = useNavigate();
@@ -39,7 +40,7 @@ export default function KitchenLoginPage() {
       <Card className="glass-grid-card max-w-md w-full rounded-[26px] border-slate-200 p-8">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <ChefHat className="w-8 h-8 text-amber-700" />
+            <img src={utensilsIcon} alt="" aria-hidden="true" className="h-8 w-8 object-contain" />
             <h1 className="brand-display text-3xl font-bold">Kitchen Login</h1>
           </div>
           <p className="text-muted-foreground">Access kitchen manager view only</p>
