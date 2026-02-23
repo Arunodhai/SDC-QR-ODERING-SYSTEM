@@ -103,7 +103,7 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
               <img
                 src={logo12}
                 alt="Stories de Café"
-                className={`${collapsed ? 'h-11 w-11' : 'h-11 w-11'} object-contain`}
+                className={`${collapsed ? 'h-13 w-13' : 'h-13 w-13'} object-contain`}
               />
               {!collapsed && (
                 <div>

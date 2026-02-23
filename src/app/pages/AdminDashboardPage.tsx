@@ -37,19 +37,19 @@ const localDateKey = (d: Date) => {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  PENDING: '#f59e0b',
-  PREPARING: '#fb7185',
-  READY: '#06b6d4',
-  COMPLETED: '#10b981',
-  CANCELLED: '#94a3b8',
+  PENDING: '#f9c98a',
+  PREPARING: '#f7b8c8',
+  READY: '#9eddf1',
+  COMPLETED: '#93d9c1',
+  CANCELLED: '#c6cfdb',
 };
 
 const STATUS_GRADIENTS: Record<string, { start: string; end: string }> = {
-  PENDING: { start: '#fbbf24', end: '#f97316' },
-  PREPARING: { start: '#fb7185', end: '#db2777' },
-  READY: { start: '#38bdf8', end: '#2563eb' },
-  COMPLETED: { start: '#34d399', end: '#16a34a' },
-  CANCELLED: { start: '#94a3b8', end: '#475569' },
+  PENDING: { start: '#fde7c2', end: '#f7c78f' },
+  PREPARING: { start: '#fddce7', end: '#f5b6cc' },
+  READY: { start: '#d9f2fb', end: '#9dd8ef' },
+  COMPLETED: { start: '#d8f6ec', end: '#98dac1' },
+  CANCELLED: { start: '#e8edf4', end: '#c6cfdb' },
 };
 
 const formatCurrency = (value: number) => `$${value.toFixed(2)}`;
@@ -104,9 +104,9 @@ function GrowthSparkCard({
   growthValue: number;
 }) {
   const isPositive = growthValue >= 0;
-  const sparkStart = isPositive ? '#22c55e' : '#f97316';
-  const sparkEnd = isPositive ? '#16a34a' : '#dc2626';
-  const valueColor = isPositive ? 'text-emerald-700' : 'text-rose-700';
+  const sparkStart = isPositive ? '#b9f0d8' : '#ffd8cf';
+  const sparkEnd = isPositive ? '#57bf96' : '#ee8f7d';
+  const valueColor = isPositive ? 'text-emerald-600' : 'text-rose-500';
 
   return (
     <Card className="glass-grid-card rounded-2xl border-slate-200/70 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
@@ -549,16 +549,16 @@ export default function AdminDashboardPage() {
                 <PieChart>
                   <defs>
                     <linearGradient id="payGradCash" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="#34d399" />
-                      <stop offset="100%" stopColor="#059669" />
+                      <stop offset="0%" stopColor="#ddf8ef" />
+                      <stop offset="100%" stopColor="#8fd7be" />
                     </linearGradient>
                     <linearGradient id="payGradCard" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="#818cf8" />
-                      <stop offset="100%" stopColor="#4f46e5" />
+                      <stop offset="0%" stopColor="#ece8ff" />
+                      <stop offset="100%" stopColor="#b8aaf9" />
                     </linearGradient>
                     <linearGradient id="payGradUpi" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="#22d3ee" />
-                      <stop offset="100%" stopColor="#0891b2" />
+                      <stop offset="0%" stopColor="#e1f5fb" />
+                      <stop offset="100%" stopColor="#96d2e8" />
                     </linearGradient>
                   </defs>
                   <Pie
@@ -605,10 +605,10 @@ export default function AdminDashboardPage() {
                         width: `${entry.percent}%`,
                         backgroundImage:
                           entry.key === 'cash'
-                            ? 'linear-gradient(90deg,#34d399,#059669)'
+                            ? 'linear-gradient(90deg,#dff8ef,#92d8bf)'
                             : entry.key === 'card'
-                              ? 'linear-gradient(90deg,#818cf8,#4f46e5)'
-                              : 'linear-gradient(90deg,#22d3ee,#0891b2)',
+                              ? 'linear-gradient(90deg,#eeeaff,#b9adfa)'
+                              : 'linear-gradient(90deg,#e5f6fb,#9bd3e8)',
                       }}
                     />
                   </div>
@@ -632,19 +632,19 @@ export default function AdminDashboardPage() {
                 <AreaChart data={hourlyTrend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="ordersGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.38} />
-                      <stop offset="55%" stopColor="#2dd4bf" stopOpacity={0.24} />
-                      <stop offset="95%" stopColor="#818cf8" stopOpacity={0.05} />
+                      <stop offset="5%" stopColor="#a8dcf1" stopOpacity={0.34} />
+                      <stop offset="55%" stopColor="#aee5d5" stopOpacity={0.22} />
+                      <stop offset="95%" stopColor="#d2cbf8" stopOpacity={0.05} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
                   <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
                   <Tooltip
-                    cursor={{ stroke: '#14b8a6', strokeOpacity: 0.25 }}
+                    cursor={{ stroke: '#93c5fd', strokeOpacity: 0.3 }}
                     contentStyle={{ borderRadius: 12, borderColor: '#e2e8f0', boxShadow: '0 8px 24px rgba(2, 6, 23, 0.08)' }}
                   />
-                  <Area type="monotone" dataKey="count" stroke="#2563eb" strokeWidth={3} fill="url(#ordersGradient)" />
+                  <Area type="monotone" dataKey="count" stroke="#79a8de" strokeWidth={3} fill="url(#ordersGradient)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -722,10 +722,10 @@ export default function AdminDashboardPage() {
                   <BarChart data={topItems} layout="vertical" margin={{ top: 8, right: 10, left: 20, bottom: 8 }}>
                     <defs>
                       <linearGradient id="topItemsBarGradient" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="#f59e0b" />
-                        <stop offset="35%" stopColor="#fb7185" />
-                        <stop offset="70%" stopColor="#a78bfa" />
-                        <stop offset="100%" stopColor="#38bdf8" />
+                        <stop offset="0%" stopColor="#f9e5bf" />
+                        <stop offset="35%" stopColor="#f6c8d5" />
+                        <stop offset="70%" stopColor="#d5cbfb" />
+                        <stop offset="100%" stopColor="#b9e3f4" />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
