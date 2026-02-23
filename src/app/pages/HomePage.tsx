@@ -46,7 +46,7 @@ export default function HomePage() {
             </section>
           </div>
 
-          <div className="h-[clamp(240px,35vh,430px)] w-[2px] self-center bg-slate-900/55" />
+          <div className="h-[clamp(240px,35vh,430px)] w-[3px] self-center bg-black" />
 
           <div className="flex w-full justify-center">
             <section className="w-full max-w-[560px] translate-x-28 self-center">
