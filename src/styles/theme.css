@@ -127,15 +127,41 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Manrope', 'Segoe UI', sans-serif;
+    position: relative;
     min-height: 100vh;
+    overflow-x: hidden;
     background-color: #e8eff5;
-    background-image:
-      linear-gradient(rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.15)),
-      url('../assets/gradiantbg5.jpg');
+    background-image: linear-gradient(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.12));
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: -14%;
+    z-index: 0;
+    pointer-events: none;
+    background-image: url('../assets/gradiantbg5.jpg');
     background-position: center;
     background-size: cover;
     background-repeat: no-repeat;
-    background-attachment: fixed;
+    transform-origin: 50% 50%;
+    animation: none;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: linear-gradient(rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.16));
+  }
+
+  #root {
+    position: relative;
+    z-index: 1;
   }
 
   /**
