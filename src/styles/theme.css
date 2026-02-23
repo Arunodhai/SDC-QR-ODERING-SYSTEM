@@ -130,7 +130,7 @@
     min-height: 100vh;
     background-color: #e8eff5;
     background-image:
-      linear-gradient(rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.22)),
+      linear-gradient(rgba(255, 255, 255, 0.30), rgba(255, 255, 255, 0.30)),
       url('../assets/gradiantbg.png');
     background-position: center;
     background-size: cover;
