@@ -128,8 +128,11 @@
     @apply bg-background text-foreground antialiased;
     font-family: 'Manrope', 'Segoe UI', sans-serif;
     min-height: 100vh;
-    background:
-      linear-gradient(180deg, #c8e3f3 0%, #d9edf5 28%, #f1e9ef 56%, #efc8bc 80%, #d8b6ea 100%);
+    background-color: #e8eff5;
+    background-image: url('../assets/gradiantbg.png');
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
     background-attachment: fixed;
   }
 
