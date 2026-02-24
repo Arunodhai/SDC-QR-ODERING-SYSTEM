@@ -18,6 +18,7 @@ This script:
 6. Replaces kitchen-auth RPCs with workspace-aware versions
 7. Enables tenant RLS policies
 8. Adds storage policies expecting object keys prefixed with `workspace_id`
+9. Adds `create_workspace_with_owner(...)` RPC used by app registration flow
 
 ## Rollout Order
 1. Backup production database.

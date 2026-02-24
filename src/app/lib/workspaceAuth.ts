@@ -1,3 +1,6 @@
+import { createClient } from '@supabase/supabase-js';
+import { projectId, publicAnonKey } from '/utils/supabase/info';
+
 export type WorkspaceProfile = {
   id: string;
   restaurantName: string;
@@ -24,6 +27,9 @@ type WorkspaceSession = {
   signedInAt: string;
 };
 
+const supabaseUrl = `https://${projectId}.supabase.co`;
+const supabase = createClient(supabaseUrl, publicAnonKey);
+
 const workspacesKey = 'sdc:workspaces:v1';
 const workspaceSessionKey = 'sdc:workspace-session:v1';
 const activeWorkspaceIdKey = 'sdc:active-workspace-id:v1';
@@ -47,6 +53,16 @@ const randomSalt = () => {
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 };
+
+const slugify = (value: string) =>
+  String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 42);
+
+const nowIso = () => new Date().toISOString();
 
 async function hashSecret(secret: string, salt: string) {
   const digest = await crypto.subtle.digest('SHA-256', textEncoder.encode(`${salt}:${secret}`));
@@ -77,6 +93,93 @@ function writeWorkspaceRecords(records: WorkspaceRecord[]) {
 function writeWorkspaceSession(session: WorkspaceSession) {
   if (!canUseStorage()) return;
   localStorage.setItem(workspaceSessionKey, JSON.stringify(session));
+}
+
+function upsertWorkspaceRecord(next: WorkspaceRecord) {
+  const records = readWorkspaceRecords();
+  const withoutSame = records.filter((item) => item.id !== next.id && normalizeEmail(item.ownerEmail) !== normalizeEmail(next.ownerEmail));
+  writeWorkspaceRecords([next, ...withoutSame]);
+}
+
+async function fetchRemoteWorkspaceProfile(workspaceId?: string): Promise<WorkspaceProfile | null> {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError) throw new Error(userError.message || 'Failed to get current user');
+  const user = userData.user;
+  if (!user) return null;
+
+  let targetWorkspaceId = String(workspaceId || '').trim();
+  if (!targetWorkspaceId) {
+    const membershipRes = await supabase
+      .from('workspace_memberships')
+      .select('workspace_id')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (membershipRes.error) throw new Error(membershipRes.error.message || 'Failed to fetch memberships');
+    targetWorkspaceId = String(membershipRes.data?.workspace_id || '').trim();
+  }
+  if (!targetWorkspaceId) return null;
+
+  const wsPrimary = await supabase
+    .from('workspaces')
+    .select('id,restaurant_name,outlet_name,owner_email,admin_username,created_at,updated_at')
+    .eq('id', targetWorkspaceId)
+    .single();
+
+  let wsRow: any = wsPrimary.data;
+  if (wsPrimary.error) {
+    const wsFallback = await supabase
+      .from('workspaces')
+      .select('id,restaurant_name,outlet_name,owner_email,created_at,updated_at')
+      .eq('id', targetWorkspaceId)
+      .single();
+    if (wsFallback.error) throw new Error(wsFallback.error.message || 'Failed to fetch workspace');
+    wsRow = wsFallback.data;
+  }
+
+  const kitchenRes = await supabase
+    .from('workspace_kitchen_auth')
+    .select('username')
+    .eq('workspace_id', targetWorkspaceId)
+    .maybeSingle();
+
+  return {
+    id: String(wsRow.id),
+    restaurantName: String(wsRow.restaurant_name || 'Workspace'),
+    outletName: String(wsRow.outlet_name || ''),
+    ownerEmail: String(wsRow.owner_email || user.email || ''),
+    adminUsername: String(wsRow.admin_username || 'admin'),
+    kitchenUsername: String(kitchenRes.data?.username || 'kitchen'),
+    createdAt: String(wsRow.created_at || nowIso()),
+    updatedAt: String(wsRow.updated_at || nowIso()),
+  };
+}
+
+function buildWorkspaceRecord(input: {
+  profile: WorkspaceProfile;
+  ownerPassword: string;
+  adminPassword: string;
+  kitchenPassword: string;
+}) {
+  return Promise.all([
+    randomSalt(),
+    randomSalt(),
+    randomSalt(),
+  ]).then(async ([ownerSalt, adminSalt, kitchenSalt]) => {
+    const ownerPasswordHash = await hashSecret(input.ownerPassword, ownerSalt);
+    const adminPasswordHash = await hashSecret(input.adminPassword, adminSalt);
+    const kitchenPasswordHash = await hashSecret(input.kitchenPassword, kitchenSalt);
+    return {
+      ...input.profile,
+      ownerSalt,
+      adminSalt,
+      kitchenSalt,
+      ownerPasswordHash,
+      adminPasswordHash,
+      kitchenPasswordHash,
+    } as WorkspaceRecord;
+  });
 }
 
 export function getWorkspaceSession() {
@@ -156,39 +259,94 @@ export async function registerWorkspace(input: {
   if (kitchenUsername.length < 3) throw new Error('Kitchen username must be at least 3 characters');
   if (kitchenPassword.length < 6) throw new Error('Kitchen password must be at least 6 characters');
 
-  const records = readWorkspaceRecords();
-  const takenOwner = records.some((record) => normalizeEmail(record.ownerEmail) === ownerEmail);
-  if (takenOwner) throw new Error('An account already exists with this owner email');
+  // First try login, so existing owners can create additional workspaces
+  // without repeatedly triggering signup-email rate limits.
+  let authReady = false;
+  const signInFirst = await supabase.auth.signInWithPassword({
+    email: ownerEmail,
+    password: ownerPassword,
+  });
+  if (!signInFirst.error) {
+    authReady = true;
+  } else {
+    const signUpRes = await supabase.auth.signUp({
+      email: ownerEmail,
+      password: ownerPassword,
+    });
+    if (signUpRes.error) {
+      const message = String(signUpRes.error.message || '');
+      const lower = message.toLowerCase();
+      if (lower.includes('rate limit')) {
+        throw new Error('Email rate limit exceeded. Wait 1-2 minutes and try again, or use the Login tab.');
+      }
+      if (lower.includes('invalid')) {
+        throw new Error('Owner email is invalid. Please enter a valid email address.');
+      }
+      if (lower.includes('already registered')) {
+        throw new Error('Owner email already exists. Use Login tab or provide the correct owner password.');
+      }
+      throw new Error(message || 'Failed to register workspace owner');
+    }
+    if (signUpRes.data.session) {
+      authReady = true;
+    } else {
+      const secondSignIn = await supabase.auth.signInWithPassword({
+        email: ownerEmail,
+        password: ownerPassword,
+      });
+      if (!secondSignIn.error) {
+        authReady = true;
+      }
+    }
+  }
 
-  const now = new Date().toISOString();
-  const ownerSalt = randomSalt();
-  const adminSalt = randomSalt();
-  const kitchenSalt = randomSalt();
+  if (!authReady) {
+    throw new Error(
+      'Owner account created but sign-in is pending email confirmation. Confirm the email or disable confirmation in Supabase Auth settings.',
+    );
+  }
 
-  const nextRecord: WorkspaceRecord = {
-    id: randomId(),
-    restaurantName,
-    outletName,
-    ownerEmail,
+  const baseSlug = slugify(`${restaurantName}-${outletName}`) || slugify(restaurantName) || 'workspace';
+  const slugCandidate = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
+  const createRes = await supabase.rpc('create_workspace_with_owner', {
+    p_slug: slugCandidate,
+    p_restaurant_name: restaurantName,
+    p_outlet_name: outletName,
+    p_owner_email: ownerEmail,
+    p_admin_username: adminUsername,
+    p_kitchen_username: kitchenUsername,
+    p_kitchen_password: kitchenPassword,
+  });
+
+  if (createRes.error) {
+    throw new Error(
+      `${createRes.error.message || 'Failed to create workspace'}. Run sql/create_multi_tenant_schema_and_rls.sql and try again.`,
+    );
+  }
+
+  const workspaceId = String(createRes.data || '').trim();
+  const remoteProfile = await fetchRemoteWorkspaceProfile(workspaceId);
+  if (!remoteProfile) throw new Error('Workspace created but profile fetch failed');
+
+  const profile: WorkspaceProfile = {
+    ...remoteProfile,
     adminUsername,
-    kitchenUsername,
-    ownerSalt,
-    adminSalt,
-    kitchenSalt,
-    ownerPasswordHash: await hashSecret(ownerPassword, ownerSalt),
-    adminPasswordHash: await hashSecret(adminPassword, adminSalt),
-    kitchenPasswordHash: await hashSecret(kitchenPassword, kitchenSalt),
-    createdAt: now,
-    updatedAt: now,
+    kitchenUsername: remoteProfile.kitchenUsername || kitchenUsername,
   };
 
-  writeWorkspaceRecords([nextRecord, ...records]);
-  writeWorkspaceSession({
-    workspaceId: nextRecord.id,
-    ownerEmail: nextRecord.ownerEmail,
-    signedInAt: now,
+  const record = await buildWorkspaceRecord({
+    profile,
+    ownerPassword,
+    adminPassword,
+    kitchenPassword,
   });
-  setActiveWorkspaceId(nextRecord.id);
+  upsertWorkspaceRecord(record);
+  writeWorkspaceSession({
+    workspaceId: profile.id,
+    ownerEmail: profile.ownerEmail,
+    signedInAt: nowIso(),
+  });
+  setActiveWorkspaceId(profile.id);
 
   return { workspace: getCurrentWorkspaceProfile() };
 }
@@ -196,15 +354,60 @@ export async function registerWorkspace(input: {
 export async function loginWorkspace(ownerEmail: string, ownerPassword: string) {
   const email = normalizeEmail(ownerEmail);
   const password = String(ownerPassword || '').trim();
-  const record = readWorkspaceRecords().find((item) => normalizeEmail(item.ownerEmail) === email);
-  if (!record) throw new Error('Workspace account not found');
-  const hashed = await hashSecret(password, record.ownerSalt);
-  if (hashed !== record.ownerPasswordHash) throw new Error('Invalid email or password');
+  const remoteLogin = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
 
+  if (remoteLogin.error) {
+    const localRecord = readWorkspaceRecords().find((item) => normalizeEmail(item.ownerEmail) === email);
+    if (!localRecord) throw new Error('Workspace account not found');
+    const hashed = await hashSecret(password, localRecord.ownerSalt);
+    if (hashed !== localRecord.ownerPasswordHash) throw new Error('Invalid email or password');
+    writeWorkspaceSession({
+      workspaceId: localRecord.id,
+      ownerEmail: localRecord.ownerEmail,
+      signedInAt: nowIso(),
+    });
+    setActiveWorkspaceId(localRecord.id);
+    return { workspace: getCurrentWorkspaceProfile() };
+  }
+
+  const remoteProfile = await fetchRemoteWorkspaceProfile();
+  if (!remoteProfile) throw new Error('No workspace is linked to this owner account');
+
+  const existingRecord = readWorkspaceRecords().find((item) => item.id === remoteProfile.id);
+  let record: WorkspaceRecord;
+
+  if (existingRecord) {
+    record = {
+      ...existingRecord,
+      ...remoteProfile,
+      adminUsername: remoteProfile.adminUsername || existingRecord.adminUsername,
+      kitchenUsername: remoteProfile.kitchenUsername || existingRecord.kitchenUsername,
+      updatedAt: remoteProfile.updatedAt || nowIso(),
+    };
+  } else {
+    // First login on this device: seed local cache from server and owner password.
+    const ownerSalt = randomSalt();
+    const adminSalt = randomSalt();
+    const kitchenSalt = randomSalt();
+    record = {
+      ...remoteProfile,
+      ownerSalt,
+      adminSalt,
+      kitchenSalt,
+      ownerPasswordHash: await hashSecret(password, ownerSalt),
+      adminPasswordHash: await hashSecret(password, adminSalt),
+      kitchenPasswordHash: await hashSecret(password, kitchenSalt),
+    };
+  }
+
+  upsertWorkspaceRecord(record);
   writeWorkspaceSession({
     workspaceId: record.id,
     ownerEmail: record.ownerEmail,
-    signedInAt: new Date().toISOString(),
+    signedInAt: nowIso(),
   });
   setActiveWorkspaceId(record.id);
 
@@ -275,7 +478,7 @@ export async function updateKitchenCredentials(input: {
     record.kitchenPasswordHash = await hashSecret(nextPassword, nextSalt);
   }
 
-  record.updatedAt = new Date().toISOString();
+  record.updatedAt = nowIso();
   writeWorkspaceRecords([...records]);
   return { success: true, username: record.kitchenUsername };
 }

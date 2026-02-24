@@ -14,6 +14,7 @@ create table if not exists public.workspaces (
   restaurant_name text not null,
   outlet_name text,
   owner_email text,
+  admin_username text,
   currency_code text not null default 'USD',
   timezone text not null default 'UTC',
   is_active boolean not null default true,
@@ -21,6 +22,9 @@ create table if not exists public.workspaces (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.workspaces
+  add column if not exists admin_username text;
 
 create table if not exists public.workspace_memberships (
   workspace_id uuid not null references public.workspaces(id) on delete cascade,
@@ -113,6 +117,73 @@ $$;
 
 grant execute on function public.current_workspace_id() to anon, authenticated;
 grant execute on function public.is_workspace_member(uuid, text[]) to anon, authenticated;
+
+create or replace function public.create_workspace_with_owner(
+  p_slug text,
+  p_restaurant_name text,
+  p_outlet_name text,
+  p_owner_email text,
+  p_admin_username text,
+  p_kitchen_username text,
+  p_kitchen_password text
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_workspace_id uuid;
+  v_slug text;
+  v_admin_username text;
+  v_kitchen_username text;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required';
+  end if;
+
+  v_slug := lower(regexp_replace(coalesce(trim(p_slug), ''), '[^a-z0-9-]+', '-', 'g'));
+  if v_slug = '' then
+    v_slug := 'ws-' || substr(replace(gen_random_uuid()::text, '-', ''), 1, 8);
+  end if;
+
+  v_admin_username := nullif(trim(coalesce(p_admin_username, '')), '');
+  v_kitchen_username := coalesce(nullif(trim(coalesce(p_kitchen_username, '')), ''), 'kitchen');
+
+  insert into public.workspaces (
+    slug, restaurant_name, outlet_name, owner_email, admin_username, created_by
+  )
+  values (
+    v_slug,
+    trim(coalesce(p_restaurant_name, '')),
+    nullif(trim(coalesce(p_outlet_name, '')), ''),
+    nullif(lower(trim(coalesce(p_owner_email, ''))), ''),
+    v_admin_username,
+    auth.uid()
+  )
+  returning id into v_workspace_id;
+
+  insert into public.workspace_memberships (workspace_id, user_id, role)
+  values (v_workspace_id, auth.uid(), 'OWNER')
+  on conflict (workspace_id, user_id) do update set role = excluded.role;
+
+  insert into public.workspace_kitchen_auth (workspace_id, username, password_hash, updated_at)
+  values (
+    v_workspace_id,
+    v_kitchen_username,
+    extensions.crypt(coalesce(p_kitchen_password, ''), extensions.gen_salt('bf')),
+    now()
+  )
+  on conflict (workspace_id) do update
+    set username = excluded.username,
+        password_hash = excluded.password_hash,
+        updated_at = now();
+
+  return v_workspace_id;
+end;
+$$;
+
+grant execute on function public.create_workspace_with_owner(text, text, text, text, text, text, text) to authenticated;
 
 -- ------------------------------------------------------------
 -- 2) Bootstrap legacy workspace + data migration anchor
