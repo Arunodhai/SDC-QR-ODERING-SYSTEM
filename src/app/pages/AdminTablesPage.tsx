@@ -9,6 +9,7 @@ import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
 import * as api from '../lib/api';
+import { getActiveWorkspaceId } from '../lib/workspaceAuth';
 import restaurantLogo from '../../assets/logo12.png';
 
 export default function AdminTablesPage() {
@@ -121,7 +122,9 @@ export default function AdminTablesPage() {
   };
 
   const getTableURL = (tableNumber: number) => {
-    return `${window.location.origin}/table/${tableNumber}`;
+    const workspaceId = getActiveWorkspaceId();
+    const search = workspaceId ? `?ws=${encodeURIComponent(workspaceId)}` : '';
+    return `${window.location.origin}/table/${tableNumber}${search}`;
   };
 
   const getQrImageSettings = (size: number) => {

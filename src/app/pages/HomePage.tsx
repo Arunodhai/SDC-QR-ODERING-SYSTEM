@@ -4,9 +4,18 @@ import logo12 from '../../assets/logo12.png';
 import gradiantBg5 from '../../assets/gradiantbg5.jpg';
 import administratorIcon from '../../assets/administrator.png';
 import utensilsIcon from '../../assets/utensils.png';
+import { clearWorkspaceSession, getCurrentWorkspaceProfile } from '../lib/workspaceAuth';
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const workspace = getCurrentWorkspaceProfile();
+  const displayBrand = workspace?.restaurantName || 'Stories de Cafe';
+  const displayOutlet = workspace?.outletName || 'Main Outlet';
+
+  const handleSwitchWorkspace = () => {
+    clearWorkspaceSession();
+    navigate('/setup');
+  };
 
   return (
     <div
@@ -19,16 +28,26 @@ export default function HomePage() {
       }}
     >
       <div className="mx-auto grid h-full w-full max-w-[1520px] grid-rows-[auto_1fr_auto] px-8 py-8 md:px-10 md:py-9">
-        <div className="pt-7 text-center">
+        <div className="pt-4 text-center">
+          <div className="mb-4 flex justify-end">
+            <button
+              type="button"
+              onClick={handleSwitchWorkspace}
+              className="rounded-full border border-black/15 bg-white/65 px-4 py-2 text-sm font-medium text-black transition hover:bg-white"
+            >
+              Switch Workspace
+            </button>
+          </div>
           <div className="inline-flex items-center gap-5">
               <img src={logo12} alt="Stories de Café" className="-translate-y-3 h-[clamp(80px,5.8vw,136px)] w-[clamp(80px,5.8vw,136px)] object-contain" />
               <h1
                 className="leading-none text-black [font-size:clamp(74px,5.8vw,132px)]"
                 style={{ fontFamily: "'Great Vibes', cursive", fontWeight: 400 }}
               >
-                Stories de Café
+                {displayBrand}
               </h1>
           </div>
+          <p className="-mt-2 text-black/75 [font-size:clamp(14px,1.1vw,22px)]">{displayOutlet}</p>
         </div>
 
         <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-[clamp(24px,3.5vw,56px)]">

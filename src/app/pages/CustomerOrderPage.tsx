@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/
 import { toast } from 'sonner';
 import * as api from '../lib/api';
 import { getMenuItemImage } from '../lib/menuImageFallback';
+import { getActiveWorkspaceId, setActiveWorkspaceId } from '../lib/workspaceAuth';
 import logo12 from '../../assets/logo12.png';
 
 const STATUS_TEXT_COLORS: Record<string, string> = {
@@ -152,8 +153,16 @@ export default function CustomerOrderPage() {
   }, [cart]);
 
   useEffect(() => {
-    loadMenu();
     const params = new URLSearchParams(window.location.search);
+    const workspaceFromQuery = String(params.get('ws') || '').trim();
+    if (workspaceFromQuery) {
+      setActiveWorkspaceId(workspaceFromQuery);
+    } else if (!getActiveWorkspaceId()) {
+      toast.error('Invalid table link. Workspace context is missing.');
+      navigate('/setup');
+      return;
+    }
+    loadMenu();
     const fromQuery = (params.get('phone') || '').replace(/[^\d]/g, '');
     const returning = params.get('returning') === '1';
     const requestedTab = params.get('tab');

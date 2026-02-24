@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import * as api from '../lib/api';
 import logo12 from '../../assets/logo12.png';
 import { toast } from 'sonner';
+import { getCurrentWorkspaceProfile } from '../lib/workspaceAuth';
 
 type AdminNavProps = {
   collapsed: boolean;
@@ -18,6 +19,7 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
   const [showExpandedAccount, setShowExpandedAccount] = useState(false);
   const [adminAvatar, setAdminAvatar] = useState<string>('');
   const [avatarLoading, setAvatarLoading] = useState(false);
+  const workspace = getCurrentWorkspaceProfile();
   const accountRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -108,6 +110,7 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
               {!collapsed && (
                 <div>
                   <p className="brand-display whitespace-nowrap text-[1.15rem] font-bold leading-none text-slate-900">Stories de Café</p>
+                  <p className="truncate text-[11px] font-semibold text-slate-600">{workspace?.restaurantName || 'Workspace'}</p>
                   <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">Admin Console</p>
                 </div>
               )}
@@ -176,7 +179,7 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
                   </span>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-slate-800">Admin</p>
-                    <p className="truncate text-xs text-slate-500">admin@sdc.com</p>
+                    <p className="truncate text-xs text-slate-500">{workspace?.ownerEmail || 'owner@workspace.com'}</p>
                   </div>
                 </button>
 
@@ -225,7 +228,7 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
                     <img src={logo12} alt="Admin avatar" className="h-8 w-8 rounded-full border border-slate-200 bg-white object-contain p-0.5" />
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-slate-800">Admin</p>
-                      <p className="truncate text-xs text-slate-500">admin@sdc.com</p>
+                      <p className="truncate text-xs text-slate-500">{workspace?.ownerEmail || 'owner@workspace.com'}</p>
                     </div>
                   </div>
                   <Button
@@ -268,7 +271,7 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <img src={logo12} alt="Stories de Café" className="h-9 w-9 object-contain" />
-            <p className="brand-display text-lg font-bold text-slate-900">Stories de Café Admin</p>
+            <p className="brand-display text-lg font-bold text-slate-900">{workspace?.restaurantName || 'Stories de Café'} Admin</p>
           </div>
           <Button variant="outline" size="sm" className="rounded-lg bg-white" onClick={handleLogout}>
             <LogOut className="mr-1 h-4 w-4" />

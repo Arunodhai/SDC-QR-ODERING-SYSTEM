@@ -8,12 +8,14 @@ import { toast } from 'sonner';
 import * as api from '../lib/api';
 import logo12 from '../../assets/logo12.png';
 import administratorIcon from '../../assets/administrator.png';
+import { getCurrentWorkspaceProfile } from '../lib/workspaceAuth';
 
 export default function AdminLoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const workspace = getCurrentWorkspaceProfile();
 
   useEffect(() => {
     (async () => {
@@ -52,18 +54,18 @@ export default function AdminLoginPage() {
           </div>
           <p className="text-muted-foreground inline-flex items-center justify-center gap-2">
             <img src={administratorIcon} alt="" aria-hidden="true" className="h-6 w-6 object-contain" />
-            <span>Admin Login</span>
+            <span>{workspace?.restaurantName || 'Workspace'} Admin Login</span>
           </p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-2">Email</label>
+            <label className="block text-sm font-medium mb-2">Admin Username</label>
             <Input
-              type="email"
+              type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@storiesdecafe.com"
+              placeholder={workspace?.adminUsername || 'Enter admin username'}
               required
             />
           </div>
@@ -94,7 +96,7 @@ export default function AdminLoginPage() {
         <Button
           variant="ghost"
           className="mt-4 -ml-2 text-base transition-all duration-200 hover:text-[1.08rem] hover:bg-transparent focus-visible:bg-transparent active:bg-transparent"
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/access')}
           type="button"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />

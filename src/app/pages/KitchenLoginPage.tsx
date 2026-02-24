@@ -7,19 +7,22 @@ import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import * as api from '../lib/api';
 import utensilsIcon from '../../assets/utensils.png';
+import { getCurrentWorkspaceProfile } from '../lib/workspaceAuth';
 
 export default function KitchenLoginPage() {
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const workspace = getCurrentWorkspaceProfile();
 
   useEffect(() => {
     (async () => {
       const session = await api.getKitchenSession();
       if (session) navigate('/kitchen');
+      else if (workspace?.kitchenUsername) setName(workspace.kitchenUsername);
     })();
-  }, [navigate]);
+  }, [navigate, workspace?.kitchenUsername]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +46,7 @@ export default function KitchenLoginPage() {
             <img src={utensilsIcon} alt="" aria-hidden="true" className="h-8 w-8 object-contain" />
             <h1 className="brand-display text-3xl font-bold">Kitchen Login</h1>
           </div>
-          <p className="text-muted-foreground">Access kitchen manager view only</p>
+          <p className="text-muted-foreground">{workspace?.restaurantName || 'Workspace'} kitchen access</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
@@ -82,7 +85,7 @@ export default function KitchenLoginPage() {
         <Button
           variant="ghost"
           className="mt-4 -ml-2 text-base transition-all duration-200 hover:text-[1.08rem] hover:bg-transparent focus-visible:bg-transparent active:bg-transparent"
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/access')}
           type="button"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />

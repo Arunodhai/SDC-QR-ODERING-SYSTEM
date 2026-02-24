@@ -5,16 +5,40 @@ import OrderSuccessPage from "./pages/OrderSuccessPage";
 import KitchenPage from "./pages/KitchenPage";
 import KitchenLoginPage from "./pages/KitchenLoginPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
+import WelcomePage from "./pages/WelcomePage";
+import SetupPage from "./pages/SetupPage";
 import AdminMenuPage from "./pages/AdminMenuPage";
 import AdminTablesPage from "./pages/AdminTablesPage";
 import AdminOrdersPage from "./pages/AdminOrdersPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import AdminLayout from "./components/AdminLayout";
+import { isWorkspaceAuthenticated } from "./lib/workspaceAuth";
+
+function requireWorkspaceAuthLoader() {
+  if (!isWorkspaceAuthenticated()) {
+    return redirect("/setup");
+  }
+  return null;
+}
 
 export const router = createBrowserRouter([
   {
     path: "/",
+    Component: WelcomePage,
+  },
+  {
+    path: "/welcome",
+    loader: () => redirect("/"),
+    Component: WelcomePage,
+  },
+  {
+    path: "/setup",
+    Component: SetupPage,
+  },
+  {
+    path: "/access",
+    loader: requireWorkspaceAuthLoader,
     Component: HomePage,
   },
   {
@@ -27,14 +51,17 @@ export const router = createBrowserRouter([
   },
   {
     path: "/kitchen/login",
+    loader: requireWorkspaceAuthLoader,
     Component: KitchenLoginPage,
   },
   {
     path: "/admin/login",
+    loader: requireWorkspaceAuthLoader,
     Component: AdminLoginPage,
   },
   {
     path: "/admin",
+    loader: requireWorkspaceAuthLoader,
     Component: AdminLayout,
     children: [
       {
@@ -65,6 +92,7 @@ export const router = createBrowserRouter([
   },
   {
     path: "/kitchen",
+    loader: requireWorkspaceAuthLoader,
     Component: KitchenPage,
   },
   {

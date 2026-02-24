@@ -1,14 +1,22 @@
 import { createClient } from '@supabase/supabase-js';
 import { projectId, publicAnonKey } from '/utils/supabase/info';
+import {
+  getActiveWorkspaceId as getStoredActiveWorkspaceId,
+  getCurrentWorkspaceProfile,
+  loginAdminUser,
+  loginKitchenUser,
+  updateKitchenCredentials,
+} from './workspaceAuth';
 
 const supabaseUrl = `https://${projectId}.supabase.co`;
 const supabase = createClient(supabaseUrl, publicAnonKey);
 const imageBucket = 'menu-images';
 const adminAvatarBucket = 'admin-avatars';
 const kitchenSessionKey = 'sdc:kitchen-session-v1';
+const adminWorkspaceSessionKey = 'sdc:admin-workspace-session-v1';
 
 const kitchenAuthSetupHint =
-  'Kitchen auth is not configured in DB. Run sql/create_kitchen_auth.sql in Supabase SQL editor.';
+  'Kitchen auth is not configured in DB. Run sql/create_multi_tenant_schema_and_rls.sql in Supabase SQL editor.';
 
 const isMissingKitchenAuthRpc = (error: any) => {
   const message = String(error?.message || '');
@@ -102,21 +110,57 @@ const aggregateBillLineItems = (orders: any[]) => {
   return Array.from(map.values());
 };
 
-export const adminSignIn = async (email: string, password: string) => {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+const missingWorkspaceHint =
+  'Workspace context is missing. Sign in to a workspace first or open the workspace-specific access link.';
+
+const getActiveWorkspaceId = () => {
+  const workspace = getCurrentWorkspaceProfile();
+  const workspaceId = workspace?.id ? String(workspace.id) : String(getStoredActiveWorkspaceId() || '');
+  if (!workspaceId) {
+    throw new Error(missingWorkspaceHint);
+  }
+  return workspaceId;
+};
+
+export const adminSignIn = async (identifier: string, password: string) => {
+  const workspace = getCurrentWorkspaceProfile();
+  if (workspace) {
+    await loginAdminUser(identifier, password);
+    const session = {
+      role: 'admin',
+      workspaceId: workspace.id,
+      username: workspace.adminUsername,
+      signedInAt: new Date().toISOString(),
+    };
+    localStorage.setItem(adminWorkspaceSessionKey, JSON.stringify(session));
+    return { session };
+  }
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email: identifier, password });
   if (error) throw new Error(errMsg(error, 'Admin login failed'));
   return data;
 };
 
 export const adminSignOut = async () => {
+  localStorage.removeItem(adminWorkspaceSessionKey);
   const { error } = await supabase.auth.signOut();
-  if (error) throw new Error(errMsg(error, 'Logout failed'));
+  if (error && !String(error.message || '').toLowerCase().includes('session')) {
+    throw new Error(errMsg(error, 'Logout failed'));
+  }
   return { success: true };
 };
 
 export const getAdminSession = async () => {
+  const workspaceRaw = localStorage.getItem(adminWorkspaceSessionKey);
+  if (workspaceRaw) {
+    try {
+      return JSON.parse(workspaceRaw);
+    } catch {
+      localStorage.removeItem(adminWorkspaceSessionKey);
+    }
+  }
   const { data, error } = await supabase.auth.getSession();
-  if (error) throw new Error(errMsg(error, 'Failed to get session'));
+  if (error) return null;
   return data.session;
 };
 
@@ -138,13 +182,15 @@ const isMissingAdminProfileSetup = (error: any) => {
 };
 
 const adminProfileSetupHint =
-  'Run sql/create_admin_profiles_and_avatars.sql in Supabase SQL editor to enable admin avatar storage.';
+  'Run sql/create_multi_tenant_schema_and_rls.sql in Supabase SQL editor to enable tenant-safe admin profile and avatar storage.';
 
 export const getAdminProfile = async () => {
   const user = await getCurrentAdminUser();
+  const workspaceId = getActiveWorkspaceId();
   const { data, error } = await supabase
     .from('admin_profiles')
     .select('user_id, avatar_url, display_name')
+    .eq('workspace_id', workspaceId)
     .eq('user_id', user.id)
     .maybeSingle();
 
@@ -176,9 +222,10 @@ export const getAdminProfile = async () => {
 
 export const uploadAdminAvatar = async (file: File) => {
   const user = await getCurrentAdminUser();
+  const workspaceId = getActiveWorkspaceId();
   const ext = (file.name.includes('.') ? file.name.split('.').pop() : 'png') || 'png';
   const safeExt = ext.toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
-  const path = `${user.id}/avatar.${safeExt}`;
+  const path = `${workspaceId}/admin/${user.id}/avatar.${safeExt}`;
 
   const { error: uploadError } = await supabase.storage.from(adminAvatarBucket).upload(path, file, { upsert: true });
   if (uploadError) {
@@ -194,18 +241,20 @@ export const uploadAdminAvatar = async (file: File) => {
 
 export const upsertAdminProfileAvatar = async (avatarUrl: string) => {
   const user = await getCurrentAdminUser();
+  const workspaceId = getActiveWorkspaceId();
   const displayName = (user.user_metadata?.full_name as string) || 'Admin';
   const { data, error } = await supabase
     .from('admin_profiles')
     .upsert(
       {
+        workspace_id: workspaceId,
         user_id: user.id,
         avatar_url: avatarUrl || null,
         display_name: displayName,
       },
       { onConflict: 'user_id' },
     )
-    .select('user_id, avatar_url, display_name')
+    .select('user_id, avatar_url, display_name, workspace_id')
     .single();
 
   if (error) {
@@ -240,24 +289,40 @@ export const kitchenSignIn = async (password: string, name = 'Kitchen Manager') 
     throw new Error('Kitchen password is required');
   }
 
-  const { data, error } = await supabase.rpc('verify_kitchen_credentials', {
-    p_username: enteredName,
-    p_password: enteredPassword,
-  });
-  if (error) {
-    if (isMissingKitchenAuthRpc(error)) {
-      throw new Error(kitchenAuthSetupHint);
+  const workspace = getCurrentWorkspaceProfile();
+  if (workspace) {
+    const { data, error } = await supabase.rpc('verify_kitchen_credentials', {
+      p_workspace_id: workspace.id,
+      p_username: enteredName,
+      p_password: enteredPassword,
+    });
+    if (error) {
+      // Local fallback keeps demo mode running if DB RPC is not migrated yet.
+      await loginKitchenUser(enteredName, enteredPassword);
+    } else if (!data) {
+      throw new Error('Invalid username or password');
     }
-    throw new Error(errMsg(error, 'Failed to verify kitchen password'));
-  }
+  } else {
+    const { data, error } = await supabase.rpc('verify_kitchen_credentials', {
+      p_username: enteredName,
+      p_password: enteredPassword,
+    });
+    if (error) {
+      if (isMissingKitchenAuthRpc(error)) {
+        throw new Error(kitchenAuthSetupHint);
+      }
+      throw new Error(errMsg(error, 'Failed to verify kitchen password'));
+    }
 
-  if (!data) {
-    throw new Error('Invalid username or password');
+    if (!data) {
+      throw new Error('Invalid username or password');
+    }
   }
 
   const session = {
     role: 'kitchen',
     name: enteredName,
+    workspaceId: workspace?.id || '',
     signedInAt: new Date().toISOString(),
   };
   localStorage.setItem(kitchenSessionKey, JSON.stringify(session));
@@ -289,6 +354,26 @@ export const kitchenSignOut = async () => {
 };
 
 export const changeKitchenPassword = async (username: string, currentPassword: string, nextPassword: string) => {
+  const workspace = getCurrentWorkspaceProfile();
+  if (workspace) {
+    const { data, error } = await supabase.rpc('change_kitchen_password', {
+      p_workspace_id: workspace.id,
+      p_username: String(username || '').trim(),
+      p_current: String(currentPassword || '').trim(),
+      p_next: String(nextPassword || '').trim(),
+    });
+    if (error) {
+      await updateKitchenCredentials({
+        currentUsername: username,
+        currentPassword,
+        nextPassword,
+      });
+      return { success: true };
+    }
+    if (!data) throw new Error('Invalid username or current password');
+    return { success: true };
+  }
+
   const trimmedUser = String(username || '').trim();
   if (!trimmedUser) {
     throw new Error('Username is required');
@@ -322,6 +407,26 @@ export const changeKitchenUsername = async (
   currentPassword: string,
   nextUsername: string,
 ) => {
+  const workspace = getCurrentWorkspaceProfile();
+  if (workspace) {
+    const { data, error } = await supabase.rpc('change_kitchen_username', {
+      p_workspace_id: workspace.id,
+      p_current_username: String(currentUsername || '').trim(),
+      p_current_password: String(currentPassword || '').trim(),
+      p_next_username: String(nextUsername || '').trim(),
+    });
+    if (error) {
+      const result = await updateKitchenCredentials({
+        currentUsername,
+        currentPassword,
+        nextUsername,
+      });
+      return { success: true, username: result.username };
+    }
+    if (!data) throw new Error('Invalid current username or password');
+    return { success: true, username: String(nextUsername || '').trim() };
+  }
+
   const trimmedCurrent = String(currentUsername || '').trim();
   const trimmedNext = String(nextUsername || '').trim();
   if (!trimmedCurrent) {
@@ -350,14 +455,20 @@ export const changeKitchenUsername = async (
 };
 
 export const healthCheck = async () => {
-  const { error } = await supabase.from('categories').select('id').limit(1);
+  const workspaceId = getActiveWorkspaceId();
+  const { error } = await supabase.from('categories').select('id').eq('workspace_id', workspaceId).limit(1);
   if (error) throw new Error(errMsg(error, 'Supabase connection failed'));
   return { status: 'ok' };
 };
 
 // Categories
 export const getCategories = async () => {
-  const { data, error } = await supabase.from('categories').select('*').order('name');
+  const workspaceId = getActiveWorkspaceId();
+  const { data, error } = await supabase
+    .from('categories')
+    .select('*')
+    .eq('workspace_id', workspaceId)
+    .order('name');
   if (error) throw new Error(errMsg(error, 'Failed to fetch categories'));
 
   const categories = (data || []).map((row, index) => ({
@@ -371,7 +482,12 @@ export const getCategories = async () => {
 };
 
 export const createCategory = async (name: string, _order: number) => {
-  const { data, error } = await supabase.from('categories').insert({ name }).select().single();
+  const workspaceId = getActiveWorkspaceId();
+  const { data, error } = await supabase
+    .from('categories')
+    .insert({ name, workspace_id: workspaceId })
+    .select()
+    .single();
   if (error) throw new Error(errMsg(error, 'Failed to create category'));
 
   return {
@@ -385,9 +501,11 @@ export const createCategory = async (name: string, _order: number) => {
 };
 
 export const updateCategory = async (id: string, updates: any) => {
+  const workspaceId = getActiveWorkspaceId();
   const { data, error } = await supabase
     .from('categories')
     .update({ name: updates.name })
+    .eq('workspace_id', workspaceId)
     .eq('id', Number(id))
     .select()
     .single();
@@ -397,20 +515,32 @@ export const updateCategory = async (id: string, updates: any) => {
 };
 
 export const deleteCategory = async (id: string) => {
-  const { error } = await supabase.from('categories').delete().eq('id', Number(id));
+  const workspaceId = getActiveWorkspaceId();
+  const { error } = await supabase
+    .from('categories')
+    .delete()
+    .eq('workspace_id', workspaceId)
+    .eq('id', Number(id));
   if (error) throw new Error(errMsg(error, 'Failed to delete category'));
   return { success: true };
 };
 
 // Menu Items
 export const getMenuItems = async () => {
-  const { data, error } = await supabase.from('menu_items').select('*').order('created_at', { ascending: false });
+  const workspaceId = getActiveWorkspaceId();
+  const { data, error } = await supabase
+    .from('menu_items')
+    .select('*')
+    .eq('workspace_id', workspaceId)
+    .order('created_at', { ascending: false });
   if (error) throw new Error(errMsg(error, 'Failed to fetch menu items'));
   return { items: (data || []).map(toMenuItem) };
 };
 
 export const createMenuItem = async (item: any) => {
+  const workspaceId = getActiveWorkspaceId();
   const payload = {
+    workspace_id: workspaceId,
     category_id: Number(item.categoryId),
     name: item.name,
     price: Number(item.price),
@@ -425,6 +555,7 @@ export const createMenuItem = async (item: any) => {
 };
 
 export const updateMenuItem = async (id: string, updates: any) => {
+  const workspaceId = getActiveWorkspaceId();
   const patch: any = {};
   if (updates.categoryId !== undefined) patch.category_id = Number(updates.categoryId);
   if (updates.name !== undefined) patch.name = updates.name;
@@ -436,6 +567,7 @@ export const updateMenuItem = async (id: string, updates: any) => {
   const { data, error } = await supabase
     .from('menu_items')
     .update(patch)
+    .eq('workspace_id', workspaceId)
     .eq('id', Number(id))
     .select()
     .single();
@@ -445,14 +577,20 @@ export const updateMenuItem = async (id: string, updates: any) => {
 };
 
 export const deleteMenuItem = async (id: string) => {
-  const { error } = await supabase.from('menu_items').delete().eq('id', Number(id));
+  const workspaceId = getActiveWorkspaceId();
+  const { error } = await supabase
+    .from('menu_items')
+    .delete()
+    .eq('workspace_id', workspaceId)
+    .eq('id', Number(id));
   if (error) throw new Error(errMsg(error, 'Failed to delete menu item'));
   return { success: true };
 };
 
 export const uploadImage = async (file: File) => {
+  const workspaceId = getActiveWorkspaceId();
   const ext = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() : 'jpg';
-  const path = `menu/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const path = `${workspaceId}/menu/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
   const buckets = [imageBucket, 'make-880825c9-menu-images'];
 
   let lastError: any = null;
@@ -472,7 +610,12 @@ export const uploadImage = async (file: File) => {
 
 // Tables
 export const getTables = async () => {
-  const { data, error } = await supabase.from('restaurant_tables').select('*').order('table_number');
+  const workspaceId = getActiveWorkspaceId();
+  const { data, error } = await supabase
+    .from('restaurant_tables')
+    .select('*')
+    .eq('workspace_id', workspaceId)
+    .order('table_number');
   if (error) throw new Error(errMsg(error, 'Failed to fetch tables'));
 
   const tables = (data || []).map((row) => ({
@@ -484,9 +627,10 @@ export const getTables = async () => {
 };
 
 export const createTable = async (tableNumber: number) => {
+  const workspaceId = getActiveWorkspaceId();
   const { data, error } = await supabase
     .from('restaurant_tables')
-    .insert({ table_number: tableNumber })
+    .insert({ table_number: tableNumber, workspace_id: workspaceId })
     .select()
     .single();
 
@@ -495,16 +639,23 @@ export const createTable = async (tableNumber: number) => {
 };
 
 export const deleteTable = async (id: string) => {
-  const { error } = await supabase.from('restaurant_tables').delete().eq('id', Number(id));
+  const workspaceId = getActiveWorkspaceId();
+  const { error } = await supabase
+    .from('restaurant_tables')
+    .delete()
+    .eq('workspace_id', workspaceId)
+    .eq('id', Number(id));
   if (error) throw new Error(errMsg(error, 'Failed to delete table'));
   return { success: true };
 };
 
 // Orders
 export const getOrders = async () => {
+  const workspaceId = getActiveWorkspaceId();
   const { data, error } = await supabase
     .from('orders')
     .select('*,order_items(*)')
+    .eq('workspace_id', workspaceId)
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(errMsg(error, 'Failed to fetch orders'));
@@ -512,9 +663,11 @@ export const getOrders = async () => {
 };
 
 export const getOrderById = async (id: string) => {
+  const workspaceId = getActiveWorkspaceId();
   const { data, error } = await supabase
     .from('orders')
     .select('*,order_items(*)')
+    .eq('workspace_id', workspaceId)
     .eq('id', Number(id))
     .single();
 
@@ -523,6 +676,7 @@ export const getOrderById = async (id: string) => {
 };
 
 export const createOrder = async (order: any) => {
+  const workspaceId = getActiveWorkspaceId();
   const total = Number(order.total || 0);
   const requestedItems = (order.items || []).filter((item: any) => item?.id);
   const requestedIds = requestedItems.map((item: any) => Number(item.id)).filter(Boolean);
@@ -531,6 +685,7 @@ export const createOrder = async (order: any) => {
     const { data: menuRows, error: menuError } = await supabase
       .from('menu_items')
       .select('id,name,is_available')
+      .eq('workspace_id', workspaceId)
       .in('id', requestedIds);
 
     if (menuError) throw new Error(errMsg(menuError, 'Failed to validate item availability'));
@@ -557,6 +712,7 @@ export const createOrder = async (order: any) => {
   const { data: createdOrderWithPhone, error: orderErrorWithPhone } = await supabase
     .from('orders')
     .insert({
+      workspace_id: workspaceId,
       table_number: Number(order.tableNumber),
       customer_name: order.customerName || 'Guest',
       customer_phone: order.customerPhone || null,
@@ -574,6 +730,7 @@ export const createOrder = async (order: any) => {
       const { data: createdOrderFallback, error: orderErrorFallback } = await supabase
         .from('orders')
         .insert({
+          workspace_id: workspaceId,
           table_number: Number(order.tableNumber),
           customer_name: order.customerName || 'Guest',
           status: 'PENDING',
@@ -594,6 +751,7 @@ export const createOrder = async (order: any) => {
   }
 
   const itemsPayload = (order.items || []).map((item: any) => ({
+    workspace_id: workspaceId,
     order_id: createdOrder.id,
     menu_item_id: item.id ? Number(item.id) : null,
     item_name: item.note ? `${item.name} (Note: ${item.note})` : item.name,
@@ -610,6 +768,7 @@ export const createOrder = async (order: any) => {
   const { data: fullOrder, error: fullOrderError } = await supabase
     .from('orders')
     .select('*,order_items(*)')
+    .eq('workspace_id', workspaceId)
     .eq('id', createdOrder.id)
     .single();
 
@@ -628,12 +787,14 @@ const isMissingOrderItemCancelColumns = (error: any) => {
 };
 
 export const updateOrderStatus = async (id: string, status: string, statusReason?: string) => {
+  const workspaceId = getActiveWorkspaceId();
   const patch: any = { status };
   if (statusReason !== undefined) patch.status_reason = statusReason;
 
   const { data, error } = await supabase
     .from('orders')
     .update(patch)
+    .eq('workspace_id', workspaceId)
     .eq('id', Number(id))
     .select('*,order_items(*)')
     .single();
@@ -643,6 +804,7 @@ export const updateOrderStatus = async (id: string, status: string, statusReason
       const { data: fallbackData, error: fallbackError } = await supabase
         .from('orders')
         .update({ status })
+        .eq('workspace_id', workspaceId)
         .eq('id', Number(id))
         .select('*,order_items(*)')
         .single();
@@ -655,11 +817,13 @@ export const updateOrderStatus = async (id: string, status: string, statusReason
 };
 
 export const updateOrderPayment = async (id: string, paymentStatus: string, paymentMethod?: string) => {
+  const workspaceId = getActiveWorkspaceId();
   const patch: Record<string, any> = { payment_status: paymentStatus };
   if (paymentMethod) patch.payment_method = paymentMethod === 'CASH' ? 'COUNTER' : paymentMethod;
   const { data, error } = await supabase
     .from('orders')
     .update(patch)
+    .eq('workspace_id', workspaceId)
     .eq('id', Number(id))
     .select('*,order_items(*)')
     .single();
@@ -669,9 +833,11 @@ export const updateOrderPayment = async (id: string, paymentStatus: string, paym
 };
 
 export const getUnpaidBillByTableAndPhone = async (tableNumber: number, phone: string) => {
+  const workspaceId = getActiveWorkspaceId();
   const latestPaidBoundary = await supabase
     .from('orders')
     .select('created_at')
+    .eq('workspace_id', workspaceId)
     .eq('table_number', Number(tableNumber))
     .eq('customer_phone', phone)
     .eq('payment_status', 'PAID')
@@ -686,6 +852,7 @@ export const getUnpaidBillByTableAndPhone = async (tableNumber: number, phone: s
   let query = supabase
     .from('orders')
     .select('*,order_items(*)')
+    .eq('workspace_id', workspaceId)
     .eq('table_number', Number(tableNumber))
     .eq('customer_phone', phone)
     .eq('payment_status', 'UNPAID')
@@ -713,6 +880,7 @@ const isPaymentMethodEnumError = (error: any) =>
   String(error?.message || '').includes('invalid input value');
 
 export const markOrdersPaidBulk = async (orderIds: string[], paymentMethod: string) => {
+  const workspaceId = getActiveWorkspaceId();
   if (!orderIds.length) return { success: true };
   const ids = orderIds.map((id) => Number(id));
   const primaryMethod = paymentMethod === 'CASH' ? 'COUNTER' : paymentMethod;
@@ -720,6 +888,7 @@ export const markOrdersPaidBulk = async (orderIds: string[], paymentMethod: stri
   const { error } = await supabase
     .from('orders')
     .update({ payment_status: 'PAID', payment_method: primaryMethod })
+    .eq('workspace_id', workspaceId)
     .in('id', ids);
 
   if (!error) return { success: true, storedMethod: primaryMethod };
@@ -730,6 +899,7 @@ export const markOrdersPaidBulk = async (orderIds: string[], paymentMethod: stri
     const { error: fallbackError } = await supabase
       .from('orders')
       .update({ payment_status: 'PAID', payment_method: fallbackMethod })
+      .eq('workspace_id', workspaceId)
       .in('id', ids);
     if (!fallbackError) {
       return { success: true, storedMethod: fallbackMethod, downgraded: true };
@@ -741,9 +911,11 @@ export const markOrdersPaidBulk = async (orderIds: string[], paymentMethod: stri
 };
 
 export const cancelPendingOrder = async (id: string, phone?: string, reason = 'Cancelled by customer') => {
+  const workspaceId = getActiveWorkspaceId();
   let query = supabase
     .from('orders')
     .update({ status: 'CANCELLED', status_reason: reason })
+    .eq('workspace_id', workspaceId)
     .eq('id', Number(id))
     .eq('status', 'PENDING');
   if (phone) query = query.eq('customer_phone', phone);
@@ -760,6 +932,7 @@ export const cancelPendingOrder = async (id: string, phone?: string, reason = 'C
     let fallbackQuery = supabase
       .from('orders')
       .update({ status: 'CANCELLED' })
+      .eq('workspace_id', workspaceId)
       .eq('id', Number(id))
       .eq('status', 'PENDING');
     if (phone) fallbackQuery = fallbackQuery.eq('customer_phone', phone);
@@ -783,6 +956,7 @@ export const cancelPendingOrder = async (id: string, phone?: string, reason = 'C
   let deleteQuery = supabase
     .from('orders')
     .delete()
+    .eq('workspace_id', workspaceId)
     .eq('id', Number(id))
     .eq('status', 'PENDING');
   if (phone) deleteQuery = deleteQuery.eq('customer_phone', phone);
@@ -795,10 +969,12 @@ export const rejectOrderOutOfStock = async (
   id: string,
   reason = 'One or more items became unavailable after order placement',
 ) => {
+  const workspaceId = getActiveWorkspaceId();
   const payload: any = { status: 'CANCELLED', status_reason: reason };
   let query = supabase
     .from('orders')
     .update(payload)
+    .eq('workspace_id', workspaceId)
     .eq('id', Number(id))
     .in('status', ['PENDING', 'PREPARING', 'READY'])
     .select('*,order_items(*)')
@@ -810,6 +986,7 @@ export const rejectOrderOutOfStock = async (
     const fallback = await supabase
       .from('orders')
       .update({ status: 'CANCELLED' })
+      .eq('workspace_id', workspaceId)
       .eq('id', Number(id))
       .in('status', ['PENDING', 'PREPARING', 'READY'])
       .select('*,order_items(*)')
@@ -823,10 +1000,12 @@ export const rejectOrderOutOfStock = async (
 };
 
 export const applyUnavailableItemsToOrder = async (id: string) => {
+  const workspaceId = getActiveWorkspaceId();
   const orderId = Number(id);
   const { data: orderRow, error: orderError } = await supabase
     .from('orders')
     .select('*,order_items(*)')
+    .eq('workspace_id', workspaceId)
     .eq('id', orderId)
     .single();
 
@@ -848,6 +1027,7 @@ export const applyUnavailableItemsToOrder = async (id: string) => {
   const { data: menuRows, error: menuError } = await supabase
     .from('menu_items')
     .select('id,name,is_available')
+    .eq('workspace_id', workspaceId)
     .in('id', menuItemIds);
   if (menuError) throw new Error(errMsg(menuError, 'Failed to check item availability'));
 
@@ -887,11 +1067,16 @@ export const applyUnavailableItemsToOrder = async (id: string) => {
     const { error: updateItemsError } = await supabase
       .from('order_items')
       .update({ is_cancelled: true, cancel_reason: reasonText })
+      .eq('workspace_id', workspaceId)
       .in('id', targetIds);
 
     if (updateItemsError) {
       if (isMissingOrderItemCancelColumns(updateItemsError)) {
-        const { error: deleteItemsError } = await supabase.from('order_items').delete().in('id', targetIds);
+        const { error: deleteItemsError } = await supabase
+          .from('order_items')
+          .delete()
+          .eq('workspace_id', workspaceId)
+          .in('id', targetIds);
         if (deleteItemsError) throw new Error(errMsg(deleteItemsError, 'Failed to remove unavailable items'));
       } else {
         throw new Error(errMsg(updateItemsError, 'Failed to update unavailable items'));
@@ -902,6 +1087,7 @@ export const applyUnavailableItemsToOrder = async (id: string) => {
   const { data: refreshedOrderRow, error: refreshedError } = await supabase
     .from('orders')
     .select('*,order_items(*)')
+    .eq('workspace_id', workspaceId)
     .eq('id', orderId)
     .single();
   if (refreshedError) throw new Error(errMsg(refreshedError, 'Failed to refresh order'));
@@ -920,6 +1106,7 @@ export const applyUnavailableItemsToOrder = async (id: string) => {
   const { data: updatedOrderRow, error: updateOrderError } = await supabase
     .from('orders')
     .update(patch)
+    .eq('workspace_id', workspaceId)
     .eq('id', orderId)
     .select('*,order_items(*)')
     .single();
@@ -931,6 +1118,7 @@ export const applyUnavailableItemsToOrder = async (id: string) => {
       const { data: fallbackRow, error: fallbackError } = await supabase
         .from('orders')
         .update(fallbackPatch)
+        .eq('workspace_id', workspaceId)
         .eq('id', orderId)
         .select('*,order_items(*)')
         .single();
@@ -944,9 +1132,11 @@ export const applyUnavailableItemsToOrder = async (id: string) => {
 };
 
 export const getActiveOrdersByTableAndPhone = async (tableNumber: number, phone: string) => {
+  const workspaceId = getActiveWorkspaceId();
   const { data, error } = await supabase
     .from('orders')
     .select('*,order_items(*)')
+    .eq('workspace_id', workspaceId)
     .eq('table_number', Number(tableNumber))
     .eq('customer_phone', phone)
     .in('status', ['PENDING', 'PREPARING', 'READY'])
@@ -963,9 +1153,11 @@ export const getActiveOrdersByTableAndPhone = async (tableNumber: number, phone:
 };
 
 export const getOrdersByTableAndPhone = async (tableNumber: number, phone: string) => {
+  const workspaceId = getActiveWorkspaceId();
   const latestPaidBoundary = await supabase
     .from('orders')
     .select('created_at')
+    .eq('workspace_id', workspaceId)
     .eq('table_number', Number(tableNumber))
     .eq('customer_phone', phone)
     .eq('payment_status', 'PAID')
@@ -983,6 +1175,7 @@ export const getOrdersByTableAndPhone = async (tableNumber: number, phone: strin
   let query = supabase
     .from('orders')
     .select('*,order_items(*)')
+    .eq('workspace_id', workspaceId)
     .eq('table_number', Number(tableNumber))
     .eq('customer_phone', phone)
     .eq('payment_status', 'UNPAID')
@@ -1005,9 +1198,11 @@ export const getOrdersByTableAndPhone = async (tableNumber: number, phone: strin
 };
 
 export const getLatestFinalBillByTableAndPhone = async (tableNumber: number, phone: string) => {
+  const workspaceId = getActiveWorkspaceId();
   const { data, error } = await supabase
     .from('final_bills')
     .select('*')
+    .eq('workspace_id', workspaceId)
     .eq('table_number', Number(tableNumber))
     .eq('customer_phone', phone)
     .order('created_at', { ascending: false })
@@ -1016,7 +1211,7 @@ export const getLatestFinalBillByTableAndPhone = async (tableNumber: number, pho
 
   if (error) {
     if (String(error.message || '').includes('final_bills')) {
-      throw new Error('DB is missing final_bills table. Run sql/create_final_bills.sql in Supabase SQL editor.');
+      throw new Error('DB is missing final_bills table. Run sql/create_multi_tenant_schema_and_rls.sql in Supabase SQL editor.');
     }
     throw new Error(errMsg(error, 'Failed to fetch final bill'));
   }
@@ -1038,14 +1233,16 @@ export const getLatestFinalBillByTableAndPhone = async (tableNumber: number, pho
 };
 
 export const getFinalBills = async () => {
+  const workspaceId = getActiveWorkspaceId();
   const { data, error } = await supabase
     .from('final_bills')
     .select('*')
+    .eq('workspace_id', workspaceId)
     .order('created_at', { ascending: true });
 
   if (error) {
     if (String(error.message || '').includes('final_bills')) {
-      throw new Error('DB is missing final_bills table. Run sql/create_final_bills.sql in Supabase SQL editor.');
+      throw new Error('DB is missing final_bills table. Run sql/create_multi_tenant_schema_and_rls.sql in Supabase SQL editor.');
     }
     throw new Error(errMsg(error, 'Failed to fetch final bills'));
   }
@@ -1065,12 +1262,14 @@ export const getFinalBills = async () => {
 };
 
 export const generateFinalBillByTableAndPhone = async (tableNumber: number, phone: string) => {
+  const workspaceId = getActiveWorkspaceId();
   const bill = await getUnpaidBillByTableAndPhone(tableNumber, phone);
   if (!bill.orders.length) {
     return { bill: null };
   }
 
   const payload = {
+    workspace_id: workspaceId,
     table_number: Number(tableNumber),
     customer_phone: phone,
     order_ids: bill.orders.map((o: any) => Number(o.id)),
@@ -1082,7 +1281,7 @@ export const generateFinalBillByTableAndPhone = async (tableNumber: number, phon
   const { data, error } = await supabase.from('final_bills').insert(payload).select().single();
   if (error) {
     if (String(error.message || '').includes('final_bills')) {
-      throw new Error('DB is missing final_bills table. Run sql/create_final_bills.sql in Supabase SQL editor.');
+      throw new Error('DB is missing final_bills table. Run sql/create_multi_tenant_schema_and_rls.sql in Supabase SQL editor.');
     }
     throw new Error(errMsg(error, 'Failed to generate final bill'));
   }
@@ -1103,9 +1302,11 @@ export const generateFinalBillByTableAndPhone = async (tableNumber: number, phon
 };
 
 export const markFinalBillPaid = async (billId: string, paymentMethod: string) => {
+  const workspaceId = getActiveWorkspaceId();
   const { data, error } = await supabase
     .from('final_bills')
     .update({ is_paid: true, paid_at: new Date().toISOString() })
+    .eq('workspace_id', workspaceId)
     .eq('id', Number(billId))
     .select('*')
     .single();
@@ -1125,16 +1326,18 @@ export const markFinalBillPaid = async (billId: string, paymentMethod: string) =
 };
 
 export const getPaidBillHistoryByPhone = async (phone: string) => {
+  const workspaceId = getActiveWorkspaceId();
   const { data, error } = await supabase
     .from('final_bills')
     .select('*')
+    .eq('workspace_id', workspaceId)
     .eq('customer_phone', phone)
     .eq('is_paid', true)
     .order('paid_at', { ascending: false });
 
   if (error) {
     if (String(error.message || '').includes('final_bills')) {
-      throw new Error('DB is missing final_bills table. Run sql/create_final_bills.sql in Supabase SQL editor.');
+      throw new Error('DB is missing final_bills table. Run sql/create_multi_tenant_schema_and_rls.sql in Supabase SQL editor.');
     }
     throw new Error(errMsg(error, 'Failed to fetch paid bill history'));
   }
@@ -1159,6 +1362,7 @@ export const getPaidBillHistoryByPhone = async (phone: string) => {
     const { data: orderRows, error: orderError } = await supabase
       .from('orders')
       .select('*,order_items(*)')
+      .eq('workspace_id', workspaceId)
       .in('id', allOrderIds)
       .order('created_at', { ascending: true });
     if (orderError) throw new Error(errMsg(orderError, 'Failed to fetch bill round details'));
@@ -1180,6 +1384,7 @@ export const getPaidBillHistoryByPhone = async (phone: string) => {
       const { data: sessionRows, error: sessionError } = await supabase
         .from('orders')
         .select('id,created_at')
+        .eq('workspace_id', workspaceId)
         .eq('table_number', b.tableNumber)
         .eq('customer_phone', b.customerPhone)
         .gte('created_at', firstAt)
@@ -1217,11 +1422,12 @@ export const getPaidBillHistoryByPhone = async (phone: string) => {
 };
 
 export const subscribeToOrderChanges = (onChange: (payload: any) => void) => {
+  const workspaceId = getActiveWorkspaceId();
   const channel = supabase
     .channel(`orders-live-${Math.random().toString(36).slice(2)}`)
     .on(
       'postgres_changes',
-      { event: '*', schema: 'public', table: 'orders' },
+      { event: '*', schema: 'public', table: 'orders', filter: `workspace_id=eq.${workspaceId}` },
       (payload) => onChange(payload),
     )
     .subscribe();
@@ -1232,11 +1438,12 @@ export const subscribeToOrderChanges = (onChange: (payload: any) => void) => {
 };
 
 export const subscribeToMenuItemChanges = (onChange: (payload: any) => void) => {
+  const workspaceId = getActiveWorkspaceId();
   const channel = supabase
     .channel(`menu-items-live-${Math.random().toString(36).slice(2)}`)
     .on(
       'postgres_changes',
-      { event: '*', schema: 'public', table: 'menu_items' },
+      { event: '*', schema: 'public', table: 'menu_items', filter: `workspace_id=eq.${workspaceId}` },
       (payload) => onChange(payload),
     )
     .subscribe();
@@ -1259,9 +1466,11 @@ export const createServiceRequest = async ({
   type?: string;
   message?: string;
 }) => {
+  const workspaceId = getActiveWorkspaceId();
   const { data, error } = await supabase
     .from('service_requests')
     .insert({
+      workspace_id: workspaceId,
       table_number: Number(tableNumber),
       customer_name: customerName || null,
       customer_phone: customerPhone || null,
@@ -1274,7 +1483,7 @@ export const createServiceRequest = async ({
 
   if (error) {
     if (String(error.message || '').includes('service_requests')) {
-      throw new Error('DB is missing service_requests table. Run sql/create_service_requests.sql in Supabase SQL editor.');
+      throw new Error('DB is missing service_requests table. Run sql/create_multi_tenant_schema_and_rls.sql in Supabase SQL editor.');
     }
     throw new Error(errMsg(error, 'Failed to create service request'));
   }
@@ -1283,15 +1492,17 @@ export const createServiceRequest = async ({
 };
 
 export const getOpenServiceRequests = async () => {
+  const workspaceId = getActiveWorkspaceId();
   const { data, error } = await supabase
     .from('service_requests')
     .select('*')
+    .eq('workspace_id', workspaceId)
     .eq('status', 'OPEN')
     .order('created_at', { ascending: false });
 
   if (error) {
     if (String(error.message || '').includes('service_requests')) {
-      throw new Error('DB is missing service_requests table. Run sql/create_service_requests.sql in Supabase SQL editor.');
+      throw new Error('DB is missing service_requests table. Run sql/create_multi_tenant_schema_and_rls.sql in Supabase SQL editor.');
     }
     throw new Error(errMsg(error, 'Failed to fetch service requests'));
   }
@@ -1299,9 +1510,11 @@ export const getOpenServiceRequests = async () => {
 };
 
 export const resolveServiceRequest = async (id: string) => {
+  const workspaceId = getActiveWorkspaceId();
   const { error } = await supabase
     .from('service_requests')
     .update({ status: 'RESOLVED' })
+    .eq('workspace_id', workspaceId)
     .eq('id', Number(id));
   if (error) throw new Error(errMsg(error, 'Failed to resolve service request'));
   return { success: true };
