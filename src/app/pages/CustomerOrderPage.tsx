@@ -872,62 +872,63 @@ export default function CustomerOrderPage() {
                   {categoryItems.length} item{categoryItems.length > 1 ? 's' : ''}
                 </span>
               </div>
-              <div className="grid gap-4 p-4">
+              <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-2 md:grid-cols-3">
                 {categoryItems.map(item => (
-                  <Card key={item.id} className={`sdc-panel-card p-4 ${item.available ? '' : 'opacity-75'}`}>
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
-                      <div className="flex min-w-0 flex-1 gap-3 sm:gap-4">
-                        {getMenuItemImage(item.name, item.image) && (
-                          <button
-                            type="button"
-                            className="h-24 w-24 shrink-0 rounded-xl border bg-white p-1 transition hover:shadow cursor-zoom-in"
-                            onClick={() =>
-                              setPreviewImage({
-                                src: getMenuItemImage(item.name, item.image),
-                                name: item.name,
-                              })
-                            }
-                          >
-                            <img
-                              src={getMenuItemImage(item.name, item.image)}
-                              alt={item.name}
-                              className={`h-full w-full rounded-lg object-contain ${item.available ? '' : 'grayscale'}`}
-                            />
-                          </button>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <h3 className="font-semibold">{item.name}</h3>
-                          <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
-                          <p className="text-lg font-bold mt-2">${item.price.toFixed(2)}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 self-end sm:shrink-0">
+                  <Card key={item.id} className={`sdc-panel-card p-3 ${item.available ? '' : 'opacity-75'}`}>
+                    <div className="flex h-full flex-col">
+                      {getMenuItemImage(item.name, item.image) ? (
+                        <button
+                          type="button"
+                          className="mb-2 aspect-square w-full overflow-hidden rounded-xl border bg-white p-1 transition hover:shadow cursor-zoom-in"
+                          onClick={() =>
+                            setPreviewImage({
+                              src: getMenuItemImage(item.name, item.image),
+                              name: item.name,
+                            })
+                          }
+                        >
+                          <img
+                            src={getMenuItemImage(item.name, item.image)}
+                            alt={item.name}
+                            className={`h-full w-full rounded-lg object-cover ${item.available ? '' : 'grayscale'}`}
+                          />
+                        </button>
+                      ) : (
+                        <div className="mb-2 aspect-square w-full rounded-xl border bg-white/60" />
+                      )}
+
+                      <h3 className="line-clamp-2 min-h-[2.6rem] text-[1.05rem] font-semibold leading-tight">{item.name}</h3>
+                      <p className="mt-1 text-xl font-bold">${item.price.toFixed(2)}</p>
+
+                      <div className="mt-3">
                         {!item.available ? (
-                          <Button variant="outline" disabled>
+                          <Button variant="outline" disabled className="h-10 w-full">
                             Unavailable
                           </Button>
                         ) : cart[item.id] ? (
-                          <>
+                          <div className="flex items-center justify-between gap-1">
                             <Button
                               variant="outline"
                               size="icon"
+                              className="h-10 w-10"
                               disabled={!phoneConfirmed}
                               onClick={() => removeFromCart(item.id)}
                             >
                               <Minus className="w-4 h-4" />
                             </Button>
-                            <span className="w-8 text-center font-semibold">{cart[item.id]}</span>
+                            <span className="min-w-[2rem] text-center text-lg font-semibold">{cart[item.id]}</span>
                             <Button
                               variant="outline"
                               size="icon"
+                              className="h-10 w-10"
                               disabled={!phoneConfirmed}
                               onClick={() => addToCart(item.id)}
                             >
                               <Plus className="w-4 h-4" />
                             </Button>
-                          </>
+                          </div>
                         ) : (
-                          <Button disabled={!phoneConfirmed} onClick={() => addToCart(item.id)}>
+                          <Button className="h-10 w-full" disabled={!phoneConfirmed} onClick={() => addToCart(item.id)}>
                             <Plus className="w-4 h-4 mr-2" />
                             Add
                           </Button>
