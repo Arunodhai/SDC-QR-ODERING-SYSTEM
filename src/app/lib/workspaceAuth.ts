@@ -8,6 +8,7 @@ export type WorkspaceProfile = {
   ownerEmail: string;
   adminUsername: string;
   kitchenUsername: string;
+  logoUrl?: string;
   currencyCode?: string;
   createdAt: string;
   updatedAt: string;
@@ -34,6 +35,8 @@ const supabase = createClient(supabaseUrl, publicAnonKey);
 const workspacesKey = 'sdc:workspaces:v1';
 const workspaceSessionKey = 'sdc:workspace-session:v1';
 const activeWorkspaceIdKey = 'sdc:active-workspace-id:v1';
+const adminWorkspaceSessionKey = 'sdc:admin-workspace-session-v1';
+const kitchenSessionKey = 'sdc:kitchen-session-v1';
 
 const textEncoder = new TextEncoder();
 
@@ -93,6 +96,8 @@ function writeWorkspaceRecords(records: WorkspaceRecord[]) {
 
 function writeWorkspaceSession(session: WorkspaceSession) {
   if (!canUseStorage()) return;
+  localStorage.removeItem(adminWorkspaceSessionKey);
+  localStorage.removeItem(kitchenSessionKey);
   localStorage.setItem(workspaceSessionKey, JSON.stringify(session));
 }
 
@@ -124,7 +129,7 @@ async function fetchRemoteWorkspaceProfile(workspaceId?: string): Promise<Worksp
 
   const wsPrimary = await supabase
     .from('workspaces')
-    .select('id,restaurant_name,outlet_name,owner_email,admin_username,currency_code,created_at,updated_at')
+    .select('id,restaurant_name,outlet_name,owner_email,admin_username,logo_url,currency_code,created_at,updated_at')
     .eq('id', targetWorkspaceId)
     .single();
 
@@ -132,7 +137,7 @@ async function fetchRemoteWorkspaceProfile(workspaceId?: string): Promise<Worksp
   if (wsPrimary.error) {
     const wsFallback = await supabase
       .from('workspaces')
-      .select('id,restaurant_name,outlet_name,owner_email,currency_code,created_at,updated_at')
+      .select('id,restaurant_name,outlet_name,owner_email,admin_username,currency_code,created_at,updated_at')
       .eq('id', targetWorkspaceId)
       .single();
     if (wsFallback.error) throw new Error(wsFallback.error.message || 'Failed to fetch workspace');
@@ -152,6 +157,7 @@ async function fetchRemoteWorkspaceProfile(workspaceId?: string): Promise<Worksp
     ownerEmail: String(wsRow.owner_email || user.email || ''),
     adminUsername: String(wsRow.admin_username || 'admin'),
     kitchenUsername: String(kitchenRes.data?.username || 'kitchen'),
+    logoUrl: String(wsRow.logo_url || ''),
     currencyCode: String(wsRow.currency_code || 'USD').toUpperCase(),
     createdAt: String(wsRow.created_at || nowIso()),
     updatedAt: String(wsRow.updated_at || nowIso()),
@@ -193,6 +199,8 @@ export function clearWorkspaceSession() {
   if (!canUseStorage()) return;
   localStorage.removeItem(workspaceSessionKey);
   localStorage.removeItem(activeWorkspaceIdKey);
+  localStorage.removeItem(adminWorkspaceSessionKey);
+  localStorage.removeItem(kitchenSessionKey);
 }
 
 export function setActiveWorkspaceId(workspaceId: string) {
@@ -242,6 +250,8 @@ export async function registerWorkspace(input: {
   adminPassword: string;
   kitchenUsername: string;
   kitchenPassword: string;
+  workspaceLogoFile?: File | null;
+  workspaceLogoUrl?: string;
 }) {
   const restaurantName = String(input.restaurantName || '').trim();
   const outletName = String(input.outletName || '').trim();
@@ -327,6 +337,46 @@ export async function registerWorkspace(input: {
   }
 
   const workspaceId = String(createRes.data || '').trim();
+  if (!workspaceId) throw new Error('Workspace created but ID is missing');
+
+  let persistedLogoUrl = String(input.workspaceLogoUrl || '').trim();
+  if (input.workspaceLogoFile) {
+    const file = input.workspaceLogoFile;
+    const ext = file.name.includes('.') ? String(file.name.split('.').pop() || 'png').toLowerCase() : 'png';
+    const allowed = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg']);
+    const safeExt = allowed.has(ext) ? ext : 'png';
+    const logoPath = `${workspaceId}/brand/logo-${Date.now()}.${safeExt}`;
+
+    const uploadRes = await supabase.storage
+      .from('workspace-logos')
+      .upload(logoPath, file, {
+        upsert: true,
+        cacheControl: '3600',
+        contentType: file.type || undefined,
+      });
+
+    if (uploadRes.error) {
+      throw new Error(
+        `${uploadRes.error.message || 'Failed to upload workspace logo'}. Run workspace-logo migration and verify storage policies.`,
+      );
+    }
+
+    const { data: logoPublicData } = supabase.storage.from('workspace-logos').getPublicUrl(logoPath);
+    persistedLogoUrl = String(logoPublicData.publicUrl || '').trim();
+
+    if (persistedLogoUrl) {
+      const logoUpdateRes = await supabase
+        .from('workspaces')
+        .update({ logo_url: persistedLogoUrl })
+        .eq('id', workspaceId);
+      if (logoUpdateRes.error) {
+        throw new Error(
+          `${logoUpdateRes.error.message || 'Failed to save workspace logo URL'}. Run workspace-logo migration and verify workspaces.logo_url + RLS.`,
+        );
+      }
+    }
+  }
+
   const remoteProfile = await fetchRemoteWorkspaceProfile(workspaceId);
   if (!remoteProfile) throw new Error('Workspace created but profile fetch failed');
 
@@ -334,6 +384,7 @@ export async function registerWorkspace(input: {
     ...remoteProfile,
     adminUsername,
     kitchenUsername: remoteProfile.kitchenUsername || kitchenUsername,
+    logoUrl: remoteProfile.logoUrl || persistedLogoUrl || '',
   };
 
   const record = await buildWorkspaceRecord({
@@ -362,17 +413,14 @@ export async function loginWorkspace(ownerEmail: string, ownerPassword: string) 
   });
 
   if (remoteLogin.error) {
-    const localRecord = readWorkspaceRecords().find((item) => normalizeEmail(item.ownerEmail) === email);
-    if (!localRecord) throw new Error('Workspace account not found');
-    const hashed = await hashSecret(password, localRecord.ownerSalt);
-    if (hashed !== localRecord.ownerPasswordHash) throw new Error('Invalid email or password');
-    writeWorkspaceSession({
-      workspaceId: localRecord.id,
-      ownerEmail: localRecord.ownerEmail,
-      signedInAt: nowIso(),
-    });
-    setActiveWorkspaceId(localRecord.id);
-    return { workspace: getCurrentWorkspaceProfile() };
+    const message = String(remoteLogin.error.message || '').toLowerCase();
+    if (message.includes('invalid login credentials')) {
+      throw new Error('Invalid owner email or password');
+    }
+    if (message.includes('email not confirmed')) {
+      throw new Error('Please confirm the owner email before signing in');
+    }
+    throw new Error(remoteLogin.error.message || 'Workspace sign-in failed');
   }
 
   const remoteProfile = await fetchRemoteWorkspaceProfile();
@@ -387,6 +435,7 @@ export async function loginWorkspace(ownerEmail: string, ownerPassword: string) 
       ...remoteProfile,
       adminUsername: remoteProfile.adminUsername || existingRecord.adminUsername,
       kitchenUsername: remoteProfile.kitchenUsername || existingRecord.kitchenUsername,
+      logoUrl: remoteProfile.logoUrl || existingRecord.logoUrl || '',
       updatedAt: remoteProfile.updatedAt || nowIso(),
     };
   } else {
@@ -402,6 +451,7 @@ export async function loginWorkspace(ownerEmail: string, ownerPassword: string) 
       ownerPasswordHash: await hashSecret(password, ownerSalt),
       adminPasswordHash: await hashSecret(password, adminSalt),
       kitchenPasswordHash: await hashSecret(password, kitchenSalt),
+      logoUrl: remoteProfile.logoUrl || '',
     };
   }
 

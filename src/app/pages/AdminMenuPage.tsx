@@ -34,6 +34,7 @@ export default function AdminMenuPage() {
     description: '',
     image: '',
     available: true,
+    dietaryType: 'NON_VEG',
   });
   const [uploading, setUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
@@ -167,7 +168,7 @@ export default function AdminMenuPage() {
         toast.success('Item created');
       }
       setShowItemDialog(false);
-      setItemForm({ categoryId: '', name: '', price: '', description: '', image: '', available: true });
+      setItemForm({ categoryId: '', name: '', price: '', description: '', image: '', available: true, dietaryType: 'NON_VEG' });
       setEditingItem(null);
       loadData();
     } catch (error) {
@@ -203,6 +204,7 @@ export default function AdminMenuPage() {
       description: item.description,
       image: item.image,
       available: item.available,
+      dietaryType: item.dietaryType || 'NON_VEG',
     });
     setShowItemDialog(true);
   };
@@ -404,6 +406,17 @@ export default function AdminMenuPage() {
 
                           <div className="flex-1 min-w-0">
                             <h4 className="font-semibold text-base leading-tight truncate">{item.name}</h4>
+                            <div className="mt-1">
+                              <span
+                                className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold ${
+                                  item.dietaryType === 'VEG'
+                                    ? 'bg-emerald-50 text-emerald-700'
+                                    : 'bg-rose-50 text-rose-700'
+                                }`}
+                              >
+                                {item.dietaryType === 'VEG' ? 'VEG' : 'NON VEG'}
+                              </span>
+                            </div>
                             {item.description && (
                               <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{item.description}</p>
                             )}
@@ -447,12 +460,13 @@ export default function AdminMenuPage() {
             <DialogTitle>{editingCategory ? 'Edit Category' : 'New Category'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreateCategory} className="space-y-4">
-            <div>
-              <Label>Category Name</Label>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">Category Name</Label>
               <Input
                 value={categoryName}
                 onChange={(e) => setCategoryName(e.target.value)}
                 placeholder="e.g. Starters"
+                className="h-11"
                 required
               />
             </div>
@@ -523,6 +537,22 @@ export default function AdminMenuPage() {
                 onChange={(e) => setItemForm(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Item description"
               />
+            </div>
+
+            <div>
+              <Label>Food Type</Label>
+              <Select
+                value={itemForm.dietaryType}
+                onValueChange={(val) => setItemForm(prev => ({ ...prev, dietaryType: val }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select food type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="VEG">Veg</SelectItem>
+                  <SelectItem value="NON_VEG">Non Veg</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div>

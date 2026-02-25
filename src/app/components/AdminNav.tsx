@@ -20,6 +20,9 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
   const [adminAvatar, setAdminAvatar] = useState<string>('');
   const [avatarLoading, setAvatarLoading] = useState(false);
   const workspace = getCurrentWorkspaceProfile();
+  const workspaceLogo = String(workspace?.logoUrl || '').trim();
+  const workspaceName = workspace?.restaurantName || 'Workspace';
+  const workspaceBranch = workspace?.outletName || '';
   const accountRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -102,15 +105,19 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
         <div>
           <div className={`mb-6 ${collapsed ? 'px-0' : 'px-1'}`}>
             <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-start gap-2.5'}`}>
-              <img
-                src={logo12}
-                alt="Stories de Café"
-                className={`${collapsed ? 'h-13 w-13' : 'h-13 w-13'} object-contain`}
-              />
+              {workspaceLogo ? (
+                <img
+                  src={workspaceLogo}
+                  alt={workspaceName}
+                  className={`${collapsed ? 'h-13 w-13' : 'h-13 w-13'} rounded-xl border border-slate-200 object-cover`}
+                />
+              ) : null}
               {!collapsed && (
                 <div>
-                  <p className="brand-display whitespace-nowrap text-[1.15rem] font-bold leading-none text-slate-900">Stories de Café</p>
-                  <p className="truncate text-[11px] font-semibold text-slate-600">{workspace?.restaurantName || 'Workspace'}</p>
+                  <p className="brand-display whitespace-nowrap text-[1.15rem] font-bold leading-none text-slate-900">{workspaceName}</p>
+                  {workspaceBranch ? (
+                    <p className="truncate text-[11px] font-semibold text-slate-600">{workspaceBranch}</p>
+                  ) : null}
                   <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">Admin Console</p>
                 </div>
               )}
@@ -270,8 +277,11 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
       <div className="sticky top-0 z-30 border-b border-slate-200 bg-white/85 px-4 py-3 backdrop-blur-xl lg:hidden">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <img src={logo12} alt="Stories de Café" className="h-9 w-9 object-contain" />
-            <p className="brand-display text-lg font-bold text-slate-900">{workspace?.restaurantName || 'Stories de Café'} Admin</p>
+            {workspaceLogo ? <img src={workspaceLogo} alt={workspaceName} className="h-9 w-9 rounded-lg border border-slate-200 object-cover" /> : null}
+            <div>
+              <p className="brand-display text-lg font-bold text-slate-900">{workspaceName}</p>
+              {workspaceBranch ? <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-500">{workspaceBranch}</p> : null}
+            </div>
           </div>
           <Button variant="outline" size="sm" className="rounded-lg bg-white" onClick={handleLogout}>
             <LogOut className="mr-1 h-4 w-4" />

@@ -34,7 +34,7 @@ export default function AdminLoginPage() {
     setLoading(true);
     try {
       await api.adminSignIn(email.trim(), password);
-      toast.success('Login successful');
+      toast.success('Sign-in successful');
       navigate('/admin/dashboard');
     } catch (error) {
       console.error('Admin login failed:', error);
@@ -65,7 +65,7 @@ export default function AdminLoginPage() {
               type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder={workspace?.adminUsername || 'Enter admin username'}
+              placeholder="Enter admin username"
               required
             />
           </div>
@@ -87,7 +87,7 @@ export default function AdminLoginPage() {
             ) : (
               <>
                 <Lock className="w-4 h-4 mr-2" />
-                Login
+                Sign in
               </>
             )}
           </Button>

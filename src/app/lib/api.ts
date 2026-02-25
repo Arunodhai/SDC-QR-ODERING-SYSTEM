@@ -40,6 +40,7 @@ const toMenuItem = (row: any) => ({
   description: row.description || '',
   image: row.image_url || '',
   available: Boolean(row.is_available),
+  dietaryType: row.dietary_type || 'NON_VEG',
   createdAt: row.created_at,
 });
 
@@ -122,9 +123,19 @@ const getActiveWorkspaceId = () => {
   return workspaceId;
 };
 
+const ensureOwnerAuthSession = async () => {
+  const { data, error } = await supabase.auth.getSession();
+  if (error) throw new Error(errMsg(error, 'Failed to validate auth session'));
+  if (!data.session) {
+    throw new Error('Auth session missing. Please sign in from Workspace Sign In and try again.');
+  }
+  return data.session;
+};
+
 export const adminSignIn = async (identifier: string, password: string) => {
   const workspace = getCurrentWorkspaceProfile();
   if (workspace) {
+    await ensureOwnerAuthSession();
     await loginAdminUser(identifier, password);
     const session = {
       role: 'admin',
@@ -154,14 +165,35 @@ export const getAdminSession = async () => {
   const workspaceRaw = localStorage.getItem(adminWorkspaceSessionKey);
   if (workspaceRaw) {
     try {
-      return JSON.parse(workspaceRaw);
+      const parsed = JSON.parse(workspaceRaw);
+      const activeWorkspaceId = getActiveWorkspaceId();
+      if (parsed?.workspaceId && activeWorkspaceId && String(parsed.workspaceId) !== String(activeWorkspaceId)) {
+        localStorage.removeItem(adminWorkspaceSessionKey);
+        return null;
+      }
+      return parsed;
     } catch {
       localStorage.removeItem(adminWorkspaceSessionKey);
     }
   }
-  const { data, error } = await supabase.auth.getSession();
-  if (error) return null;
-  return data.session;
+  return null;
+};
+
+export const hasAdminWorkspaceSession = () => {
+  try {
+    const raw = localStorage.getItem(adminWorkspaceSessionKey);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    const activeWorkspaceId = getCurrentWorkspaceProfile()?.id || '';
+    if (parsed?.workspaceId && activeWorkspaceId && String(parsed.workspaceId) !== String(activeWorkspaceId)) {
+      localStorage.removeItem(adminWorkspaceSessionKey);
+      return false;
+    }
+    return Boolean(parsed?.role === 'admin');
+  } catch {
+    localStorage.removeItem(adminWorkspaceSessionKey);
+    return false;
+  }
 };
 
 const getCurrentAdminUser = async () => {
@@ -221,6 +253,7 @@ export const getAdminProfile = async () => {
 };
 
 export const uploadAdminAvatar = async (file: File) => {
+  await ensureOwnerAuthSession();
   const user = await getCurrentAdminUser();
   const workspaceId = getActiveWorkspaceId();
   const ext = (file.name.includes('.') ? file.name.split('.').pop() : 'png') || 'png';
@@ -240,6 +273,7 @@ export const uploadAdminAvatar = async (file: File) => {
 };
 
 export const upsertAdminProfileAvatar = async (avatarUrl: string) => {
+  await ensureOwnerAuthSession();
   const user = await getCurrentAdminUser();
   const workspaceId = getActiveWorkspaceId();
   const displayName = (user.user_metadata?.full_name as string) || 'Admin';
@@ -482,6 +516,7 @@ export const getCategories = async () => {
 };
 
 export const createCategory = async (name: string, _order: number) => {
+  await ensureOwnerAuthSession();
   const workspaceId = getActiveWorkspaceId();
   const { data, error } = await supabase
     .from('categories')
@@ -547,6 +582,7 @@ export const createMenuItem = async (item: any) => {
     description: item.description || '',
     image_url: item.image || null,
     is_available: item.available !== false,
+    dietary_type: item.dietaryType || 'NON_VEG',
   };
 
   const { data, error } = await supabase.from('menu_items').insert(payload).select().single();
@@ -563,6 +599,7 @@ export const updateMenuItem = async (id: string, updates: any) => {
   if (updates.description !== undefined) patch.description = updates.description;
   if (updates.image !== undefined) patch.image_url = updates.image || null;
   if (updates.available !== undefined) patch.is_available = Boolean(updates.available);
+  if (updates.dietaryType !== undefined) patch.dietary_type = updates.dietaryType || 'NON_VEG';
 
   const { data, error } = await supabase
     .from('menu_items')
@@ -627,6 +664,7 @@ export const getTables = async () => {
 };
 
 export const createTable = async (tableNumber: number) => {
+  await ensureOwnerAuthSession();
   const workspaceId = getActiveWorkspaceId();
   const { data, error } = await supabase
     .from('restaurant_tables')

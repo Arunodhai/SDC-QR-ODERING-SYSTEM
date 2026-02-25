@@ -886,21 +886,21 @@ export default function CustomerOrderPage() {
           if (categoryItems.length === 0) return null;
 
           return (
-            <section key={category.id} id={`category-${category.id}`} className="mb-7 border-b border-slate-200/80 pb-5 last:border-b-0">
+            <section key={category.id} id={`category-${category.id}`} className="mb-6 pb-6 border-b border-slate-200/90 last:border-b-0 last:mb-0">
               <div className="mb-3 flex items-center justify-between px-1">
-                <h2 className="text-[1.15rem] font-semibold tracking-tight text-slate-900">{category.name}</h2>
-                <span className="rounded-md border border-teal-200 bg-white px-2 py-0.5 text-xs text-teal-800">
+                <h2 className="text-[1.05rem] font-semibold tracking-tight text-slate-900">{category.name}</h2>
+                <span className="inline-flex h-6 items-center rounded-full border border-teal-200 bg-white px-2 text-[0.78rem] font-medium text-teal-700">
                   {categoryItems.length} item{categoryItems.length > 1 ? 's' : ''}
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:gap-x-4 sm:gap-y-6 md:grid-cols-3">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-4">
                 {categoryItems.map(item => (
-                  <article key={item.id} className={`${item.available ? '' : 'opacity-75'}`}>
+                  <article key={item.id} className={`${item.available ? '' : 'opacity-75'} rounded-[18px] border border-slate-200/90 bg-white px-2.5 pt-2.5 pb-3`}>
                     <div className="flex h-full flex-col">
                       {getMenuItemImage(item.name, item.image) ? (
                         <button
                           type="button"
-                          className="mb-2 aspect-square w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-1 transition hover:shadow-sm cursor-zoom-in"
+                          className="mb-2 aspect-square w-full overflow-hidden rounded-[16px] border border-slate-200 bg-white p-1 transition hover:shadow-sm cursor-zoom-in"
                           onClick={() =>
                             setPreviewImage({
                               src: getMenuItemImage(item.name, item.image),
@@ -911,21 +911,37 @@ export default function CustomerOrderPage() {
                           <img
                             src={getMenuItemImage(item.name, item.image)}
                             alt={item.name}
-                            className={`h-full w-full rounded-lg object-cover ${item.available ? '' : 'grayscale'}`}
+                            className={`h-full w-full rounded-[12px] object-cover ${item.available ? '' : 'grayscale'}`}
                           />
                         </button>
                       ) : (
-                        <div className="mb-2 aspect-square w-full rounded-2xl border border-slate-200 bg-white/60" />
+                        <div className="mb-2 aspect-square w-full rounded-[16px] border border-slate-200 bg-white/60" />
                       )}
 
-                      <h3 className="line-clamp-2 min-h-[2.75rem] text-[1.05rem] font-semibold leading-tight text-slate-900">{item.name}</h3>
-                      <p className="mt-2 text-[1.35rem] font-semibold leading-none tracking-tight text-slate-900">
+                      <div className="mb-1 flex items-center gap-1.5">
+                        <span
+                          className={`relative h-3 w-3 rounded-[3px] border ${
+                            item.dietaryType === 'VEG' ? 'border-emerald-600' : 'border-rose-600'
+                          }`}
+                        >
+                          <span
+                            className={`absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full ${
+                              item.dietaryType === 'VEG' ? 'bg-emerald-600' : 'bg-rose-600'
+                            }`}
+                          />
+                        </span>
+                        <span className={`text-[0.68rem] font-semibold tracking-[0.03em] ${item.dietaryType === 'VEG' ? 'text-emerald-700' : 'text-rose-700'}`}>
+                          {item.dietaryType === 'VEG' ? 'VEG' : 'NON VEG'}
+                        </span>
+                      </div>
+                      <h3 className="line-clamp-2 text-[1.12rem] font-medium leading-[1.22] tracking-tight text-slate-900">{item.name}</h3>
+                      <p className="mt-2 text-[2.05rem] font-semibold leading-none tracking-[-0.02em] text-slate-900">
                         {formatMenuPrice(item.price, workspaceCurrencyCode)}
                       </p>
 
                       <div className="mt-3">
                         {!item.available ? (
-                          <Button variant="outline" disabled className="h-11 w-full rounded-2xl border-slate-300 bg-white text-slate-500">
+                          <Button variant="outline" disabled className="h-11 w-full rounded-[16px] border-[1.2px] border-slate-300 bg-white text-[0.95rem] font-semibold text-slate-500">
                             Unavailable
                           </Button>
                         ) : cart[item.id] ? (
@@ -933,27 +949,27 @@ export default function CustomerOrderPage() {
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-11 w-11 rounded-xl border-slate-300"
+                              className="h-11 w-11 rounded-[14px] border-[1.2px] border-slate-300"
                               disabled={!phoneConfirmed}
                               onClick={() => removeFromCart(item.id)}
                             >
-                              <Minus className="w-4 h-4" />
+                              <Minus className="h-5 w-5" />
                             </Button>
-                            <span className="min-w-[2rem] text-center text-xl font-semibold text-slate-900">{cart[item.id]}</span>
+                            <span className="min-w-[2rem] text-center text-[1.2rem] font-semibold text-slate-900">{cart[item.id]}</span>
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-11 w-11 rounded-xl border-slate-300"
+                              className="h-11 w-11 rounded-[14px] border-[1.2px] border-slate-300"
                               disabled={!phoneConfirmed}
                               onClick={() => addToCart(item.id)}
                             >
-                              <Plus className="w-4 h-4" />
+                              <Plus className="h-5 w-5" />
                             </Button>
                           </div>
                         ) : (
                           <Button
                             variant="outline"
-                            className="h-11 w-full rounded-2xl border-[1.5px] border-slate-300 bg-white text-[0.95rem] font-bold tracking-[0.04em] text-emerald-700 hover:bg-emerald-50 hover:text-emerald-700"
+                            className="h-11 w-full rounded-[16px] border-[1.2px] border-slate-300 bg-white text-[0.94rem] font-bold tracking-[0.06em] text-emerald-700 hover:bg-emerald-50 hover:text-emerald-700"
                             disabled={!phoneConfirmed}
                             onClick={() => addToCart(item.id)}
                           >

@@ -14,10 +14,21 @@ import AdminDashboardPage from "./pages/AdminDashboardPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import AdminLayout from "./components/AdminLayout";
 import { isWorkspaceAuthenticated } from "./lib/workspaceAuth";
+import { hasAdminWorkspaceSession } from "./lib/api";
 
 function requireWorkspaceAuthLoader() {
   if (!isWorkspaceAuthenticated()) {
     return redirect("/setup");
+  }
+  return null;
+}
+
+function requireAdminAuthLoader() {
+  if (!isWorkspaceAuthenticated()) {
+    return redirect("/setup");
+  }
+  if (!hasAdminWorkspaceSession()) {
+    return redirect("/admin/login");
   }
   return null;
 }
@@ -61,7 +72,7 @@ export const router = createBrowserRouter([
   },
   {
     path: "/admin",
-    loader: requireWorkspaceAuthLoader,
+    loader: requireAdminAuthLoader,
     Component: AdminLayout,
     children: [
       {

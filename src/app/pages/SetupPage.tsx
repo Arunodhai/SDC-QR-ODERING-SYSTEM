@@ -19,9 +19,24 @@ export default function SetupPage() {
   const [adminPassword, setAdminPassword] = useState('');
   const [kitchenUsername, setKitchenUsername] = useState('');
   const [kitchenPassword, setKitchenPassword] = useState('');
+  const [workspaceLogoFile, setWorkspaceLogoFile] = useState<File | null>(null);
+  const [workspaceLogoPreview, setWorkspaceLogoPreview] = useState('');
 
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+
+  const handleWorkspaceLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      setWorkspaceLogoFile(null);
+      setWorkspaceLogoPreview('');
+      return;
+    }
+    setWorkspaceLogoFile(file);
+    const reader = new FileReader();
+    reader.onload = () => setWorkspaceLogoPreview(String(reader.result || ''));
+    reader.readAsDataURL(file);
+  };
 
   const handleRegister = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -36,6 +51,7 @@ export default function SetupPage() {
         adminPassword,
         kitchenUsername,
         kitchenPassword,
+        workspaceLogoFile,
       });
       toast.success('Workspace created successfully');
       navigate('/access');
@@ -130,6 +146,20 @@ export default function SetupPage() {
                   placeholder="Enter restaurant or cafe name"
                   className="h-11 rounded-2xl border-slate-200 bg-white"
                 />
+              </label>
+              <label className="space-y-2 md:col-span-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.13em] text-slate-500">Workspace logo (optional)</span>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleWorkspaceLogoChange}
+                    className="h-11 rounded-2xl border-slate-200 bg-white file:mr-3 file:rounded-full file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"
+                  />
+                  {workspaceLogoPreview ? (
+                    <img src={workspaceLogoPreview} alt="Workspace logo preview" className="h-11 w-11 rounded-xl border border-slate-200 object-cover" />
+                  ) : null}
+                </div>
               </label>
               <label className="space-y-2">
                 <span className="text-xs font-semibold uppercase tracking-[0.13em] text-slate-500">Outlet / Branch</span>
