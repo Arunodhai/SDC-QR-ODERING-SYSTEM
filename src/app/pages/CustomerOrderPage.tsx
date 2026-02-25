@@ -895,12 +895,12 @@ export default function CustomerOrderPage() {
               </div>
               <div className="grid grid-cols-2 gap-x-3 gap-y-4">
                 {categoryItems.map(item => (
-                  <article key={item.id} className={`${item.available ? '' : 'opacity-75'} rounded-[18px] border border-slate-200/90 bg-white px-2.5 pt-2.5 pb-3`}>
+                  <article key={item.id} className={`${item.available ? '' : 'opacity-75'} overflow-hidden rounded-[18px] border border-slate-200/90 bg-white pb-3`}>
                     <div className="flex h-full flex-col">
                       {getMenuItemImage(item.name, item.image) ? (
                         <button
                           type="button"
-                          className="mb-2 aspect-square w-full overflow-hidden rounded-[16px] border border-slate-200 bg-white p-1 transition hover:shadow-sm cursor-zoom-in"
+                          className="aspect-square w-full overflow-hidden border-b border-slate-200 bg-white transition hover:shadow-sm cursor-zoom-in"
                           onClick={() =>
                             setPreviewImage({
                               src: getMenuItemImage(item.name, item.image),
@@ -911,14 +911,15 @@ export default function CustomerOrderPage() {
                           <img
                             src={getMenuItemImage(item.name, item.image)}
                             alt={item.name}
-                            className={`h-full w-full rounded-[12px] object-cover ${item.available ? '' : 'grayscale'}`}
+                            className={`h-full w-full object-cover ${item.available ? '' : 'grayscale'}`}
                           />
                         </button>
                       ) : (
-                        <div className="mb-2 aspect-square w-full rounded-[16px] border border-slate-200 bg-white/60" />
+                        <div className="aspect-square w-full border-b border-slate-200 bg-white/60" />
                       )}
 
-                      <div className="mb-1 flex items-center gap-1.5">
+                      <div className="px-2.5 pt-2.5">
+                        <div className="mb-1 flex items-center gap-1.5">
                         <span
                           className={`relative h-3 w-3 rounded-[3px] border ${
                             item.dietaryType === 'VEG' ? 'border-emerald-600' : 'border-rose-600'
@@ -933,50 +934,51 @@ export default function CustomerOrderPage() {
                         <span className={`text-[0.68rem] font-semibold tracking-[0.03em] ${item.dietaryType === 'VEG' ? 'text-emerald-700' : 'text-rose-700'}`}>
                           {item.dietaryType === 'VEG' ? 'VEG' : 'NON VEG'}
                         </span>
-                      </div>
-                      <h3 className="line-clamp-2 text-[1.12rem] font-medium leading-[1.22] tracking-tight text-slate-900">{item.name}</h3>
+                        </div>
+                        <h3 className="line-clamp-2 text-[1.08rem] font-medium leading-[1.22] tracking-tight text-slate-900">{item.name}</h3>
 
-                      <div className="mt-2 flex items-end justify-between gap-2">
-                        <p className="text-[1.72rem] font-semibold leading-none tracking-[-0.02em] text-slate-900">
-                          {formatMenuPrice(item.price, workspaceCurrencyCode)}
-                        </p>
+                        <div className="mt-2 flex items-center justify-between gap-2">
+                          <p className="text-[1.1rem] font-semibold leading-none tracking-[-0.01em] text-slate-900">
+                            {formatMenuPrice(item.price, workspaceCurrencyCode)}
+                          </p>
 
-                        {!item.available ? (
-                          <Button variant="outline" disabled className="h-10 rounded-[14px] border-[1.2px] border-slate-300 bg-white px-3 text-[0.85rem] font-semibold text-slate-500">
-                            Unavailable
-                          </Button>
-                        ) : cart[item.id] ? (
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-10 w-10 rounded-[13px] border-[1.2px] border-slate-300"
-                              disabled={!phoneConfirmed}
-                              onClick={() => removeFromCart(item.id)}
-                            >
-                              <Minus className="h-4.5 w-4.5" />
+                          {!item.available ? (
+                            <Button variant="outline" disabled className="h-9 rounded-[12px] border-[1.2px] border-slate-300 bg-white px-3 text-[0.82rem] font-semibold text-slate-500">
+                              Unavailable
                             </Button>
-                            <span className="min-w-[1.8rem] text-center text-[1.12rem] font-semibold text-slate-900">{cart[item.id]}</span>
+                          ) : cart[item.id] ? (
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 rounded-[11px] border-[1.2px] border-slate-300"
+                                disabled={!phoneConfirmed}
+                                onClick={() => removeFromCart(item.id)}
+                              >
+                                <Minus className="h-4 w-4" />
+                              </Button>
+                              <span className="min-w-[1.35rem] text-center text-[1rem] font-semibold leading-none text-slate-900">{cart[item.id]}</span>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 rounded-[11px] border-[1.2px] border-slate-300"
+                                disabled={!phoneConfirmed}
+                                onClick={() => addToCart(item.id)}
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
                             <Button
                               variant="outline"
-                              size="icon"
-                              className="h-10 w-10 rounded-[13px] border-[1.2px] border-slate-300"
+                              className="h-9 rounded-[12px] border-[1.2px] border-slate-300 bg-white px-4 text-[0.85rem] font-bold tracking-[0.05em] text-emerald-700 hover:bg-emerald-50 hover:text-emerald-700"
                               disabled={!phoneConfirmed}
                               onClick={() => addToCart(item.id)}
                             >
-                              <Plus className="h-4.5 w-4.5" />
+                              ADD
                             </Button>
-                          </div>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            className="h-10 rounded-[14px] border-[1.2px] border-slate-300 bg-white px-5 text-[0.9rem] font-bold tracking-[0.06em] text-emerald-700 hover:bg-emerald-50 hover:text-emerald-700"
-                            disabled={!phoneConfirmed}
-                            onClick={() => addToCart(item.id)}
-                          >
-                            ADD
-                          </Button>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </div>
                   </article>
