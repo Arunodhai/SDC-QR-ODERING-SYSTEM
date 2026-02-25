@@ -886,21 +886,21 @@ export default function CustomerOrderPage() {
           if (categoryItems.length === 0) return null;
 
           return (
-            <Card key={category.id} id={`category-${category.id}`} className="sdc-panel-card mb-6 overflow-hidden">
-              <div className="flex items-center justify-between border-b bg-white px-4 py-3">
-                <h2 className="text-lg font-bold">{category.name}</h2>
+            <section key={category.id} id={`category-${category.id}`} className="mb-6">
+              <div className="mb-3 flex items-center justify-between px-1">
+                <h2 className="text-[1.85rem] font-semibold tracking-tight text-slate-900">{category.name}</h2>
                 <span className="rounded-md border border-teal-200 bg-white px-2 py-0.5 text-xs text-teal-800">
                   {categoryItems.length} item{categoryItems.length > 1 ? 's' : ''}
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-2 sm:gap-3 sm:p-4 md:grid-cols-3">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:gap-x-4 sm:gap-y-6 md:grid-cols-3">
                 {categoryItems.map(item => (
-                  <Card key={item.id} className={`rounded-2xl border border-slate-200/70 bg-white p-3.5 shadow-[0_4px_14px_rgba(15,23,42,0.05)] ${item.available ? '' : 'opacity-75'}`}>
+                  <article key={item.id} className={`${item.available ? '' : 'opacity-75'}`}>
                     <div className="flex h-full flex-col">
                       {getMenuItemImage(item.name, item.image) ? (
                         <button
                           type="button"
-                          className="mb-2.5 aspect-square w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-1 transition hover:shadow-sm cursor-zoom-in"
+                          className="mb-2 aspect-square w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-1 transition hover:shadow-sm cursor-zoom-in"
                           onClick={() =>
                             setPreviewImage({
                               src: getMenuItemImage(item.name, item.image),
@@ -915,15 +915,15 @@ export default function CustomerOrderPage() {
                           />
                         </button>
                       ) : (
-                        <div className="mb-2.5 aspect-square w-full rounded-2xl border border-slate-200 bg-white/60" />
+                        <div className="mb-2 aspect-square w-full rounded-2xl border border-slate-200 bg-white/60" />
                       )}
 
-                      <h3 className="line-clamp-2 min-h-[2.85rem] text-[1.05rem] font-semibold leading-tight text-slate-900">{item.name}</h3>
-                      <p className="mt-1.5 text-[2rem] font-semibold leading-none tracking-tight text-slate-900">
+                      <h3 className="line-clamp-2 min-h-[2.75rem] text-[1.05rem] font-semibold leading-tight text-slate-900">{item.name}</h3>
+                      <p className="mt-2 text-[2rem] font-semibold leading-none tracking-tight text-slate-900">
                         {formatMenuPrice(item.price, workspaceCurrencyCode)}
                       </p>
 
-                      <div className="mt-3.5">
+                      <div className="mt-3">
                         {!item.available ? (
                           <Button variant="outline" disabled className="h-11 w-full rounded-2xl border-slate-300 bg-white text-slate-500">
                             Unavailable
@@ -962,10 +962,10 @@ export default function CustomerOrderPage() {
                         )}
                       </div>
                     </div>
-                  </Card>
+                  </article>
                 ))}
               </div>
-            </Card>
+            </section>
           );
         })}
 
