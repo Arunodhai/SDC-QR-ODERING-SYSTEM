@@ -893,9 +893,9 @@ export default function CustomerOrderPage() {
                   {categoryItems.length} item{categoryItems.length > 1 ? 's' : ''}
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-3.5 p-4 sm:grid-cols-2 md:grid-cols-3">
+              <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-2 sm:gap-3 sm:p-4 md:grid-cols-3">
                 {categoryItems.map(item => (
-                  <Card key={item.id} className={`rounded-2xl border border-slate-200/70 bg-white p-3 shadow-[0_4px_14px_rgba(15,23,42,0.05)] ${item.available ? '' : 'opacity-75'}`}>
+                  <Card key={item.id} className={`rounded-2xl border border-slate-200/70 bg-white p-3.5 shadow-[0_4px_14px_rgba(15,23,42,0.05)] ${item.available ? '' : 'opacity-75'}`}>
                     <div className="flex h-full flex-col">
                       {getMenuItemImage(item.name, item.image) ? (
                         <button
