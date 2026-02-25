@@ -9,8 +9,8 @@ import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
 import * as api from '../lib/api';
-import { getActiveWorkspaceId } from '../lib/workspaceAuth';
-import restaurantLogo from '../../assets/logo12.png';
+import { getActiveWorkspaceId, getCurrentWorkspaceProfile } from '../lib/workspaceAuth';
+import defaultRestaurantLogo from '../../assets/logo12.png';
 
 export default function AdminTablesPage() {
   const navigate = useNavigate();
@@ -19,6 +19,10 @@ export default function AdminTablesPage() {
   const [showQRDialog, setShowQRDialog] = useState(false);
   const [selectedTable, setSelectedTable] = useState<any>(null);
   const [tableNumber, setTableNumber] = useState('');
+  const [qrLogoSrc, setQrLogoSrc] = useState<string>(() => {
+    const workspaceLogo = String(getCurrentWorkspaceProfile()?.logoUrl || '').trim();
+    return workspaceLogo || defaultRestaurantLogo;
+  });
 
   useEffect(() => {
     let mounted = true;
@@ -42,13 +46,47 @@ export default function AdminTablesPage() {
 
   const loadTables = async () => {
     try {
-      const res = await api.getTables();
-      setTables(res.tables || []);
+      const [tableRes, workspaceRes] = await Promise.all([
+        api.getTables(),
+        api.getWorkspaceSettings().catch(() => null),
+      ]);
+
+      setTables(tableRes.tables || []);
+      const latestWorkspaceLogo = String(workspaceRes?.workspace?.logoUrl || getCurrentWorkspaceProfile()?.logoUrl || '').trim();
+      setQrLogoSrc(latestWorkspaceLogo || defaultRestaurantLogo);
     } catch (error) {
       console.error('Error loading tables:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to load tables');
     }
   };
+
+  useEffect(() => {
+    const src = String(qrLogoSrc || '').trim();
+    if (!src || src.startsWith('data:')) return;
+
+    let active = true;
+    const normalizeToDataUrl = async () => {
+      try {
+        const response = await fetch(src, { mode: 'cors' });
+        if (!response.ok) throw new Error('Failed to fetch logo');
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (!active) return;
+          if (typeof reader.result === 'string' && reader.result.startsWith('data:')) {
+            setQrLogoSrc(reader.result);
+          }
+        };
+        reader.readAsDataURL(blob);
+      } catch {
+        if (active) setQrLogoSrc(defaultRestaurantLogo);
+      }
+    };
+    normalizeToDataUrl();
+    return () => {
+      active = false;
+    };
+  }, [qrLogoSrc]);
 
   const handleCreateTable = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,7 +152,7 @@ export default function AdminTablesPage() {
   const getQrImageSettings = (size: number) => {
     const logoSize = Math.round(size * 0.28);
     return {
-      src: restaurantLogo,
+      src: qrLogoSrc || defaultRestaurantLogo,
       height: logoSize,
       width: logoSize,
       excavate: true,

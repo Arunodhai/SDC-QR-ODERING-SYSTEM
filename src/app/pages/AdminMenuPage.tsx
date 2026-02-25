@@ -410,14 +410,14 @@ export default function AdminMenuPage() {
                       {categoryItems.length} item{categoryItems.length > 1 ? 's' : ''}
                     </span>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 p-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3">
                     {categoryItems.map(item => (
                       <Card key={item.id} className="sdc-panel-card overflow-hidden p-0">
-                        <div className="flex min-h-[190px]">
+                        <div className="flex h-[170px] w-full">
                           {getMenuItemImage(item.name, item.image) && (
                             <button
                               type="button"
-                              className="h-full w-[190px] shrink-0 overflow-hidden rounded-none border-r bg-white transition hover:opacity-95 cursor-zoom-in"
+                              className="h-full w-[170px] shrink-0 overflow-hidden rounded-none border-r border-slate-200 bg-white transition hover:opacity-95 cursor-zoom-in"
                               onClick={() =>
                                 setPreviewImage({
                                   src: getMenuItemImage(item.name, item.image),
@@ -429,10 +429,10 @@ export default function AdminMenuPage() {
                             </button>
                           )}
                           {!getMenuItemImage(item.name, item.image) && (
-                            <div className="h-full w-[190px] shrink-0 border-r bg-white/60" />
+                            <div className="h-full w-[170px] shrink-0 border-r border-slate-200 bg-white/60" />
                           )}
 
-                          <div className="flex-1 min-w-0 p-3">
+                          <div className="flex min-w-0 flex-1 flex-col p-3">
                             <h4 className="font-semibold text-base leading-tight truncate">{item.name}</h4>
                             <div className="mt-1">
                               <span
@@ -450,7 +450,7 @@ export default function AdminMenuPage() {
                             )}
                             <p className="text-base font-bold mt-1">${item.price.toFixed(2)}</p>
 
-                            <div className="mt-2 flex items-center justify-between gap-2">
+                            <div className="mt-auto flex items-center justify-between gap-2 pt-2">
                               <div className="flex items-center gap-2 text-sm">
                                 <Label className="text-sm">Available</Label>
                                 <Switch
