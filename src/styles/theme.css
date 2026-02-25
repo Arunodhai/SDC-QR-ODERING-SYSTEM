@@ -210,6 +210,50 @@
 }
 
 @layer utilities {
+  .preset1-shell {
+    position: relative;
+    overflow: hidden;
+    min-height: 100vh;
+    color: #0f172a;
+    background-image:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.15) 35%, rgba(255, 255, 255, 0.65) 100%),
+      url('../assets/gradiantbg4.jpg');
+    background-size: 100% 100%, cover;
+    background-position: center;
+  }
+
+  .preset1-shell::before,
+  .preset1-shell::after {
+    content: '';
+    pointer-events: none;
+    position: absolute;
+    z-index: 0;
+    border-radius: 9999px;
+    filter: blur(64px);
+  }
+
+  .preset1-shell::before {
+    top: -7rem;
+    left: 50%;
+    width: 20rem;
+    height: 20rem;
+    transform: translateX(-50%);
+    background: rgba(255, 237, 213, 0.7);
+  }
+
+  .preset1-shell::after {
+    right: 2rem;
+    bottom: 2rem;
+    width: 15rem;
+    height: 15rem;
+    background: rgba(207, 250, 254, 0.7);
+  }
+
+  .preset1-content {
+    position: relative;
+    z-index: 1;
+  }
+
   .page-shell {
     @apply min-h-screen;
   }
@@ -460,5 +504,206 @@
       linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(255, 255, 255, 1));
     background-size: 260% 260%;
     animation: sdcGradientShift 22s ease-in-out infinite, sdcFloatPulse 9s ease-in-out infinite;
+  }
+
+  @keyframes qrScanSweep {
+    0% {
+      top: 6px;
+      opacity: 0.85;
+    }
+    50% {
+      top: calc(100% - 8px);
+      opacity: 1;
+    }
+    100% {
+      top: 6px;
+      opacity: 0.85;
+    }
+  }
+
+  .qr-scan-frame {
+    position: relative;
+    width: 196px;
+    height: 196px;
+    border-radius: 0.9rem;
+    border: 1px solid rgba(203, 213, 225, 0.9);
+    padding: 8px;
+    background: #ffffff;
+    overflow: hidden;
+  }
+
+  .qr-scan-frame--hero {
+    width: 360px;
+    height: 360px;
+    padding: 10px;
+    border-radius: 1.1rem;
+  }
+
+  @media (max-width: 768px) {
+    .qr-scan-frame--hero {
+      width: 260px;
+      height: 260px;
+      padding: 8px;
+    }
+  }
+
+  .qr-scan-line {
+    position: absolute;
+    left: -22px;
+    right: -22px;
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(
+      90deg,
+      rgba(239, 68, 68, 0) 0%,
+      rgba(239, 68, 68, 0.82) 20%,
+      rgba(239, 68, 68, 0.98) 50%,
+      rgba(239, 68, 68, 0.82) 80%,
+      rgba(239, 68, 68, 0) 100%
+    );
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.75), 0 0 24px rgba(239, 68, 68, 0.42);
+    animation: qrScanSweep 2.2s ease-in-out infinite;
+  }
+
+  @keyframes flowTrackProgress {
+    0% {
+      transform: scaleX(0);
+    }
+    100% {
+      transform: scaleX(1);
+    }
+  }
+
+  @keyframes flowTrackProgress5 {
+    0% {
+      transform: scaleX(0);
+    }
+    3.2% {
+      transform: scaleX(0);
+    }
+    25% {
+      transform: scaleX(0.25);
+    }
+    28.2% {
+      transform: scaleX(0.25);
+    }
+    50% {
+      transform: scaleX(0.5);
+    }
+    53.2% {
+      transform: scaleX(0.5);
+    }
+    75% {
+      transform: scaleX(0.75);
+    }
+    78.2% {
+      transform: scaleX(0.75);
+    }
+    100% {
+      transform: scaleX(1);
+    }
+  }
+
+  @keyframes flowTrackProgress4 {
+    0% {
+      transform: scaleX(0);
+    }
+    3.2% {
+      transform: scaleX(0);
+    }
+    33.333% {
+      transform: scaleX(0.33333);
+    }
+    36.533% {
+      transform: scaleX(0.33333);
+    }
+    66.666% {
+      transform: scaleX(0.66666);
+    }
+    69.866% {
+      transform: scaleX(0.66666);
+    }
+    100% {
+      transform: scaleX(1);
+    }
+  }
+
+  .flow-track-progress {
+    display: block;
+    width: 100%;
+    height: 2px;
+    border-radius: 999px;
+    background: #0f172a;
+    transform-origin: left center;
+    animation: flowTrackProgress 6s linear infinite;
+    pointer-events: none;
+  }
+
+  .flow-track-progress--5 {
+    animation-name: flowTrackProgress5;
+  }
+
+  .flow-track-progress--4 {
+    animation-name: flowTrackProgress4;
+  }
+
+  @keyframes flowStepPulse {
+    0% {
+      transform: scale(1);
+    }
+    6% {
+      transform: scale(1.22);
+    }
+    12% {
+      transform: scale(1);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .flow-step-node {
+    animation: flowStepPulse 6s linear infinite;
+    will-change: transform;
+  }
+
+  .testimonial-marquee {
+    position: relative;
+    mask-image: linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%);
+  }
+
+  .testimonial-marquee-track {
+    display: flex;
+    gap: 1rem;
+    width: max-content;
+    animation: testimonialMarquee 40s linear infinite;
+    will-change: transform;
+  }
+
+  .testimonial-marquee-card {
+    width: 360px;
+    flex: 0 0 auto;
+  }
+
+  @keyframes testimonialMarquee {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(calc(-50% - 0.5rem));
+    }
+  }
+
+  .testimonial-marquee:hover .testimonial-marquee-track {
+    animation-play-state: paused;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .flow-track-progress,
+    .flow-step-node,
+    .testimonial-marquee-track {
+      animation: none !important;
+    }
   }
 }
