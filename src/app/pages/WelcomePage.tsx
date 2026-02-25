@@ -298,9 +298,12 @@ export default function WelcomePage() {
               <button
                 type="button"
                 onClick={() => navigate('/setup')}
-                className="text-sm font-medium text-slate-900 underline underline-offset-4"
+                className="text-sm font-medium text-slate-900"
               >
-                Already existing user? <span className="font-semibold text-[#00A000]">Sign in.</span>
+                Already existing user?{' '}
+                <span className="inline-block font-semibold text-[#00A000] transition-transform duration-200 ease-out hover:scale-110">
+                &nbsp;Sign in.
+                </span>
               </button>
             </div>
           </div>
