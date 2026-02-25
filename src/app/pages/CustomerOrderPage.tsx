@@ -886,9 +886,9 @@ export default function CustomerOrderPage() {
           if (categoryItems.length === 0) return null;
 
           return (
-            <section key={category.id} id={`category-${category.id}`} className="mb-6">
+            <section key={category.id} id={`category-${category.id}`} className="mb-7 border-b border-slate-200/80 pb-5 last:border-b-0">
               <div className="mb-3 flex items-center justify-between px-1">
-                <h2 className="text-[1.85rem] font-semibold tracking-tight text-slate-900">{category.name}</h2>
+                <h2 className="text-[1.15rem] font-semibold tracking-tight text-slate-900">{category.name}</h2>
                 <span className="rounded-md border border-teal-200 bg-white px-2 py-0.5 text-xs text-teal-800">
                   {categoryItems.length} item{categoryItems.length > 1 ? 's' : ''}
                 </span>
@@ -919,7 +919,7 @@ export default function CustomerOrderPage() {
                       )}
 
                       <h3 className="line-clamp-2 min-h-[2.75rem] text-[1.05rem] font-semibold leading-tight text-slate-900">{item.name}</h3>
-                      <p className="mt-2 text-[2rem] font-semibold leading-none tracking-tight text-slate-900">
+                      <p className="mt-2 text-[1.35rem] font-semibold leading-none tracking-tight text-slate-900">
                         {formatMenuPrice(item.price, workspaceCurrencyCode)}
                       </p>
 
