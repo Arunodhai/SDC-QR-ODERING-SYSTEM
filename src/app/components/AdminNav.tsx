@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { LayoutGrid, Table2, Receipt, LogOut, ChefHat, BarChart3, ChevronRight, ChevronLeft, User } from 'lucide-react';
+import { LayoutGrid, Table2, Receipt, LogOut, ChefHat, BarChart3, ChevronRight, ChevronLeft, User, Settings } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router';
 import { Button } from './ui/button';
 import * as api from '../lib/api';
-import logo12 from '../../assets/logo12.png';
 import { toast } from 'sonner';
 import { getCurrentWorkspaceProfile } from '../lib/workspaceAuth';
 
@@ -93,6 +92,7 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
     { path: '/admin/tables', label: 'Tables', icon: Table2 },
     { path: '/admin/orders', label: 'Orders', icon: Receipt },
     { path: '/admin/kitchen', label: 'Kitchen', icon: ChefHat },
+    { path: '/admin/settings', label: 'Settings', icon: Settings },
   ];
 
   return (
@@ -232,7 +232,13 @@ export default function AdminNav({ collapsed, onToggleCollapse }: AdminNavProps)
               {showCollapsedAccount && (
                 <div className="absolute bottom-0 left-[calc(100%+12px)] z-[90] w-56 rounded-[8px] border border-slate-200 bg-white p-3 shadow-[0_14px_24px_rgba(15,23,42,0.18)]">
                   <div className="mb-2 flex items-center gap-2">
-                    <img src={logo12} alt="Admin avatar" className="h-8 w-8 rounded-full border border-slate-200 bg-white object-contain p-0.5" />
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white">
+                      {adminAvatar ? (
+                        <img src={adminAvatar} alt="Admin avatar" className="h-7 w-7 rounded-full object-cover" />
+                      ) : (
+                        <User className="h-3.5 w-3.5 text-black" />
+                      )}
+                    </span>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-slate-800">Admin</p>
                       <p className="truncate text-xs text-slate-500">{workspace?.ownerEmail || 'owner@workspace.com'}</p>

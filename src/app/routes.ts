@@ -11,6 +11,7 @@ import AdminMenuPage from "./pages/AdminMenuPage";
 import AdminTablesPage from "./pages/AdminTablesPage";
 import AdminOrdersPage from "./pages/AdminOrdersPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
+import AdminSettingsPage from "./pages/AdminSettingsPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import AdminLayout from "./components/AdminLayout";
 import { isWorkspaceAuthenticated } from "./lib/workspaceAuth";
@@ -98,6 +99,10 @@ export const router = createBrowserRouter([
       {
         path: "kitchen",
         Component: KitchenPage,
+      },
+      {
+        path: "settings",
+        Component: AdminSettingsPage,
       },
     ],
   },

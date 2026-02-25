@@ -534,3 +534,64 @@ export async function updateKitchenCredentials(input: {
   writeWorkspaceRecords([...records]);
   return { success: true, username: record.kitchenUsername };
 }
+
+export function patchCurrentWorkspaceProfile(patch: Partial<WorkspaceProfile>) {
+  const workspace = getCurrentWorkspaceProfile();
+  if (!workspace) throw new Error('Workspace not authenticated');
+  const records = readWorkspaceRecords();
+  const record = records.find((item) => item.id === workspace.id);
+  if (!record) throw new Error('Workspace not found');
+
+  if (patch.restaurantName !== undefined) record.restaurantName = String(patch.restaurantName || '').trim();
+  if (patch.outletName !== undefined) record.outletName = String(patch.outletName || '').trim();
+  if (patch.ownerEmail !== undefined) record.ownerEmail = normalizeEmail(String(patch.ownerEmail || '').trim());
+  if (patch.adminUsername !== undefined) record.adminUsername = String(patch.adminUsername || '').trim();
+  if (patch.kitchenUsername !== undefined) record.kitchenUsername = String(patch.kitchenUsername || '').trim();
+  if (patch.logoUrl !== undefined) record.logoUrl = String(patch.logoUrl || '').trim();
+  if (patch.currencyCode !== undefined) record.currencyCode = String(patch.currencyCode || 'USD').toUpperCase();
+  record.updatedAt = nowIso();
+
+  writeWorkspaceRecords([...records]);
+  return getCurrentWorkspaceProfile();
+}
+
+export async function updateAdminCredentials(input: {
+  currentUsername: string;
+  currentPassword: string;
+  nextUsername?: string;
+  nextPassword?: string;
+}) {
+  const workspace = getCurrentWorkspaceProfile();
+  if (!workspace) throw new Error('Workspace not authenticated');
+  const records = readWorkspaceRecords();
+  const record = records.find((item) => item.id === workspace.id);
+  if (!record) throw new Error('Workspace not found');
+
+  const enteredCurrentUsername = normalizeUsername(input.currentUsername);
+  if (enteredCurrentUsername !== normalizeUsername(record.adminUsername)) {
+    throw new Error('Invalid current admin username or password');
+  }
+
+  const currentPasswordHash = await hashSecret(String(input.currentPassword || '').trim(), record.adminSalt);
+  if (currentPasswordHash !== record.adminPasswordHash) {
+    throw new Error('Invalid current admin username or password');
+  }
+
+  if (input.nextUsername) {
+    const nextUsername = String(input.nextUsername || '').trim();
+    if (nextUsername.length < 3) throw new Error('New admin username must be at least 3 characters');
+    record.adminUsername = nextUsername;
+  }
+
+  if (input.nextPassword) {
+    const nextPassword = String(input.nextPassword || '').trim();
+    if (nextPassword.length < 6) throw new Error('New admin password must be at least 6 characters');
+    const nextSalt = randomSalt();
+    record.adminSalt = nextSalt;
+    record.adminPasswordHash = await hashSecret(nextPassword, nextSalt);
+  }
+
+  record.updatedAt = nowIso();
+  writeWorkspaceRecords([...records]);
+  return { success: true, username: record.adminUsername };
+}

@@ -2,6 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 import { projectId, publicAnonKey } from '/utils/supabase/info';
 import {
   getActiveWorkspaceId as getStoredActiveWorkspaceId,
+  patchCurrentWorkspaceProfile,
+  updateAdminCredentials as updateAdminCredentialsLocal,
   getCurrentWorkspaceProfile,
   loginAdminUser,
   loginKitchenUser,
@@ -194,6 +196,135 @@ export const hasAdminWorkspaceSession = () => {
     localStorage.removeItem(adminWorkspaceSessionKey);
     return false;
   }
+};
+
+export const getWorkspaceSettings = async () => {
+  await ensureOwnerAuthSession();
+  const workspaceId = getActiveWorkspaceId();
+  const { data, error } = await supabase
+    .from('workspaces')
+    .select('id, restaurant_name, outlet_name, owner_email, admin_username, logo_url, currency_code, timezone, updated_at')
+    .eq('id', workspaceId)
+    .single();
+
+  if (error) throw new Error(errMsg(error, 'Failed to fetch workspace settings'));
+
+  const kitchenRes = await supabase
+    .from('workspace_kitchen_auth')
+    .select('username')
+    .eq('workspace_id', workspaceId)
+    .maybeSingle();
+
+  patchCurrentWorkspaceProfile({
+    restaurantName: data.restaurant_name || '',
+    outletName: data.outlet_name || '',
+    ownerEmail: data.owner_email || '',
+    adminUsername: data.admin_username || '',
+    kitchenUsername: kitchenRes.data?.username || '',
+    logoUrl: data.logo_url || '',
+    currencyCode: data.currency_code || 'USD',
+    updatedAt: data.updated_at || new Date().toISOString(),
+  });
+
+  return {
+    workspace: {
+      id: String(data.id),
+      restaurantName: String(data.restaurant_name || ''),
+      outletName: String(data.outlet_name || ''),
+      ownerEmail: String(data.owner_email || ''),
+      adminUsername: String(data.admin_username || ''),
+      kitchenUsername: String(kitchenRes.data?.username || ''),
+      logoUrl: String(data.logo_url || ''),
+      currencyCode: String(data.currency_code || 'USD').toUpperCase(),
+      timezone: String(data.timezone || 'UTC'),
+      updatedAt: String(data.updated_at || ''),
+    },
+  };
+};
+
+export const uploadWorkspaceLogo = async (file: File) => {
+  await ensureOwnerAuthSession();
+  const workspaceId = getActiveWorkspaceId();
+  const ext = (file.name.includes('.') ? file.name.split('.').pop() : 'png') || 'png';
+  const safeExt = ext.toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
+  const path = `${workspaceId}/brand/logo-${Date.now()}.${safeExt}`;
+
+  const { error } = await supabase.storage.from('workspace-logos').upload(path, file, { upsert: true });
+  if (error) throw new Error(errMsg(error, 'Failed to upload workspace logo'));
+
+  const { data } = supabase.storage.from('workspace-logos').getPublicUrl(path);
+  return { url: String(data.publicUrl || '') };
+};
+
+export const updateWorkspaceSettings = async (input: {
+  restaurantName: string;
+  outletName: string;
+  currencyCode?: string;
+  logoUrl?: string;
+}) => {
+  await ensureOwnerAuthSession();
+  const workspaceId = getActiveWorkspaceId();
+  const payload: any = {
+    restaurant_name: String(input.restaurantName || '').trim(),
+    outlet_name: String(input.outletName || '').trim(),
+    currency_code: String(input.currencyCode || 'USD').toUpperCase(),
+  };
+  if (input.logoUrl !== undefined) payload.logo_url = String(input.logoUrl || '').trim() || null;
+
+  const { data, error } = await supabase
+    .from('workspaces')
+    .update(payload)
+    .eq('id', workspaceId)
+    .select('id, restaurant_name, outlet_name, owner_email, admin_username, logo_url, currency_code, timezone, updated_at')
+    .single();
+
+  if (error) throw new Error(errMsg(error, 'Failed to update workspace settings'));
+
+  patchCurrentWorkspaceProfile({
+    restaurantName: data.restaurant_name || '',
+    outletName: data.outlet_name || '',
+    ownerEmail: data.owner_email || '',
+    adminUsername: data.admin_username || '',
+    logoUrl: data.logo_url || '',
+    currencyCode: data.currency_code || 'USD',
+    updatedAt: data.updated_at || new Date().toISOString(),
+  });
+
+  return {
+    workspace: {
+      id: String(data.id),
+      restaurantName: String(data.restaurant_name || ''),
+      outletName: String(data.outlet_name || ''),
+      ownerEmail: String(data.owner_email || ''),
+      adminUsername: String(data.admin_username || ''),
+      logoUrl: String(data.logo_url || ''),
+      currencyCode: String(data.currency_code || 'USD').toUpperCase(),
+      timezone: String(data.timezone || 'UTC'),
+      updatedAt: String(data.updated_at || ''),
+    },
+  };
+};
+
+export const updateAdminCredentials = async (input: {
+  currentUsername: string;
+  currentPassword: string;
+  nextUsername?: string;
+  nextPassword?: string;
+}) => {
+  await ensureOwnerAuthSession();
+  const result = await updateAdminCredentialsLocal(input);
+
+  if (input.nextUsername) {
+    const workspaceId = getActiveWorkspaceId();
+    const { error } = await supabase
+      .from('workspaces')
+      .update({ admin_username: String(input.nextUsername || '').trim() })
+      .eq('id', workspaceId);
+    if (error) throw new Error(errMsg(error, 'Failed to update admin username'));
+    patchCurrentWorkspaceProfile({ adminUsername: String(input.nextUsername || '').trim() });
+  }
+
+  return result;
 };
 
 const getCurrentAdminUser = async () => {
@@ -458,7 +589,9 @@ export const changeKitchenUsername = async (
       return { success: true, username: result.username };
     }
     if (!data) throw new Error('Invalid current username or password');
-    return { success: true, username: String(nextUsername || '').trim() };
+    const updatedUsername = String(nextUsername || '').trim();
+    patchCurrentWorkspaceProfile({ kitchenUsername: updatedUsername });
+    return { success: true, username: updatedUsername };
   }
 
   const trimmedCurrent = String(currentUsername || '').trim();
@@ -485,6 +618,7 @@ export const changeKitchenUsername = async (
     throw new Error('Invalid current username or password');
   }
 
+  patchCurrentWorkspaceProfile({ kitchenUsername: trimmedNext });
   return { success: true, username: trimmedNext };
 };
 

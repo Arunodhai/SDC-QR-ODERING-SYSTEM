@@ -935,41 +935,42 @@ export default function CustomerOrderPage() {
                         </span>
                       </div>
                       <h3 className="line-clamp-2 text-[1.12rem] font-medium leading-[1.22] tracking-tight text-slate-900">{item.name}</h3>
-                      <p className="mt-2 text-[2.05rem] font-semibold leading-none tracking-[-0.02em] text-slate-900">
-                        {formatMenuPrice(item.price, workspaceCurrencyCode)}
-                      </p>
 
-                      <div className="mt-3">
+                      <div className="mt-2 flex items-end justify-between gap-2">
+                        <p className="text-[1.72rem] font-semibold leading-none tracking-[-0.02em] text-slate-900">
+                          {formatMenuPrice(item.price, workspaceCurrencyCode)}
+                        </p>
+
                         {!item.available ? (
-                          <Button variant="outline" disabled className="h-11 w-full rounded-[16px] border-[1.2px] border-slate-300 bg-white text-[0.95rem] font-semibold text-slate-500">
+                          <Button variant="outline" disabled className="h-10 rounded-[14px] border-[1.2px] border-slate-300 bg-white px-3 text-[0.85rem] font-semibold text-slate-500">
                             Unavailable
                           </Button>
                         ) : cart[item.id] ? (
-                          <div className="flex items-center justify-between gap-1">
+                          <div className="flex items-center gap-1">
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-11 w-11 rounded-[14px] border-[1.2px] border-slate-300"
+                              className="h-10 w-10 rounded-[13px] border-[1.2px] border-slate-300"
                               disabled={!phoneConfirmed}
                               onClick={() => removeFromCart(item.id)}
                             >
-                              <Minus className="h-5 w-5" />
+                              <Minus className="h-4.5 w-4.5" />
                             </Button>
-                            <span className="min-w-[2rem] text-center text-[1.2rem] font-semibold text-slate-900">{cart[item.id]}</span>
+                            <span className="min-w-[1.8rem] text-center text-[1.12rem] font-semibold text-slate-900">{cart[item.id]}</span>
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-11 w-11 rounded-[14px] border-[1.2px] border-slate-300"
+                              className="h-10 w-10 rounded-[13px] border-[1.2px] border-slate-300"
                               disabled={!phoneConfirmed}
                               onClick={() => addToCart(item.id)}
                             >
-                              <Plus className="h-5 w-5" />
+                              <Plus className="h-4.5 w-4.5" />
                             </Button>
                           </div>
                         ) : (
                           <Button
                             variant="outline"
-                            className="h-11 w-full rounded-[16px] border-[1.2px] border-slate-300 bg-white text-[0.94rem] font-bold tracking-[0.06em] text-emerald-700 hover:bg-emerald-50 hover:text-emerald-700"
+                            className="h-10 rounded-[14px] border-[1.2px] border-slate-300 bg-white px-5 text-[0.9rem] font-bold tracking-[0.06em] text-emerald-700 hover:bg-emerald-50 hover:text-emerald-700"
                             disabled={!phoneConfirmed}
                             onClick={() => addToCart(item.id)}
                           >

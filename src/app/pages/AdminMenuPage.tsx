@@ -413,11 +413,11 @@ export default function AdminMenuPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 p-3">
                     {categoryItems.map(item => (
                       <Card key={item.id} className="sdc-panel-card overflow-hidden p-0">
-                        <div className="flex flex-col">
+                        <div className="flex min-h-[190px]">
                           {getMenuItemImage(item.name, item.image) && (
                             <button
                               type="button"
-                              className="h-44 w-full shrink-0 overflow-hidden rounded-none border-b bg-white transition hover:opacity-95 cursor-zoom-in"
+                              className="h-full w-[190px] shrink-0 overflow-hidden rounded-none border-r bg-white transition hover:opacity-95 cursor-zoom-in"
                               onClick={() =>
                                 setPreviewImage({
                                   src: getMenuItemImage(item.name, item.image),
@@ -429,7 +429,7 @@ export default function AdminMenuPage() {
                             </button>
                           )}
                           {!getMenuItemImage(item.name, item.image) && (
-                            <div className="h-44 w-full shrink-0 border-b bg-white/60" />
+                            <div className="h-full w-[190px] shrink-0 border-r bg-white/60" />
                           )}
 
                           <div className="flex-1 min-w-0 p-3">
