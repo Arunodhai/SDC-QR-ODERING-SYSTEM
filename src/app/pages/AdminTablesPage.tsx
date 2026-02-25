@@ -43,23 +43,7 @@ export default function AdminTablesPage() {
   const loadTables = async () => {
     try {
       const res = await api.getTables();
-      let nextTables = res.tables || [];
-
-      if (nextTables.length < 12) {
-        const existing = new Set(nextTables.map((t: any) => Number(t.tableNumber)));
-        const missing = Array.from({ length: 12 }, (_, i) => i + 1).filter((n) => !existing.has(n));
-        if (missing.length) {
-          await Promise.all(
-            missing.map((num) =>
-              api.createTable(num).catch(() => null),
-            ),
-          );
-          const refreshed = await api.getTables();
-          nextTables = refreshed.tables || [];
-        }
-      }
-
-      setTables(nextTables);
+      setTables(res.tables || []);
     } catch (error) {
       console.error('Error loading tables:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to load tables');
@@ -200,13 +184,15 @@ export default function AdminTablesPage() {
             <DialogTitle>Add Table</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreateTable} className="space-y-4">
-            <div>
-              <Label>Table Number</Label>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">Table Number</Label>
               <Input
                 type="number"
                 value={tableNumber}
                 onChange={(e) => setTableNumber(e.target.value)}
                 placeholder="e.g. 1"
+                min={1}
+                className="h-11"
                 required
               />
             </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { Plus, Edit, Trash2, Upload, Coffee } from 'lucide-react';
+import { Plus, Edit, Trash2, Coffee } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
@@ -209,6 +209,25 @@ export default function AdminMenuPage() {
     setShowItemDialog(true);
   };
 
+  const openCreateItemForCategory = (categoryId?: string | number) => {
+    if (categories.length === 0) {
+      toast.error('Create at least one category first');
+      return;
+    }
+    setEditingItem(null);
+    setItemForm({
+      categoryId: categoryId ? String(categoryId) : '',
+      name: '',
+      price: '',
+      description: '',
+      image: '',
+      available: true,
+      dietaryType: 'NON_VEG',
+    });
+    setActiveTab('items');
+    setShowItemDialog(true);
+  };
+
   const toggleItemAvailability = async (item: any) => {
     const nextAvailable = !item.available;
     setMenuItems((prev) =>
@@ -289,6 +308,15 @@ export default function AdminMenuPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-3"
+                      onClick={() => openCreateItemForCategory(category.id)}
+                    >
+                      <Plus className="mr-1 h-3.5 w-3.5" />
+                      Add item
+                    </Button>
                     <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openEditCategory(category)}>
                       <Edit className="w-4 h-4" />
                     </Button>
@@ -311,7 +339,7 @@ export default function AdminMenuPage() {
                     setActiveTab('categories');
                     return;
                   }
-                  setShowItemDialog(true);
+                  openCreateItemForCategory();
                 }}
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -357,13 +385,13 @@ export default function AdminMenuPage() {
               <Card className="sdc-panel-card p-8 text-center mb-6">
                 <h3 className="text-lg font-semibold mb-2">No menu items found</h3>
                 <p className="text-muted-foreground mb-4">
-                  Categories exist, but there are no rows in <code>menu_items</code>.
-                </p>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Run <code>/Users/arunodhaiv/Desktop/SDC/sql/import_stories_menu.sql</code> in Supabase SQL editor, then click Refresh.
+                  Categories are ready. Add your first menu item to start taking orders.
                 </p>
                 <div className="mx-auto max-w-xs">
-                  <Button onClick={loadData} className="w-full">Refresh Data</Button>
+                  <Button onClick={() => openCreateItemForCategory()} className="w-full">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add First Item
+                  </Button>
                 </div>
               </Card>
             )}
@@ -384,12 +412,12 @@ export default function AdminMenuPage() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 p-3">
                     {categoryItems.map(item => (
-                      <Card key={item.id} className="sdc-panel-card p-3">
-                        <div className="flex gap-3 items-start">
+                      <Card key={item.id} className="sdc-panel-card overflow-hidden p-0">
+                        <div className="flex flex-col">
                           {getMenuItemImage(item.name, item.image) && (
                             <button
                               type="button"
-                              className="h-24 w-24 shrink-0 rounded-lg border bg-white p-1 transition hover:shadow cursor-zoom-in"
+                              className="h-44 w-full shrink-0 overflow-hidden rounded-none border-b bg-white transition hover:opacity-95 cursor-zoom-in"
                               onClick={() =>
                                 setPreviewImage({
                                   src: getMenuItemImage(item.name, item.image),
@@ -397,14 +425,14 @@ export default function AdminMenuPage() {
                                 })
                               }
                             >
-                              <img src={getMenuItemImage(item.name, item.image)} alt={item.name} className="h-full w-full rounded object-contain" />
+                              <img src={getMenuItemImage(item.name, item.image)} alt={item.name} className="h-full w-full object-cover" />
                             </button>
                           )}
                           {!getMenuItemImage(item.name, item.image) && (
-                            <div className="h-24 w-24 shrink-0 rounded-lg border bg-white/60" />
+                            <div className="h-44 w-full shrink-0 border-b bg-white/60" />
                           )}
 
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 p-3">
                             <h4 className="font-semibold text-base leading-tight truncate">{item.name}</h4>
                             <div className="mt-1">
                               <span
@@ -489,15 +517,15 @@ export default function AdminMenuPage() {
                 No categories found. Create a category first from the Categories tab.
               </div>
             )}
-            <div>
-              <Label>Category</Label>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">Category</Label>
               <Select
                 value={itemForm.categoryId}
                 onValueChange={(val) => setItemForm(prev => ({ ...prev, categoryId: val }))}
                 disabled={categories.length === 0}
                 required
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-11">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -508,61 +536,87 @@ export default function AdminMenuPage() {
               </Select>
             </div>
 
-            <div>
-              <Label>Name</Label>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">Name</Label>
               <Input
                 value={itemForm.name}
                 onChange={(e) => setItemForm(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="e.g. Cappuccino"
+                className="h-11"
                 required
               />
             </div>
 
-            <div>
-              <Label>Price</Label>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">Price</Label>
               <Input
                 type="number"
                 step="0.01"
                 value={itemForm.price}
                 onChange={(e) => setItemForm(prev => ({ ...prev, price: e.target.value }))}
                 placeholder="0.00"
+                className="h-11"
                 required
               />
             </div>
 
-            <div>
-              <Label>Description</Label>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">Description</Label>
               <Textarea
                 value={itemForm.description}
                 onChange={(e) => setItemForm(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Item description"
+                className="min-h-[84px]"
               />
             </div>
 
-            <div>
-              <Label>Food Type</Label>
-              <Select
-                value={itemForm.dietaryType}
-                onValueChange={(val) => setItemForm(prev => ({ ...prev, dietaryType: val }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select food type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="VEG">Veg</SelectItem>
-                  <SelectItem value="NON_VEG">Non Veg</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">Food Type</Label>
+              <div className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white px-3 py-2">
+                <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-800">
+                  <input
+                    type="radio"
+                    name="dietaryType"
+                    value="VEG"
+                    checked={itemForm.dietaryType === 'VEG'}
+                    onChange={(e) => setItemForm(prev => ({ ...prev, dietaryType: e.target.value }))}
+                    className="h-4 w-4 accent-emerald-600"
+                  />
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-[3px] border border-emerald-600">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                    </span>
+                    Veg
+                  </span>
+                </label>
+                <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-800">
+                  <input
+                    type="radio"
+                    name="dietaryType"
+                    value="NON_VEG"
+                    checked={itemForm.dietaryType === 'NON_VEG'}
+                    onChange={(e) => setItemForm(prev => ({ ...prev, dietaryType: e.target.value }))}
+                    className="h-4 w-4 accent-rose-600"
+                  />
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-[3px] border border-rose-600">
+                      <span className="h-1.5 w-1.5 rounded-full bg-rose-600" />
+                    </span>
+                    Non Veg
+                  </span>
+                </label>
+              </div>
             </div>
 
-            <div>
-              <Label>Image</Label>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">Image</Label>
               <div className="flex gap-2">
                 <Input
                   type="file"
                   accept="image/*"
                   onChange={handleImageUpload}
                   disabled={uploading}
+                  className="h-11"
                 />
               </div>
               {itemForm.image && (

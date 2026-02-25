@@ -672,7 +672,13 @@ export const createTable = async (tableNumber: number) => {
     .select()
     .single();
 
-  if (error) throw new Error(errMsg(error, 'Failed to create table'));
+  if (error) {
+    const message = String(error.message || '').toLowerCase();
+    if (message.includes('restaurant_tables_table_number_key') || message.includes('uq_restaurant_tables_workspace_table_number')) {
+      throw new Error(`Table ${tableNumber} already exists in this workspace`);
+    }
+    throw new Error(errMsg(error, 'Failed to create table'));
+  }
   return { table: { id: String(data.id), tableNumber: Number(data.table_number) } };
 };
 

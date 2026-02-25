@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
@@ -21,6 +21,7 @@ export default function SetupPage() {
   const [kitchenPassword, setKitchenPassword] = useState('');
   const [workspaceLogoFile, setWorkspaceLogoFile] = useState<File | null>(null);
   const [workspaceLogoPreview, setWorkspaceLogoPreview] = useState('');
+  const workspaceLogoInputRef = useRef<HTMLInputElement | null>(null);
 
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -77,24 +78,24 @@ export default function SetupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <main className="mx-auto w-full max-w-[980px] px-6 py-12 md:px-10 md:py-16">
+    <div className="min-h-screen bg-white md:h-screen md:overflow-hidden">
+      <main className="mx-auto w-full max-w-[1100px] px-6 py-6 md:px-10 md:py-6">
         <section>
           <p className="text-xs font-semibold uppercase tracking-[0.26em] text-rose-500">
             {isLoginMode ? 'Sign In' : 'Setup'}
           </p>
-          <h1 className="mt-2 text-4xl leading-[1.02] text-slate-900 md:text-6xl" style={{ fontFamily: "'Playfair Display', serif" }}>
+          <h1 className="mt-1 text-4xl leading-[1.02] text-slate-900 md:text-5xl" style={{ fontFamily: "'Playfair Display', serif" }}>
             {isLoginMode ? 'Workspace Sign In' : 'Workspace Setup'}
           </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 md:text-base">
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 md:text-[15px]">
             {isLoginMode
               ? 'Sign in with owner credentials to continue to Admin/Kitchen access selection.'
               : 'Create your workspace once with owner, admin, and kitchen credentials. You can sign in anytime after setup.'}
           </p>
-          <div className="mt-8 border-t border-slate-200/80" />
+          <div className="mt-4 border-t border-slate-200/80" />
 
           {isLoginMode ? (
-            <form onSubmit={handleLogin} className="mt-8 grid max-w-xl gap-5">
+            <form onSubmit={handleLogin} className="mt-6 grid max-w-xl gap-4">
               <label className="space-y-2">
                 <span className="text-xs font-semibold uppercase tracking-[0.13em] text-slate-500">Owner email</span>
                 <Input
@@ -103,7 +104,7 @@ export default function SetupPage() {
                   onChange={(event) => setLoginEmail(event.target.value)}
                   required
                   placeholder="Enter owner email"
-                  className="h-11 rounded-2xl border-slate-200 bg-white"
+                  className="h-10 rounded-2xl border-slate-200 bg-white"
                 />
               </label>
               <label className="space-y-2">
@@ -114,15 +115,15 @@ export default function SetupPage() {
                   onChange={(event) => setLoginPassword(event.target.value)}
                   required
                   placeholder="Enter owner password"
-                  className="h-11 rounded-2xl border-slate-200 bg-white"
+                  className="h-10 rounded-2xl border-slate-200 bg-white"
                 />
               </label>
 
-              <div className="mt-2">
+              <div className="mt-1">
                 <Button
                   type="submit"
                   disabled={saving}
-                  className="h-12 w-full rounded-full bg-slate-900 text-sm font-semibold text-white hover:bg-slate-800 md:w-auto md:px-10"
+                  className="h-11 w-full rounded-full bg-slate-900 text-sm font-semibold text-white hover:bg-slate-800 md:w-auto md:px-10"
                 >
                   {saving ? 'Signing in...' : 'Sign in to Workspace'}
                 </Button>
@@ -136,7 +137,7 @@ export default function SetupPage() {
               </button>
             </form>
           ) : (
-            <form onSubmit={handleRegister} className="mt-8 grid gap-5 md:grid-cols-2">
+            <form onSubmit={handleRegister} className="mt-6 grid gap-3 md:grid-cols-2">
               <label className="space-y-2">
                 <span className="text-xs font-semibold uppercase tracking-[0.13em] text-slate-500">Restaurant / Cafe name</span>
                 <Input
@@ -144,22 +145,8 @@ export default function SetupPage() {
                   onChange={(event) => setRestaurantName(event.target.value)}
                   required
                   placeholder="Enter restaurant or cafe name"
-                  className="h-11 rounded-2xl border-slate-200 bg-white"
+                  className="h-10 rounded-2xl border-slate-200 bg-white"
                 />
-              </label>
-              <label className="space-y-2 md:col-span-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.13em] text-slate-500">Workspace logo (optional)</span>
-                <div className="flex items-center gap-3">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleWorkspaceLogoChange}
-                    className="h-11 rounded-2xl border-slate-200 bg-white file:mr-3 file:rounded-full file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"
-                  />
-                  {workspaceLogoPreview ? (
-                    <img src={workspaceLogoPreview} alt="Workspace logo preview" className="h-11 w-11 rounded-xl border border-slate-200 object-cover" />
-                  ) : null}
-                </div>
               </label>
               <label className="space-y-2">
                 <span className="text-xs font-semibold uppercase tracking-[0.13em] text-slate-500">Outlet / Branch</span>
@@ -168,8 +155,33 @@ export default function SetupPage() {
                   onChange={(event) => setOutletName(event.target.value)}
                   required
                   placeholder="Enter outlet or branch name"
-                  className="h-11 rounded-2xl border-slate-200 bg-white"
+                  className="h-10 rounded-2xl border-slate-200 bg-white"
                 />
+              </label>
+              <label className="space-y-2 md:col-span-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.13em] text-slate-500">Workspace logo (optional)</span>
+                <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-2 py-1.5">
+                  <input
+                    ref={workspaceLogoInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleWorkspaceLogoChange}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => workspaceLogoInputRef.current?.click()}
+                    className="h-8 rounded-full bg-slate-900 px-4 text-sm font-semibold text-white"
+                  >
+                    Choose file
+                  </button>
+                  <span className="min-w-0 flex-1 truncate text-sm text-slate-600">
+                    {workspaceLogoFile?.name || 'No file selected'}
+                  </span>
+                  {workspaceLogoPreview ? (
+                    <img src={workspaceLogoPreview} alt="Workspace logo preview" className="h-9 w-9 rounded-lg border border-slate-200 object-cover" />
+                  ) : null}
+                </div>
               </label>
               <label className="space-y-2">
                 <span className="text-xs font-semibold uppercase tracking-[0.13em] text-slate-500">Owner email (login id)</span>
@@ -179,7 +191,7 @@ export default function SetupPage() {
                   onChange={(event) => setOwnerEmail(event.target.value)}
                   required
                   placeholder="name@business.com"
-                  className="h-11 rounded-2xl border-slate-200 bg-white"
+                  className="h-10 rounded-2xl border-slate-200 bg-white"
                 />
               </label>
               <label className="space-y-2">
@@ -190,7 +202,7 @@ export default function SetupPage() {
                   onChange={(event) => setOwnerPassword(event.target.value)}
                   required
                   placeholder="Create owner password"
-                  className="h-11 rounded-2xl border-slate-200 bg-white"
+                  className="h-10 rounded-2xl border-slate-200 bg-white"
                 />
               </label>
               <label className="space-y-2">
@@ -200,7 +212,7 @@ export default function SetupPage() {
                   onChange={(event) => setAdminUsername(event.target.value)}
                   required
                   placeholder="Create admin username"
-                  className="h-11 rounded-2xl border-slate-200 bg-white"
+                  className="h-10 rounded-2xl border-slate-200 bg-white"
                 />
               </label>
               <label className="space-y-2">
@@ -211,7 +223,7 @@ export default function SetupPage() {
                   onChange={(event) => setAdminPassword(event.target.value)}
                   required
                   placeholder="Create admin password"
-                  className="h-11 rounded-2xl border-slate-200 bg-white"
+                  className="h-10 rounded-2xl border-slate-200 bg-white"
                 />
               </label>
               <label className="space-y-2">
@@ -221,7 +233,7 @@ export default function SetupPage() {
                   onChange={(event) => setKitchenUsername(event.target.value)}
                   required
                   placeholder="Create kitchen username"
-                  className="h-11 rounded-2xl border-slate-200 bg-white"
+                  className="h-10 rounded-2xl border-slate-200 bg-white"
                 />
               </label>
               <label className="space-y-2">
@@ -232,15 +244,15 @@ export default function SetupPage() {
                   onChange={(event) => setKitchenPassword(event.target.value)}
                   required
                   placeholder="Create kitchen password"
-                  className="h-11 rounded-2xl border-slate-200 bg-white"
+                  className="h-10 rounded-2xl border-slate-200 bg-white"
                 />
               </label>
 
-              <div className="mt-2 md:col-span-2">
+              <div className="mt-1 md:col-span-2">
                 <Button
                   type="submit"
                   disabled={saving}
-                  className="h-12 w-full rounded-full bg-slate-900 text-sm font-semibold text-white hover:bg-slate-800 md:w-auto md:px-10"
+                  className="h-11 w-full rounded-full bg-slate-900 text-sm font-semibold text-white hover:bg-slate-800 md:w-auto md:px-10"
                 >
                   {saving ? 'Creating workspace...' : 'Create Workspace'}
                 </Button>
