@@ -1,4 +1,4 @@
-import { ArrowRight, BarChart3, CheckCircle2, CookingPot, QrCode, ReceiptText, ShieldCheck, SquareMenu, Table2, UserRoundCheck, Wallet } from 'lucide-react';
+import { ArrowRight, BarChart3, CheckCircle2, Clock3, CookingPot, Crown, GitBranch, LineChart, Printer, QrCode, ReceiptText, ShieldCheck, Sparkles, SquareMenu, Table2, UserRoundCheck, Users2, Wallet } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { QRCodeSVG } from 'qrcode.react';
@@ -127,34 +127,50 @@ const businessWhyPoints = [
   {
     title: 'Faster Ordering and Table Turnover',
     detail: 'Guests order instantly from table QR, increasing table turns per day.',
+    icon: Clock3,
+    result: 'More tables per shift',
   },
   {
     title: 'Reduced Staff Dependency',
     detail: 'Smaller teams serve more guests with fewer order-taking errors.',
+    icon: Users2,
+    result: 'Lower service overhead',
   },
   {
     title: 'No Menu Printing Cost',
     detail: 'Update prices digitally from admin with zero reprinting overhead.',
+    icon: Printer,
+    result: 'Instant menu changes',
   },
   {
     title: 'Realtime Kitchen and Billing Sync',
     detail: 'Orders reach kitchen and billing instantly, cutting confusion and delays.',
+    icon: GitBranch,
+    result: 'Fewer missed orders',
   },
   {
     title: 'Actionable Business Insights',
     detail: 'See best-sellers, peak hours, revenue, and AOV for smarter decisions.',
+    icon: LineChart,
+    result: 'Data-backed decisions',
   },
   {
     title: 'Higher Average Order Value',
     detail: 'Add-ons, combos, and visuals increase basket size and order value.',
+    icon: Sparkles,
+    result: 'Higher basket size',
   },
   {
     title: 'Hygienic Contactless Experience',
     detail: 'Contactless ordering improves hygiene and modern guest comfort.',
+    icon: ShieldCheck,
+    result: 'Modern guest trust',
   },
   {
     title: 'Premium Brand Perception',
     detail: 'A QR-first flow makes your brand look modern and premium.',
+    icon: Crown,
+    result: 'Stronger brand image',
   },
 ];
 
@@ -327,6 +343,131 @@ export default function WelcomePage() {
           </div>
         </section>
 
+        <section id="business-impact" className="border-t border-slate-200/70 py-14 md:py-16">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-rose-500">Why Restaurants Choose This</p>
+            <h2 className="mt-2 text-[clamp(2rem,4.5vw,3.8rem)] leading-[0.96] text-slate-900" style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}>
+              Built for revenue, speed, and control.
+            </h2>
+            <p className="mt-4 max-w-3xl text-base leading-relaxed text-slate-600">
+              Faster service on the floor, cleaner execution in the kitchen, and sharper business decisions for owners.
+            </p>
+
+            <div className="mt-7 grid gap-3 sm:grid-cols-3">
+              {[
+                {
+                  kpi: '+24%',
+                  label: 'Faster table turnover',
+                  stroke: '#16a34a',
+                  points: '2,46 16,42 30,40 44,36 58,34 72,30 86,28 100,24 114,22 128,18 140,16',
+                },
+                {
+                  kpi: '-38%',
+                  label: 'Order-taking mistakes',
+                  stroke: '#ef4444',
+                  points: '2,8 16,12 30,14 44,18 58,22 72,28 86,34 100,38 114,42 128,48 140,54',
+                },
+                {
+                  kpi: '+17%',
+                  label: 'Average order value',
+                  stroke: '#16a34a',
+                  points: '2,46 16,42 30,40 44,36 58,34 72,30 86,28 100,24 114,22 128,18 140,16',
+                },
+              ].map((item, idx) => (
+                <div key={item.label} className="rounded-3xl border border-slate-200 bg-white px-5 py-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-[2.65rem] leading-none text-slate-900" style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}>
+                        {item.kpi}
+                      </p>
+                      <p className="mt-1 text-xs font-medium uppercase tracking-[0.12em] text-slate-500">{item.label}</p>
+                    </div>
+                    <div className="hidden w-[170px] shrink-0 md:block">
+                      <svg viewBox="0 0 142 60" className="h-[64px] w-full">
+                        <defs>
+                          <linearGradient id={`kpi-mini-fill-${idx}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={item.stroke} stopOpacity="0.24" />
+                            <stop offset="100%" stopColor={item.stroke} stopOpacity="0" />
+                          </linearGradient>
+                        </defs>
+                        <line x1="0" y1="12" x2="142" y2="12" stroke="#e2e8f0" strokeWidth="1" />
+                        <polygon points={`${item.points} 140,58 2,58`} fill={`url(#kpi-mini-fill-${idx})`} />
+                        <polyline
+                          points={item.points}
+                          fill="none"
+                          stroke={item.stroke}
+                          strokeWidth="2.2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-8 grid gap-x-12 md:grid-cols-2">
+              {businessWhyPoints.map((point, idx) => {
+                const Icon = point.icon;
+                return (
+                  <article key={point.title} className="group border-b border-slate-200/80 py-4">
+                    <div className="flex items-start gap-3">
+                      <div className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition-colors duration-200 group-hover:border-slate-900 group-hover:text-slate-900">
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-3">
+                          <h3 className="text-xl leading-tight text-slate-900" style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}>
+                            {point.title}
+                          </h3>
+                          <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                            {String(idx + 1).padStart(2, '0')}
+                          </span>
+                        </div>
+                        <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{point.detail}</p>
+                        <p className="mt-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">{point.result}</p>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section id="platform-features" className="py-12">
+          <div className="mb-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-500">Features</p>
+            <h2 className="mt-2 text-5xl leading-none text-slate-900" style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}>
+              Complete product capabilities
+            </h2>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {platformFeatures.map((feature) => {
+              const Icon = feature.icon;
+              return (
+                <article
+                  key={feature.title}
+                  className="group rounded-2xl border border-slate-200 bg-white p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_10px_24px_rgba(15,23,42,0.06)]"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-2 text-slate-700 transition-colors duration-200 group-hover:bg-slate-900 group-hover:text-white">
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">{feature.group}</p>
+                  </div>
+                  <h3 className="mt-4 text-xl leading-tight text-slate-900" style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}>
+                    {feature.title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{feature.detail}</p>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
         <section className="border-t border-slate-200/70 py-12 md:py-14">
           <div className="mb-6">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-rose-500">Role Flows</p>
@@ -343,48 +484,48 @@ export default function WelcomePage() {
               const motion = getFlowMotion(flow.steps.length, flowClockMs);
 
               return (
-              <Card key={flow.title} className="sdc-panel-card gap-0 border border-slate-200/90 bg-white p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{flow.title}</p>
-                <div className="mt-4 hidden sm:block">
-                  <div className="relative">
-                    <div
-                      className="absolute top-4 z-[1] h-px overflow-hidden"
-                      style={{ left: '16px', right: '16px' }}
-                    >
-                      <span className="block h-px bg-slate-900" style={{ width: `${motion.progress * 100}%` }} />
-                    </div>
-                    <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${flow.steps.length}, minmax(0, 1fr))` }}>
-                      {flow.steps.map((step, idx) => (
-                        <div key={step.title} className="relative z-10 text-center">
-                          <div
-                            className={`mx-auto inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-rose-400 to-orange-300 text-xs font-semibold text-white shadow-[0_8px_18px_rgba(251,113,133,0.3)] transition-transform duration-150 ${
-                              motion.activeIndex === idx ? 'scale-[1.22]' : 'scale-100'
-                            }`}
-                          >
-                            {idx + 1}
+                <Card key={flow.title} className="sdc-panel-card gap-0 border border-slate-200/90 bg-white p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{flow.title}</p>
+                  <div className="mt-4 hidden sm:block">
+                    <div className="relative">
+                      <div
+                        className="absolute top-4 z-[1] h-px overflow-hidden"
+                        style={{ left: '16px', right: '16px' }}
+                      >
+                        <span className="block h-px bg-slate-900" style={{ width: `${motion.progress * 100}%` }} />
+                      </div>
+                      <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${flow.steps.length}, minmax(0, 1fr))` }}>
+                        {flow.steps.map((step, idx) => (
+                          <div key={step.title} className="relative z-10 text-center">
+                            <div
+                              className={`mx-auto inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-rose-400 to-orange-300 text-xs font-semibold text-white shadow-[0_8px_18px_rgba(251,113,133,0.3)] transition-transform duration-150 ${
+                                motion.activeIndex === idx ? 'scale-[1.22]' : 'scale-100'
+                              }`}
+                            >
+                              {idx + 1}
+                            </div>
+                            <p className="mt-2 text-xs font-semibold leading-tight text-slate-700">{step.title}</p>
+                            <p className="mt-0.5 text-[10px] text-slate-500">{step.hint}</p>
                           </div>
-                          <p className="mt-2 text-xs font-semibold leading-tight text-slate-700">{step.title}</p>
-                          <p className="mt-0.5 text-[10px] text-slate-500">{step.hint}</p>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="mt-3 space-y-2 sm:hidden">
-                  {flow.steps.map((step, idx) => (
-                    <div key={step.title} className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-white/75 p-2">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-rose-400 to-orange-300 text-[10px] font-semibold text-white shadow-[0_6px_14px_rgba(251,113,133,0.28)]">
-                          {idx + 1}
-                        </span>
-                        <p className="text-xs font-semibold text-slate-700">{step.title}</p>
+                  <div className="mt-3 space-y-2 sm:hidden">
+                    {flow.steps.map((step, idx) => (
+                      <div key={step.title} className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-white/75 p-2">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-rose-400 to-orange-300 text-[10px] font-semibold text-white shadow-[0_6px_14px_rgba(251,113,133,0.28)]">
+                            {idx + 1}
+                          </span>
+                          <p className="text-xs font-semibold text-slate-700">{step.title}</p>
+                        </div>
+                        <p className="text-[10px] text-slate-500">{step.hint}</p>
                       </div>
-                      <p className="text-[10px] text-slate-500">{step.hint}</p>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            );
+                    ))}
+                  </div>
+                </Card>
+              );
             })}
           </div>
         </section>
@@ -424,67 +565,6 @@ export default function WelcomePage() {
                   ))}
                 </ul>
               </Card>
-            ))}
-          </div>
-        </section>
-
-        <section id="platform-features" className="py-12">
-          <div className="mb-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-500">Features</p>
-            <h2 className="mt-2 text-5xl leading-none text-slate-900" style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}>
-              Complete product capabilities
-            </h2>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {platformFeatures.map((feature) => {
-              const Icon = feature.icon;
-              return (
-                <article
-                  key={feature.title}
-                  className="group rounded-2xl border border-slate-200 bg-white p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_10px_24px_rgba(15,23,42,0.06)]"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-2 text-slate-700 transition-colors duration-200 group-hover:bg-slate-900 group-hover:text-white">
-                      <Icon className="h-4 w-4" />
-                    </div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">{feature.group}</p>
-                  </div>
-                  <h3 className="mt-4 text-xl leading-tight text-slate-900" style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}>
-                    {feature.title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{feature.detail}</p>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-
-        <section id="business-impact" className="border-t border-slate-200/70 py-14 md:py-16">
-          <div className="mb-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-rose-500">Why Restaurants Choose This</p>
-            <h2 className="mt-2 text-[clamp(2rem,4.5vw,3.8rem)] leading-[0.96] text-slate-900" style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}>
-              Built for revenue, speed, and control.
-            </h2>
-          </div>
-          <div className="grid gap-x-10 md:grid-cols-2">
-            {businessWhyPoints.map((point, idx) => (
-              <article key={point.title} className="border-b border-slate-200/70 py-5">
-                <div className="flex items-start gap-4">
-                  <span
-                    className="mt-0.5 text-2xl leading-none text-slate-300"
-                    style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}
-                  >
-                    {String(idx + 1).padStart(2, '0')}
-                  </span>
-                  <div>
-                    <h3 className="text-xl leading-tight text-slate-900" style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}>
-                      {point.title}
-                    </h3>
-                    <p className="mt-2 text-base leading-relaxed text-slate-600">{point.detail}</p>
-                  </div>
-                </div>
-              </article>
             ))}
           </div>
         </section>
