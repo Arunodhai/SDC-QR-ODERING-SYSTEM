@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import * as api from '../lib/api';
 import { getMenuItemImage } from '../lib/menuImageFallback';
 import { getActiveWorkspaceId, getCurrentWorkspaceProfile, setActiveWorkspaceId } from '../lib/workspaceAuth';
-import logo12 from '../../assets/logo12.png';
+import defaultLogo from '../../assets/logo12.png';
 
 const STATUS_TEXT_COLORS: Record<string, string> = {
   PENDING: 'text-amber-600',
@@ -118,6 +118,8 @@ export default function CustomerOrderPage() {
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
   const [cartAvailabilityPopup, setCartAvailabilityPopup] = useState<string>('');
   const [workspaceCurrencyCode, setWorkspaceCurrencyCode] = useState('USD');
+  const [brandName, setBrandName] = useState('Stories de Café');
+  const [brandLogo, setBrandLogo] = useState(defaultLogo);
   const latestFinalBillIdRef = useRef<string>('');
   const cartRef = useRef<Record<string, number>>({});
   const cartStorageKey = `sdc:cart:${tableNumber || 'unknown'}:${customerPhone || 'guest'}`;
@@ -135,6 +137,12 @@ export default function CustomerOrderPage() {
 
   useEffect(() => {
     const workspace = getCurrentWorkspaceProfile();
+    if (workspace?.restaurantName) {
+      setBrandName(String(workspace.restaurantName));
+    }
+    if (workspace?.logoUrl) {
+      setBrandLogo(String(workspace.logoUrl));
+    }
     if (workspace?.currencyCode) {
       setWorkspaceCurrencyCode(String(workspace.currencyCode).toUpperCase());
     }
@@ -176,6 +184,10 @@ export default function CustomerOrderPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const workspaceFromQuery = String(params.get('ws') || '').trim();
+    const restaurantNameFromQuery = String(params.get('rn') || '').trim();
+    const logoFromQuery = String(params.get('lu') || '').trim();
+    if (restaurantNameFromQuery) setBrandName(restaurantNameFromQuery);
+    if (logoFromQuery) setBrandLogo(logoFromQuery);
     if (workspaceFromQuery) {
       setActiveWorkspaceId(workspaceFromQuery);
     } else if (!getActiveWorkspaceId()) {
@@ -533,8 +545,8 @@ export default function CustomerOrderPage() {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h1 className="brand-display flex items-center gap-2 text-2xl font-bold leading-none text-slate-900">
-                <img src={logo12} alt="Stories de Café" className="h-8 w-8 shrink-0 object-contain" />
-                <span className="truncate">Stories de Café</span>
+                <img src={brandLogo || defaultLogo} alt={brandName} className="h-8 w-8 shrink-0 object-contain" />
+                <span className="truncate">{brandName}</span>
               </h1>
               {phoneConfirmed && (
                 <p className="mt-2 truncate text-sm text-slate-600">

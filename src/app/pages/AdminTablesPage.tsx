@@ -145,8 +145,13 @@ export default function AdminTablesPage() {
 
   const getTableURL = (tableNumber: number) => {
     const workspaceId = getActiveWorkspaceId();
-    const search = workspaceId ? `?ws=${encodeURIComponent(workspaceId)}` : '';
-    return `${window.location.origin}/table/${tableNumber}${search}`;
+    const workspace = getCurrentWorkspaceProfile();
+    const params = new URLSearchParams();
+    if (workspaceId) params.set('ws', workspaceId);
+    if (workspace?.restaurantName) params.set('rn', String(workspace.restaurantName));
+    if (workspace?.logoUrl) params.set('lu', String(workspace.logoUrl));
+    const query = params.toString();
+    return `${window.location.origin}/table/${tableNumber}${query ? `?${query}` : ''}`;
   };
 
   const getQrImageSettings = (size: number) => {
