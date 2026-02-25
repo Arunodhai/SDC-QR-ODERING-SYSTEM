@@ -313,11 +313,11 @@ export default function WelcomePage() {
             <div className="mt-4">
               <button
                 type="button"
-                onClick={() => navigate('/setup')}
+                onClick={() => navigate('/setup?mode=login')}
                 className="text-sm font-medium text-slate-900"
               >
-                Already existing user?{' '}
-                <span className="inline-block font-semibold text-[#00A000] transition-transform duration-200 ease-out hover:scale-110">
+                Already have a workspace?{' '}
+                <span className="inline-block font-semibold text-[#00A000] underline underline-offset-4 transition-transform duration-200 ease-out hover:scale-110">
                 &nbsp;Sign in.
                 </span>
               </button>

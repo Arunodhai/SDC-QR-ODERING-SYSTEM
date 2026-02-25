@@ -8,6 +8,7 @@ export type WorkspaceProfile = {
   ownerEmail: string;
   adminUsername: string;
   kitchenUsername: string;
+  currencyCode?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -123,7 +124,7 @@ async function fetchRemoteWorkspaceProfile(workspaceId?: string): Promise<Worksp
 
   const wsPrimary = await supabase
     .from('workspaces')
-    .select('id,restaurant_name,outlet_name,owner_email,admin_username,created_at,updated_at')
+    .select('id,restaurant_name,outlet_name,owner_email,admin_username,currency_code,created_at,updated_at')
     .eq('id', targetWorkspaceId)
     .single();
 
@@ -131,7 +132,7 @@ async function fetchRemoteWorkspaceProfile(workspaceId?: string): Promise<Worksp
   if (wsPrimary.error) {
     const wsFallback = await supabase
       .from('workspaces')
-      .select('id,restaurant_name,outlet_name,owner_email,created_at,updated_at')
+      .select('id,restaurant_name,outlet_name,owner_email,currency_code,created_at,updated_at')
       .eq('id', targetWorkspaceId)
       .single();
     if (wsFallback.error) throw new Error(wsFallback.error.message || 'Failed to fetch workspace');
@@ -151,6 +152,7 @@ async function fetchRemoteWorkspaceProfile(workspaceId?: string): Promise<Worksp
     ownerEmail: String(wsRow.owner_email || user.email || ''),
     adminUsername: String(wsRow.admin_username || 'admin'),
     kitchenUsername: String(kitchenRes.data?.username || 'kitchen'),
+    currencyCode: String(wsRow.currency_code || 'USD').toUpperCase(),
     createdAt: String(wsRow.created_at || nowIso()),
     updatedAt: String(wsRow.updated_at || nowIso()),
   };

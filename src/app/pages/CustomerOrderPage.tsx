@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/
 import { toast } from 'sonner';
 import * as api from '../lib/api';
 import { getMenuItemImage } from '../lib/menuImageFallback';
-import { getActiveWorkspaceId, setActiveWorkspaceId } from '../lib/workspaceAuth';
+import { getActiveWorkspaceId, getCurrentWorkspaceProfile, setActiveWorkspaceId } from '../lib/workspaceAuth';
 import logo12 from '../../assets/logo12.png';
 
 const STATUS_TEXT_COLORS: Record<string, string> = {
@@ -56,6 +56,19 @@ const formatDateTime = (value?: string | null) => {
     hour: 'numeric',
     minute: '2-digit',
   });
+};
+const formatMenuPrice = (value: number, currencyCode = 'USD') => {
+  const amount = Math.round(Number(value) || 0);
+  try {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: String(currencyCode || 'USD').toUpperCase(),
+      maximumFractionDigits: 0,
+      minimumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `$${amount.toLocaleString('en-US')}`;
+  }
 };
 const getPaymentMethodLabel = (value?: string) => {
   const key = String(value || '').toUpperCase();
@@ -104,6 +117,7 @@ export default function CustomerOrderPage() {
   const [categoryJump, setCategoryJump] = useState<string>('');
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
   const [cartAvailabilityPopup, setCartAvailabilityPopup] = useState<string>('');
+  const [workspaceCurrencyCode, setWorkspaceCurrencyCode] = useState('USD');
   const latestFinalBillIdRef = useRef<string>('');
   const cartRef = useRef<Record<string, number>>({});
   const cartStorageKey = `sdc:cart:${tableNumber || 'unknown'}:${customerPhone || 'guest'}`;
@@ -118,6 +132,13 @@ export default function CustomerOrderPage() {
   const menuCategories = categories.filter((category) =>
     menuItems.some((item) => String(item.categoryId) === String(category.id)),
   );
+
+  useEffect(() => {
+    const workspace = getCurrentWorkspaceProfile();
+    if (workspace?.currencyCode) {
+      setWorkspaceCurrencyCode(String(workspace.currencyCode).toUpperCase());
+    }
+  }, []);
 
   const sanitizeCartByAvailability = useCallback((allItems: any[]) => {
     const allMap = new Map((allItems || []).map((item: any) => [String(item.id), item]));
@@ -872,14 +893,14 @@ export default function CustomerOrderPage() {
                   {categoryItems.length} item{categoryItems.length > 1 ? 's' : ''}
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-2 md:grid-cols-3">
+              <div className="grid grid-cols-2 gap-3.5 p-4 sm:grid-cols-2 md:grid-cols-3">
                 {categoryItems.map(item => (
-                  <Card key={item.id} className={`sdc-panel-card p-3 ${item.available ? '' : 'opacity-75'}`}>
+                  <Card key={item.id} className={`rounded-2xl border border-slate-200/70 bg-white p-3 shadow-[0_4px_14px_rgba(15,23,42,0.05)] ${item.available ? '' : 'opacity-75'}`}>
                     <div className="flex h-full flex-col">
                       {getMenuItemImage(item.name, item.image) ? (
                         <button
                           type="button"
-                          className="mb-2 aspect-square w-full overflow-hidden rounded-xl border bg-white p-1 transition hover:shadow cursor-zoom-in"
+                          className="mb-2.5 aspect-square w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-1 transition hover:shadow-sm cursor-zoom-in"
                           onClick={() =>
                             setPreviewImage({
                               src: getMenuItemImage(item.name, item.image),
@@ -894,15 +915,17 @@ export default function CustomerOrderPage() {
                           />
                         </button>
                       ) : (
-                        <div className="mb-2 aspect-square w-full rounded-xl border bg-white/60" />
+                        <div className="mb-2.5 aspect-square w-full rounded-2xl border border-slate-200 bg-white/60" />
                       )}
 
-                      <h3 className="line-clamp-2 min-h-[2.6rem] text-[1.05rem] font-semibold leading-tight">{item.name}</h3>
-                      <p className="mt-1 text-xl font-bold">${item.price.toFixed(2)}</p>
+                      <h3 className="line-clamp-2 min-h-[2.85rem] text-[1.05rem] font-semibold leading-tight text-slate-900">{item.name}</h3>
+                      <p className="mt-1.5 text-[2rem] font-semibold leading-none tracking-tight text-slate-900">
+                        {formatMenuPrice(item.price, workspaceCurrencyCode)}
+                      </p>
 
-                      <div className="mt-3">
+                      <div className="mt-3.5">
                         {!item.available ? (
-                          <Button variant="outline" disabled className="h-10 w-full">
+                          <Button variant="outline" disabled className="h-11 w-full rounded-2xl border-slate-300 bg-white text-slate-500">
                             Unavailable
                           </Button>
                         ) : cart[item.id] ? (
@@ -910,17 +933,17 @@ export default function CustomerOrderPage() {
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-10 w-10"
+                              className="h-11 w-11 rounded-xl border-slate-300"
                               disabled={!phoneConfirmed}
                               onClick={() => removeFromCart(item.id)}
                             >
                               <Minus className="w-4 h-4" />
                             </Button>
-                            <span className="min-w-[2rem] text-center text-lg font-semibold">{cart[item.id]}</span>
+                            <span className="min-w-[2rem] text-center text-xl font-semibold text-slate-900">{cart[item.id]}</span>
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-10 w-10"
+                              className="h-11 w-11 rounded-xl border-slate-300"
                               disabled={!phoneConfirmed}
                               onClick={() => addToCart(item.id)}
                             >
@@ -928,9 +951,13 @@ export default function CustomerOrderPage() {
                             </Button>
                           </div>
                         ) : (
-                          <Button className="h-10 w-full" disabled={!phoneConfirmed} onClick={() => addToCart(item.id)}>
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add
+                          <Button
+                            variant="outline"
+                            className="h-11 w-full rounded-2xl border-[1.5px] border-slate-300 bg-white text-[0.95rem] font-bold tracking-[0.04em] text-emerald-700 hover:bg-emerald-50 hover:text-emerald-700"
+                            disabled={!phoneConfirmed}
+                            onClick={() => addToCart(item.id)}
+                          >
+                            ADD
                           </Button>
                         )}
                       </div>
