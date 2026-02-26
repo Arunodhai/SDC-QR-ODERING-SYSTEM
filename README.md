@@ -87,15 +87,6 @@ Optional seed menu:
 - `/Users/arunodhaiv/Desktop/SDC/src/app/lib/workspaceAuth.ts` - workspace auth/session logic
 - `/Users/arunodhaiv/Desktop/SDC/sql` - schema/migration scripts
 
-## Deployment
-Vercel config exists at:
-- `/Users/arunodhaiv/Desktop/SDC/vercel.json`
-
-Standard deploy:
-```bash
-vercel
-```
-
 ## Notes
 - This app is designed for restaurant operations and not for processing online card payments directly.
 - Payment settlement is handled as in-house flow (counter/card/cash/UPI logging).
