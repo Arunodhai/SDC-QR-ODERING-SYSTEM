@@ -1,81 +1,113 @@
-# Stories de Café - Restaurant Ordering System
+# Stories de Cafe - QR Ordering System
 
-A complete web-based restaurant ordering system with QR code table ordering, kitchen management, and admin controls.
-
-## Features
-
-### Customer Ordering
-- Scan QR code at table to access menu
-- Browse menu by categories
-- Add items to cart with quantity controls
-- Optional customer name input
-- Simple order placement
-
-### Kitchen View
-- Real-time order display
-- Order status management (PENDING → PREPARING → READY → COMPLETED)
-- Auto-refresh every 5 seconds
-- Shows table number, customer name, items, and time
-
-### Admin Portal
-- **Menu Management**: Create categories and menu items with images
-- **Table Management**: Create tables and generate QR codes
-- **Order Tracking**: View order history, filter by payment status
-- **Payment Processing**: Mark orders as paid
-- **Revenue Tracking**: Calculate revenue from paid orders
-
-## Quick Start
-
-1. Visit the home page and click "Admin Portal"
-2. Login with password: `admin123`
-3. Go to Menu tab and click "Create Sample Data" to populate test menu
-4. Navigate to Tables to create tables and generate QR codes
-5. Scan QR codes or visit `/table/1` to test customer ordering
-6. Check Kitchen view to see incoming orders
-7. Use Admin Orders to track payments and revenue
-
-## Routes
-
-- `/` - Home page with quick links
-- `/table/:tableNumber` - Customer ordering page
-- `/order/success` - Order confirmation
-- `/kitchen` - Kitchen order management
-- `/admin/login` - Admin login
-- `/admin/menu` - Menu and category management
-- `/admin/tables` - Table management with QR codes
-- `/admin/orders` - Order history and payments
+Multi-tenant restaurant ordering web app with:
+- Customer QR menu + cart + live order tracking
+- Kitchen live workflow
+- Admin dashboard/menu/tables/orders/settings
+- Workspace-based branding (name/logo/currency)
 
 ## Tech Stack
+- React + Vite + React Router
+- Supabase (Postgres, Auth, Storage, Realtime)
+- Tailwind + Radix UI components
+- Recharts for dashboard visualization
 
-- **Frontend**: React, React Router, Tailwind CSS
-- **Backend**: Supabase Edge Functions (Hono server)
-- **Database**: Supabase KV Store
-- **Storage**: Supabase Storage (for menu images)
-- **QR Codes**: qrcode.react
-- **UI**: shadcn/ui components
+## Current Routes
+- `/` - Welcome
+- `/setup` - Workspace register/sign-in
+- `/access` - Workspace portal chooser
+- `/admin/login`
+- `/admin/dashboard`
+- `/admin/menu`
+- `/admin/tables`
+- `/admin/orders`
+- `/admin/kitchen`
+- `/admin/settings`
+- `/kitchen/login`
+- `/kitchen`
+- `/table/:tableNumber` - Customer menu
+- `/order/success` - Order status page
 
-## Data Structure
+## Local Run
+```bash
+npm install
+npm run dev
+```
 
-### Categories
-- id, name, order
+Build:
+```bash
+npm run build
+```
 
-### Menu Items
-- id, categoryId, name, price, description, image, available
+## Supabase Configuration
+This project currently reads Supabase public config from:
+- `/Users/arunodhaiv/Desktop/SDC/utils/supabase/info.tsx`
 
-### Tables
-- id, tableNumber
+Set your values there:
+- `projectId`
+- `publicAnonKey`
 
-### Orders
-- id, tableId, tableNumber, customerName, items[], total
-- status: PENDING | PREPARING | READY | COMPLETED
-- paymentStatus: PAID | UNPAID
-- paymentMethod: COUNTER
-- createdAt
+## Database Setup (Required)
+Run these SQL files in Supabase SQL Editor (in order):
+
+1. `/Users/arunodhaiv/Desktop/SDC/sql/create_multi_tenant_schema_and_rls.sql`
+2. `/Users/arunodhaiv/Desktop/SDC/sql/create_kitchen_auth.sql`
+3. `/Users/arunodhaiv/Desktop/SDC/sql/create_final_bills.sql`
+4. `/Users/arunodhaiv/Desktop/SDC/sql/add_workspace_logo_storage.sql`
+5. `/Users/arunodhaiv/Desktop/SDC/sql/create_admin_profiles_and_avatars.sql`
+6. `/Users/arunodhaiv/Desktop/SDC/sql/add_order_item_cancellation.sql`
+7. `/Users/arunodhaiv/Desktop/SDC/sql/add_order_status_reason.sql`
+8. `/Users/arunodhaiv/Desktop/SDC/sql/add_menu_item_dietary_type.sql`
+9. `/Users/arunodhaiv/Desktop/SDC/sql/fix_restaurant_tables_workspace_unique.sql`
+
+Optional seed menu:
+- `/Users/arunodhaiv/Desktop/SDC/sql/import_stories_menu.sql`
+
+## Storage Buckets Used
+- `menu-images`
+- `workspace-logos`
+- `admin-avatars`
+
+## Core Features Implemented
+- Workspace onboarding with owner/admin/kitchen credentials
+- Admin settings for branding, currency, timezone
+- QR generation per table with workspace context in link
+- Customer cart/order flow with notes
+- Live status progression (Pending -> Preparing -> Ready -> Served)
+- Cancel handling and unavailable-item handling
+- Consolidated billing + paid history
+- Kitchen and admin order management
+- Dashboard metrics and charts
+
+## Important Multi-Tenant Notes
+- Category uniqueness is workspace-scoped (`workspace_id + lower(name)`).
+- If you still see `categories_name_key` duplicate error, your DB likely still has an old global unique constraint from pre-migration schema.
+- Run `create_multi_tenant_schema_and_rls.sql` and the fix scripts above to align schema.
+
+## Reset Test Data (Quick)
+Use this when you want clean test runs:
+```sql
+delete from public.final_bills;
+delete from public.order_items;
+delete from public.orders;
+```
+
+## Project Structure (High Level)
+- `/Users/arunodhaiv/Desktop/SDC/src/app/pages` - all screens
+- `/Users/arunodhaiv/Desktop/SDC/src/app/components` - shared UI/layout
+- `/Users/arunodhaiv/Desktop/SDC/src/app/lib/api.ts` - data access layer
+- `/Users/arunodhaiv/Desktop/SDC/src/app/lib/workspaceAuth.ts` - workspace auth/session logic
+- `/Users/arunodhaiv/Desktop/SDC/sql` - schema/migration scripts
+
+## Deployment
+Vercel config exists at:
+- `/Users/arunodhaiv/Desktop/SDC/vercel.json`
+
+Standard deploy:
+```bash
+vercel
+```
 
 ## Notes
-
-- This is a prototype system for demonstration purposes
-- Not designed for collecting PII or securing sensitive payment data
-- Simple password-based admin auth (use proper auth in production)
-- Images stored in Supabase Storage with signed URLs
-- Auto-polling for real-time updates (kitchen and admin views)
+- This app is designed for restaurant operations and not for processing online card payments directly.
+- Payment settlement is handled as in-house flow (counter/card/cash/UPI logging).
