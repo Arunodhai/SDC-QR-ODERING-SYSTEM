@@ -79,18 +79,6 @@ Optional seed menu:
 - Kitchen and admin order management
 - Dashboard metrics and charts
 
-## Important Multi-Tenant Notes
-- Category uniqueness is workspace-scoped (`workspace_id + lower(name)`).
-- If you still see `categories_name_key` duplicate error, your DB likely still has an old global unique constraint from pre-migration schema.
-- Run `create_multi_tenant_schema_and_rls.sql` and the fix scripts above to align schema.
-
-## Reset Test Data (Quick)
-Use this when you want clean test runs:
-```sql
-delete from public.final_bills;
-delete from public.order_items;
-delete from public.orders;
-```
 
 ## Project Structure (High Level)
 - `/Users/arunodhaiv/Desktop/SDC/src/app/pages` - all screens
