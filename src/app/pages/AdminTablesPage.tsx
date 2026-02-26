@@ -246,24 +246,21 @@ export default function AdminTablesPage() {
 
       {/* QR Code Dialog */}
       <Dialog open={showQRDialog} onOpenChange={setShowQRDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Table {selectedTable?.tableNumber} QR Code</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="flex justify-center rounded-xl border p-8 bg-white">
+            <div className="mx-auto flex w-full max-w-[320px] justify-center rounded-xl border bg-white p-5">
               <QRCodeSVG
                 id="qr-code"
                 value={selectedTable ? getTableURL(selectedTable.tableNumber) : ''}
-                size={256}
+                size={220}
                 level="H"
-                imageSettings={getQrImageSettings(256)}
+                imageSettings={getQrImageSettings(220)}
               />
             </div>
             <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-4">
-                {selectedTable && getTableURL(selectedTable.tableNumber)}
-              </p>
               <Button onClick={downloadQR} className="w-full">
                 Download QR Code
               </Button>
